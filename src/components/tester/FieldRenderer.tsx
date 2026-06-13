@@ -491,6 +491,15 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
           testFieldId={field.id}
           onUploadComplete={(imageUrl) => onChange(field.id, currentValue, imageUrl)}
         />
+        <input
+          type="file"
+          ref={cameraInputRef}
+          disabled={disabled || uploading}
+          accept="image/*"
+          capture="environment"
+          onChange={handleFileChange}
+          className="hidden"
+        />
       </div>
     )
   }
