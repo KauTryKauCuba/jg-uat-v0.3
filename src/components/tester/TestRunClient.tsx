@@ -217,6 +217,42 @@ export function TestRunClient({ run }: TestRunClientProps) {
       return
     }
 
+    // Validate that if choice is failed, blocked, or n/a, defectDetails and screenshotUrl are provided.
+    let validationErrorMessage: string | null = null
+    for (const field of run.testCase.fields) {
+      if (field.fieldType === "DROPDOWN") {
+        const answer = answers[field.id]
+        const val = answer?.value
+        const screenshotUrl = answer?.screenshotUrl
+
+        let choice = ""
+        let defectDetails = ""
+        if (typeof val === "object" && val !== null) {
+          choice = val.choice || ""
+          defectDetails = val.defectDetails || ""
+        } else {
+          choice = String(val || "")
+        }
+
+        const choiceLower = choice.toLowerCase().trim()
+        if (choiceLower !== "" && choiceLower !== "passed" && choiceLower !== "pass") {
+          if (!defectDetails || defectDetails.trim() === "") {
+            validationErrorMessage = `Defect details are required for "${field.fieldName}" when the result is ${choice}.`
+            break
+          }
+          if (!screenshotUrl || screenshotUrl.trim() === "") {
+            validationErrorMessage = `A screenshot attachment is required for "${field.fieldName}" when the result is ${choice}.`
+            break
+          }
+        }
+      }
+    }
+
+    if (validationErrorMessage) {
+      setSubmitError(validationErrorMessage)
+      return
+    }
+
     setSubmitError(null)
     setIsSubmitModalOpen(true)
   }

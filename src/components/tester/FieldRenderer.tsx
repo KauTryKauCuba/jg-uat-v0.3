@@ -314,7 +314,7 @@ export function FieldRenderer({ field, answer, onChange, disabled }: FieldRender
 
             {/* Screenshot Upload */}
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-rose-400 uppercase tracking-wider">Screenshot Attachment</label>
+              <label className="text-[10px] font-bold text-rose-400 uppercase tracking-wider">Screenshot Attachment *</label>
               {currentScreenshotUrl ? (
                 <div className="relative rounded-xl overflow-hidden border border-white/10 bg-black/30 p-2 group">
                   <img
