@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { db } from "@/lib/db";
-import { users, testRuns, helpRequests } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { users, testRuns, helpRequests, uatResourceSets } from "@/db/schema";
+import { eq, isNotNull } from "drizzle-orm";
 
 export async function POST(req: NextRequest) {
   try {
@@ -18,7 +18,13 @@ export async function POST(req: NextRequest) {
     // 2. Delete all help requests (cascades to helpMessages)
     await db.delete(helpRequests);
 
-    // 3. Reset all testers' profile choices
+    // 3. Unclaim all resource sets
+    await db
+      .update(uatResourceSets)
+      .set({ testerId: null })
+      .where(isNotNull(uatResourceSets.testerId));
+
+    // 4. Reset all testers' profile choices
     await db
       .update(users)
       .set({

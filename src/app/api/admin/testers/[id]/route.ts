@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { db } from "@/lib/db";
-import { users } from "@/db/schema";
+import { users, uatResourceSets } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function PUT(
@@ -47,6 +47,12 @@ export async function PUT(
 
       return NextResponse.json({ success: true, employerLocked: newLockStatus });
     } else if (action === "reset-choice") {
+      // Unclaim any resource sets owned by this tester
+      await db
+        .update(uatResourceSets)
+        .set({ testerId: null })
+        .where(eq(uatResourceSets.testerId, id));
+
       await db
         .update(users)
         .set({

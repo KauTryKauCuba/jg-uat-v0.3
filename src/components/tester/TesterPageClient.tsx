@@ -512,25 +512,34 @@ export function TesterPageClient({
                   {resourceSets.map((set) => {
                     const isSelected = selectedSet?.id === set.id
                     const isClaimedByOthers = !!set.testerId && set.testerId !== testerId
+                    const isPermanent = selectCount >= 2 && !isSelected
+                    const isDisabled = isClaimedByOthers || isPermanent
                     return (
                       <button
                         key={set.id}
                         type="button"
-                        disabled={isClaimedByOthers}
+                        disabled={isDisabled}
                         onClick={() => handleSelectSet(set)}
                         className={`relative w-12 h-12 rounded-full overflow-hidden border-2 shrink-0 transition-all cursor-pointer ${
                           isSelected
                             ? "border-brand-teal ring-2 ring-brand-teal/30 scale-105"
                             : isClaimedByOthers
                             ? "border-red-500/20 opacity-30 cursor-not-allowed grayscale"
+                            : isPermanent
+                            ? "border-white/5 opacity-20 cursor-not-allowed grayscale"
                             : "border-white/10 opacity-60 hover:opacity-100"
                         }`}
-                        title={isClaimedByOthers ? `${set.name} (Claimed by another tester)` : set.name}
+                        title={isClaimedByOthers ? `${set.name} (Claimed by another tester)` : isPermanent ? `${set.name} (Selection is permanent)` : set.name}
                       >
                         <img src={set.photoUrl} className="w-full h-full object-cover" alt={set.name} />
                         {isClaimedByOthers && (
                           <div className="absolute inset-0 bg-red-900/60 flex items-center justify-center">
                             <span className="text-[10px] font-bold text-red-200 uppercase tracking-tighter">🔒</span>
+                          </div>
+                        )}
+                        {isPermanent && (
+                          <div className="absolute inset-0 bg-zinc-900/70 flex items-center justify-center">
+                            <span className="text-[10px] font-bold text-gray-400">🔒</span>
                           </div>
                         )}
                       </button>
