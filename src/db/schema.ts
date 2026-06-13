@@ -1,0 +1,171 @@
+import { pgEnum, pgTable, uuid, text, timestamp, jsonb, integer, boolean } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+
+// Enums
+export const roleEnum = pgEnum("role", ["ADMIN", "TESTER"]);
+export const fieldTypeEnum = pgEnum("field_type", ["TEXT", "NUMBER", "FILE", "BOOLEAN", "DROPDOWN", "CHECKLIST"]);
+export const runStatusEnum = pgEnum("run_status", ["PENDING", "SUBMITTED", "PASSED", "FAILED"]);
+
+// Users table
+export const users = pgTable("users", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name"),
+  email: text("email").notNull().unique(),
+  password: text("password").notNull(),
+  role: roleEnum("role").default("TESTER").notNull(),
+  testerGroup: text("tester_group"), // "JOBSEEKER" | "EMPLOYER" | null
+  employerLocked: boolean("employer_locked").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Test Case Categories table
+export const testCaseCategories = pgTable("test_case_categories", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull().unique(),
+  description: text("description"),
+  order: integer("order").default(0).notNull(),
+  targetGroup: text("target_group").default("JOBSEEKER").notNull(), // "JOBSEEKER" | "EMPLOYER"
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Test Cases table
+export const testCases = pgTable("test_cases", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  title: text("title").notNull(),
+  description: text("description"),
+  pdfUrl: text("pdf_url"),
+  categoryId: uuid("category_id").references(() => testCaseCategories.id, { onDelete: "cascade" }),
+  timer: integer("timer"),
+  order: integer("order").default(0).notNull(),
+  createdById: uuid("created_by_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Test Fields table
+export const testFields = pgTable("test_fields", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  testCaseId: uuid("test_case_id").notNull().references(() => testCases.id, { onDelete: "cascade" }),
+  fieldName: text("field_name").notNull(),
+  fieldType: fieldTypeEnum("field_type").default("TEXT").notNull(),
+  choices: jsonb("choices").$type<string[]>(),
+  steps: jsonb("steps").$type<string[]>(),
+  order: integer("order").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Test Runs table
+export const testRuns = pgTable("test_runs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  testCaseId: uuid("test_case_id").notNull().references(() => testCases.id, { onDelete: "cascade" }),
+  testerId: uuid("tester_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  status: runStatusEnum("status").default("PENDING").notNull(),
+  submittedAt: timestamp("submitted_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Test Answers table
+export const testAnswers = pgTable("test_answers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  testRunId: uuid("test_run_id").notNull().references(() => testRuns.id, { onDelete: "cascade" }),
+  testFieldId: uuid("test_field_id").notNull().references(() => testFields.id, { onDelete: "cascade" }),
+  value: text("value"),
+  screenshotUrl: text("screenshot_url"),
+  pdfUrl: text("pdf_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Relations definitions
+export const usersRelations = relations(users, ({ many }) => ({
+  testCases: many(testCases),
+  testRuns: many(testRuns),
+}));
+
+export const testCaseCategoriesRelations = relations(testCaseCategories, ({ many }) => ({
+  testCases: many(testCases),
+}));
+
+export const testCasesRelations = relations(testCases, ({ one, many }) => ({
+  createdBy: one(users, {
+    fields: [testCases.createdById],
+    references: [users.id],
+  }),
+  category: one(testCaseCategories, {
+    fields: [testCases.categoryId],
+    references: [testCaseCategories.id],
+  }),
+  testFields: many(testFields),
+  testRuns: many(testRuns),
+}));
+
+export const testFieldsRelations = relations(testFields, ({ one, many }) => ({
+  testCase: one(testCases, {
+    fields: [testFields.testCaseId],
+    references: [testCases.id],
+  }),
+  testAnswers: many(testAnswers),
+}));
+
+export const testRunsRelations = relations(testRuns, ({ one, many }) => ({
+  testCase: one(testCases, {
+    fields: [testRuns.testCaseId],
+    references: [testCases.id],
+  }),
+  tester: one(users, {
+    fields: [testRuns.testerId],
+    references: [users.id],
+  }),
+  testAnswers: many(testAnswers),
+}));
+
+export const testAnswersRelations = relations(testAnswers, ({ one }) => ({
+  testRun: one(testRuns, {
+    fields: [testAnswers.testRunId],
+    references: [testRuns.id],
+  }),
+  testField: one(testFields, {
+    fields: [testAnswers.testFieldId],
+    references: [testFields.id],
+  }),
+}));
+
+export const helpRequests = pgTable("help_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  testerId: uuid("tester_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  type: text("type").notNull(), // "CHAT" | "IN_PERSON"
+  status: text("status").default("PENDING").notNull(), // "PENDING" | "RESOLVED"
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const helpMessages = pgTable("help_messages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  helpRequestId: uuid("help_request_id").notNull().references(() => helpRequests.id, { onDelete: "cascade" }),
+  senderId: uuid("sender_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  message: text("message").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const helpRequestsRelations = relations(helpRequests, ({ one, many }) => ({
+  tester: one(users, {
+    fields: [helpRequests.testerId],
+    references: [users.id],
+  }),
+  messages: many(helpMessages),
+}));
+
+export const helpMessagesRelations = relations(helpMessages, ({ one }) => ({
+  helpRequest: one(helpRequests, {
+    fields: [helpMessages.helpRequestId],
+    references: [helpRequests.id],
+  }),
+  sender: one(users, {
+    fields: [helpMessages.senderId],
+    references: [users.id],
+  }),
+}));

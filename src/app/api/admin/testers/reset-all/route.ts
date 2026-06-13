@@ -1,0 +1,36 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { db } from "@/lib/db";
+import { users, testRuns, helpRequests } from "@/db/schema";
+import { eq } from "drizzle-orm";
+
+export async function POST(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user || session.user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // 1. Delete all test runs (cascades to testAnswers)
+    await db.delete(testRuns);
+
+    // 2. Delete all help requests (cascades to helpMessages)
+    await db.delete(helpRequests);
+
+    // 3. Reset all testers' profile choices
+    await db
+      .update(users)
+      .set({
+        testerGroup: null,
+        employerLocked: true, // Lock employer profile by default
+        updatedAt: new Date(),
+      })
+      .where(eq(users.role, "TESTER"));
+
+    return NextResponse.json({ success: true, message: "All testers reset successfully" });
+  } catch (error: any) {
+    console.error("Failed to reset testers:", error);
+    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+  }
+}

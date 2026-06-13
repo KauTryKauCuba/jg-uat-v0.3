@@ -1,0 +1,1 @@
+ALTER TABLE "test_cases" ADD COLUMN "order" integer DEFAULT 0 NOT NULL;
