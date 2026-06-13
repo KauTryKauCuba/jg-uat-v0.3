@@ -78,6 +78,7 @@ export function TestCaseForm({ initialData }: TestCaseFormProps) {
   const [uploading, setUploading] = React.useState(false)
   const [uploadError, setUploadError] = React.useState<string | null>(null)
   const [saving, setSaving] = React.useState(false)
+  const [uploadProgress, setUploadProgress] = React.useState<number | null>(null)
 
   // Drag & drop file states
   const [dragActive, setDragActive] = React.useState(false)
@@ -90,33 +91,54 @@ export function TestCaseForm({ initialData }: TestCaseFormProps) {
   const [choiceInput, setChoiceInput] = React.useState("")
   const [stepInput, setStepInput] = React.useState("")
 
-  const handleFileUpload = async (file: File) => {
+  const handleFileUpload = (file: File) => {
     if (file.type !== "application/pdf") {
       setUploadError("Only PDF files are supported")
       return
     }
     setUploading(true)
     setUploadError(null)
+    setUploadProgress(0)
 
     const formData = new FormData()
     formData.append("file", file)
 
-    try {
-      const res = await fetch("/api/upload/pdf", {
-        method: "POST",
-        body: formData,
-      })
-      const json = await res.json()
-      if (json.error) {
-        setUploadError(json.error)
-      } else {
-        setPdfUrl(json.data.url)
+    const xhr = new XMLHttpRequest()
+    xhr.open("POST", "/api/upload/pdf", true)
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        const percent = Math.round((e.loaded / e.total) * 100)
+        setUploadProgress(percent)
       }
-    } catch (err: any) {
-      setUploadError("Failed to upload PDF file")
-    } finally {
-      setUploading(false)
     }
+
+    xhr.onload = () => {
+      setUploading(false)
+      setUploadProgress(null)
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const json = JSON.parse(xhr.responseText)
+          if (json.error) {
+            setUploadError(json.error)
+          } else {
+            setPdfUrl(json.data.url)
+          }
+        } catch (err) {
+          setUploadError("Failed to parse response")
+        }
+      } else {
+        setUploadError(`Upload failed with status ${xhr.status}`)
+      }
+    }
+
+    xhr.onerror = () => {
+      setUploading(false)
+      setUploadProgress(null)
+      setUploadError("Network error during PDF upload")
+    }
+
+    xhr.send(formData)
   }
 
   const handleDrag = (e: React.DragEvent) => {
@@ -361,9 +383,19 @@ export function TestCaseForm({ initialData }: TestCaseFormProps) {
             }`}
           >
             {uploading ? (
-              <div className="flex flex-col items-center space-y-2">
+              <div className="flex flex-col items-center space-y-3 w-full max-w-xs">
                 <LoadingSpinner size="md" />
-                <p className="text-xs text-gray-400">Uploading PDF document...</p>
+                <p className="text-xs text-gray-400">
+                  Uploading PDF document... {uploadProgress !== null ? `${uploadProgress}%` : ""}
+                </p>
+                {uploadProgress !== null && (
+                  <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+                    <div
+                      className="bg-brand-cyan h-1.5 transition-all duration-150"
+                      style={{ width: `${uploadProgress}%` }}
+                    ></div>
+                  </div>
+                )}
               </div>
             ) : pdfUrl ? (
               <div className="flex flex-col items-center space-y-2">
