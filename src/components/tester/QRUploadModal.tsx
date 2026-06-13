@@ -80,7 +80,7 @@ export function QRUploadModal({
 
     const checkStatus = async () => {
       try {
-        const res = await fetch(`/api/mobile-upload/${sessionId}`)
+        const res = await fetch(`/api/mobile-upload/${sessionId}?t=${Date.now()}`)
         const json = await res.json()
         
         // Log status to help debugging
