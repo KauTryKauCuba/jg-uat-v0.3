@@ -2,15 +2,15 @@
 set -e
 
 # Wait for database to be ready
-NODE_PATH=./dev_node_modules node wait-for-db.js
+node wait-for-db.js
 
 # Push database schema changes
 echo "Synchronizing database schema..."
-./dev_node_modules/.bin/drizzle-kit push
+npx drizzle-kit push
 
 # Seed database with default admin/tester if not already present
 echo "Running database seed..."
-./dev_node_modules/.bin/tsx src/db/seed.ts
+npm run db:seed
 
 # Start application
 echo "Starting application..."

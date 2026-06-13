@@ -1,4 +1,4 @@
-import { pgEnum, pgTable, uuid, text, timestamp, jsonb, integer, boolean, index } from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, uuid, text, timestamp, jsonb, integer, boolean } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 // Enums
@@ -43,10 +43,7 @@ export const testCases = pgTable("test_cases", {
   createdById: uuid("created_by_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => ({
-  categoryIdIdx: index("test_cases_category_id_idx").on(table.categoryId),
-  createdByIdIdx: index("test_cases_created_by_id_idx").on(table.createdById),
-}));
+});
 
 // Test Fields table
 export const testFields = pgTable("test_fields", {
@@ -59,9 +56,7 @@ export const testFields = pgTable("test_fields", {
   order: integer("order").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => ({
-  testCaseIdIdx: index("test_fields_test_case_id_idx").on(table.testCaseId),
-}));
+});
 
 // Test Runs table
 export const testRuns = pgTable("test_runs", {
@@ -72,10 +67,7 @@ export const testRuns = pgTable("test_runs", {
   submittedAt: timestamp("submitted_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => ({
-  testCaseIdIdx: index("test_runs_test_case_id_idx").on(table.testCaseId),
-  testerIdIdx: index("test_runs_tester_id_idx").on(table.testerId),
-}));
+});
 
 // Test Answers table
 export const testAnswers = pgTable("test_answers", {
@@ -87,10 +79,7 @@ export const testAnswers = pgTable("test_answers", {
   pdfUrl: text("pdf_url"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => ({
-  testRunIdIdx: index("test_answers_test_run_id_idx").on(table.testRunId),
-  testFieldIdIdx: index("test_answers_test_field_id_idx").on(table.testFieldId),
-}));
+});
 
 // Relations definitions
 export const usersRelations = relations(users, ({ many }) => ({
@@ -153,9 +142,7 @@ export const helpRequests = pgTable("help_requests", {
   status: text("status").default("PENDING").notNull(), // "PENDING" | "RESOLVED"
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => ({
-  testerIdIdx: index("help_requests_tester_id_idx").on(table.testerId),
-}));
+});
 
 export const helpMessages = pgTable("help_messages", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -163,10 +150,7 @@ export const helpMessages = pgTable("help_messages", {
   senderId: uuid("sender_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   message: text("message").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-}, (table) => ({
-  helpRequestIdIdx: index("help_messages_help_request_id_idx").on(table.helpRequestId),
-  senderIdIdx: index("help_messages_sender_id_idx").on(table.senderId),
-}));
+});
 
 export const helpRequestsRelations = relations(helpRequests, ({ one, many }) => ({
   tester: one(users, {
@@ -196,10 +180,7 @@ export const mobileUploads = pgTable("mobile_uploads", {
   status: text("status").default("PENDING").notNull(), // "PENDING" | "COMPLETED"
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => ({
-  testRunIdIdx: index("mobile_uploads_test_run_id_idx").on(table.testRunId),
-  testFieldIdIdx: index("mobile_uploads_test_field_id_idx").on(table.testFieldId),
-}));
+});
 
 // UAT Resource Sets table
 export const uatResourceSets = pgTable("uat_resource_sets", {
@@ -211,9 +192,7 @@ export const uatResourceSets = pgTable("uat_resource_sets", {
   testerId: uuid("tester_id").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => ({
-  testerIdIdx: index("uat_resource_sets_tester_id_idx").on(table.testerId),
-}));
+});
 
 export const uatResourceSetsRelations = relations(uatResourceSets, ({ one }) => ({
   tester: one(users, {
