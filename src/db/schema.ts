@@ -169,3 +169,14 @@ export const helpMessagesRelations = relations(helpMessages, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+// Mobile Uploads table for QR photo upload feature
+export const mobileUploads = pgTable("mobile_uploads", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  testRunId: uuid("test_run_id").notNull(),
+  testFieldId: uuid("test_field_id").notNull(),
+  imageUrl: text("image_url"),
+  status: text("status").default("PENDING").notNull(), // "PENDING" | "COMPLETED"
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});

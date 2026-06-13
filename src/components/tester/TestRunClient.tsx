@@ -339,6 +339,7 @@ export function TestRunClient({ run }: TestRunClientProps) {
                     answer={answers[field.id] ?? null}
                     onChange={handleAnswerChange}
                     disabled={isSubmitted}
+                    testRunId={run.id}
                   />
                   {index < run.testCase.fields.length - 1 && (
                     <hr className="border-white/5" />
