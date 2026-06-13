@@ -15,8 +15,6 @@ export default function MobileUploadClient({ sessionId, initialStatus }: MobileU
   const [uploading, setUploading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
 
-  const fileInputRef = React.useRef<HTMLInputElement>(null)
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -30,10 +28,6 @@ export default function MobileUploadClient({ sessionId, initialStatus }: MobileU
       setPreviewUrl(reader.result as string)
     }
     reader.readAsDataURL(file)
-  }
-
-  const handleSelectClick = () => {
-    fileInputRef.current?.click()
   }
 
   const handleUpload = async () => {
@@ -80,16 +74,6 @@ export default function MobileUploadClient({ sessionId, initialStatus }: MobileU
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* File capture input */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileChange}
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-      />
-
       {previewUrl ? (
         <div className="space-y-4">
           <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-black/40 p-2">
@@ -101,15 +85,18 @@ export default function MobileUploadClient({ sessionId, initialStatus }: MobileU
           </div>
 
           <div className="flex gap-3">
-            <button
-              type="button"
-              disabled={uploading}
-              onClick={handleSelectClick}
-              className="flex-1 py-3 px-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-            >
+            <label className="relative flex-1 py-3 px-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
               <RefreshCw className="w-4 h-4" />
               <span>Retake</span>
-            </button>
+              <input
+                type="file"
+                disabled={uploading}
+                onChange={handleFileChange}
+                accept="image/*"
+                capture="environment"
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+              />
+            </label>
             <button
               type="button"
               disabled={uploading}
@@ -132,19 +119,23 @@ export default function MobileUploadClient({ sessionId, initialStatus }: MobileU
         </div>
       ) : (
         <div className="space-y-4">
-          <button
-            type="button"
-            onClick={handleSelectClick}
-            className="w-full py-8 px-6 rounded-2xl border border-dashed border-white/20 bg-black/30 hover:border-brand-teal hover:bg-black/50 transition-all flex flex-col items-center justify-center gap-3 cursor-pointer group"
-          >
+          <label className="relative w-full py-8 px-6 rounded-2xl border border-dashed border-white/20 bg-black/30 hover:border-brand-teal hover:bg-black/50 transition-all flex flex-col items-center justify-center gap-3 cursor-pointer group">
             <div className="p-3 rounded-full bg-white/5 border border-white/10 text-gray-400 group-hover:text-brand-teal group-hover:border-brand-teal/30 transition-all">
               <Camera className="w-6 h-6" />
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1 text-center">
               <span className="text-sm font-bold text-gray-200 block">Use Phone Camera</span>
               <span className="text-[10px] text-gray-500 block">Tap here to take a photo or select an image</span>
             </div>
-          </button>
+            <input
+              type="file"
+              disabled={uploading}
+              onChange={handleFileChange}
+              accept="image/*"
+              capture="environment"
+              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+            />
+          </label>
         </div>
       )}
 
