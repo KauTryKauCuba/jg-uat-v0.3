@@ -168,6 +168,7 @@ interface TesterPageClientProps {
   userName: string
   testerGroup: "JOBSEEKER" | "EMPLOYER" | null
   employerLocked: boolean
+  testerId: string
 }
 
 export function TesterPageClient({
@@ -176,6 +177,7 @@ export function TesterPageClient({
   userName,
   testerGroup,
   employerLocked,
+  testerId,
 }: TesterPageClientProps) {
   const router = useRouter()
   usePageTitle(
@@ -190,9 +192,75 @@ export function TesterPageClient({
   const [startTime, setStartTime] = React.useState("")
   const [selectingGroup, setSelectingGroup] = React.useState<string | null>(null)
 
+  // UAT Resource Sets states
+  const [resourceSets, setResourceSets] = React.useState<any[]>([])
+  const [selectedSet, setSelectedSet] = React.useState<any | null>(null)
+  const [loadingResources, setLoadingResources] = React.useState(true)
+
   React.useEffect(() => {
     setStartTime(new Date().toLocaleString())
   }, [])
+
+  React.useEffect(() => {
+    const fetchResources = async () => {
+      try {
+        const res = await fetch("/api/tester/resources")
+        const json = await res.json()
+        if (json.data && json.data.length > 0) {
+          setResourceSets(json.data)
+          // Find if this tester has already claimed a set
+          const claimedSet = json.data.find((set: any) => set.testerId === testerId)
+          if (claimedSet) {
+            setSelectedSet(claimedSet)
+          } else {
+            setSelectedSet(null) // No set claimed yet
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load UAT resources:", err)
+      } finally {
+        setLoadingResources(false)
+      }
+    }
+    
+    if (testerGroup) {
+      fetchResources()
+    }
+  }, [testerGroup, testerId])
+
+  const handleSelectSet = async (set: any) => {
+    const isAlreadySelectedByMe = selectedSet?.id === set.id
+    const targetSetId = isAlreadySelectedByMe ? null : set.id // Toggle selection / unclaim
+
+    try {
+      const res = await fetch("/api/tester/resources/select", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ setId: targetSetId }),
+      })
+      const json = await res.json()
+      if (json.error) {
+        alert(json.error)
+      } else {
+        // Update local sets with new claims
+        const updatedSets = resourceSets.map((s) => {
+          // If this set was claimed by current tester, set testerId to null
+          if (s.testerId === testerId) {
+            return { ...s, testerId: null }
+          }
+          // If this set is the newly claimed one, set testerId to current tester
+          if (s.id === targetSetId) {
+            return { ...s, testerId: testerId }
+          }
+          return s
+        })
+        setResourceSets(updatedSets)
+        setSelectedSet(targetSetId ? set : null)
+      }
+    } catch {
+      alert("Failed to update resource set selection.")
+    }
+  }
 
   const handleAction = async (caseId: string, runId: string | null) => {
     if (runId) {
@@ -348,16 +416,141 @@ export function TesterPageClient({
   return (
     <main className="max-w-7xl mx-auto px-6 py-8 w-full flex-1 flex flex-col space-y-10 relative z-10 text-white">
       {!isEmpty && (
-        <div className="bg-zinc-900/40 border border-white/5 rounded-3xl p-8 backdrop-blur-md shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div className="space-y-1">
-            <h1 className="text-2xl font-extrabold tracking-tight">Welcome, {userName}!</h1>
-            <p className="text-sm text-gray-400">
-              Thank you for joining. Testing UAT flow as: <span className="font-semibold text-brand-cyan">{testerGroup === "EMPLOYER" ? "Employer" : "Jobseeker"}</span>
-            </p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Welcome Card */}
+          <div className="lg:col-span-2 bg-zinc-900/40 border border-white/5 rounded-3xl p-8 backdrop-blur-md shadow-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="space-y-1">
+              <h1 className="text-2xl font-extrabold tracking-tight">Welcome, {userName}!</h1>
+              <p className="text-sm text-gray-400">
+                Thank you for joining. Testing UAT flow as: <span className="font-semibold text-brand-cyan">{testerGroup === "EMPLOYER" ? "Employer" : "Jobseeker"}</span>
+              </p>
+            </div>
+            <div className="text-xs text-gray-500 font-mono bg-white/5 px-4 py-2.5 rounded-xl border border-white/5 flex flex-col sm:items-end w-full sm:w-auto">
+              <span className="font-bold text-brand-teal uppercase tracking-wider block mb-0.5 text-[10px]">Session Started</span>
+              <span>{startTime}</span>
+            </div>
           </div>
-          <div className="text-xs text-gray-500 font-mono bg-white/5 px-4 py-2.5 rounded-xl border border-white/5 flex flex-col md:items-end">
-            <span className="font-bold text-brand-teal uppercase tracking-wider block mb-0.5 text-[10px]">Session Started</span>
-            <span>{startTime}</span>
+
+          {/* Download Resources Card */}
+          <div className="bg-zinc-900/40 border border-white/5 rounded-3xl p-6 backdrop-blur-md shadow-xl flex flex-col justify-between space-y-4">
+            <div className="space-y-1">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-brand-cyan">Testing Resources</h2>
+              <p className="text-[11px] text-gray-400">
+                Choose a photo set. The resume and IC card are linked as a set.
+              </p>
+            </div>
+
+            {/* Photo Selection Sets */}
+            {loadingResources ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="w-5 h-5 text-brand-teal animate-spin" />
+              </div>
+            ) : resourceSets.length === 0 ? (
+              /* Fallback to local default assets if no sets configured */
+              <div className="space-y-2">
+                <p className="text-[10px] text-gray-500 italic">Using default fallback specimen set.</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <a
+                    href="/sample-photo.png"
+                    download="specimen-photo.png"
+                    className="flex flex-col items-center justify-center p-3 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 hover:border-brand-teal/30 transition-all text-center group cursor-pointer"
+                  >
+                    <span className="text-lg mb-1">👤</span>
+                    <span className="text-[10px] font-bold text-gray-300">Photo</span>
+                  </a>
+                  <a
+                    href="/sample-resume.pdf"
+                    download="specimen-resume.pdf"
+                    className="flex flex-col items-center justify-center p-3 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 hover:border-brand-teal/30 transition-all text-center group cursor-pointer"
+                  >
+                    <span className="text-lg mb-1">📄</span>
+                    <span className="text-[10px] font-bold text-gray-300">Resume</span>
+                  </a>
+                  <a
+                    href="/sample-ic.png"
+                    download="specimen-ic.png"
+                    className="flex flex-col items-center justify-center p-3 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 hover:border-brand-teal/30 transition-all text-center group cursor-pointer"
+                  >
+                    <span className="text-lg mb-1">🪪</span>
+                    <span className="text-[10px] font-bold text-gray-300">IC Card</span>
+                  </a>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Selectors */}
+                <div className="flex items-center space-x-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-white/5">
+                  {resourceSets.map((set) => {
+                    const isSelected = selectedSet?.id === set.id
+                    const isClaimedByOthers = set.testerId && set.testerId !== testerId
+                    return (
+                      <button
+                        key={set.id}
+                        type="button"
+                        disabled={isClaimedByOthers}
+                        onClick={() => handleSelectSet(set)}
+                        className={`relative w-12 h-12 rounded-full overflow-hidden border-2 shrink-0 transition-all cursor-pointer ${
+                          isSelected
+                            ? "border-brand-teal ring-2 ring-brand-teal/30 scale-105"
+                            : isClaimedByOthers
+                            ? "border-red-500/20 opacity-30 cursor-not-allowed grayscale"
+                            : "border-white/10 opacity-60 hover:opacity-100"
+                        }`}
+                        title={isClaimedByOthers ? `${set.name} (Claimed by another tester)` : set.name}
+                      >
+                        <img src={set.photoUrl} className="w-full h-full object-cover" alt={set.name} />
+                        {isClaimedByOthers && (
+                          <div className="absolute inset-0 bg-red-900/60 flex items-center justify-center">
+                            <span className="text-[10px] font-bold text-red-200 uppercase tracking-tighter">🔒</span>
+                          </div>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Info and download buttons for selected set */}
+                {selectedSet && (
+                  <div className="space-y-3 animate-fade-in">
+                    <p className="text-[10px] text-gray-400 font-semibold truncate">
+                      Selected Set: <span className="text-gray-200">{selectedSet.name}</span>
+                    </p>
+                    <div className="grid grid-cols-3 gap-2">
+                      <a
+                        href={selectedSet.photoUrl}
+                        download={`${selectedSet.name.replace(/\s+/g, "_")}_photo.png`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex flex-col items-center justify-center p-2.5 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 hover:border-brand-teal/30 transition-all text-center group cursor-pointer"
+                      >
+                        <span className="text-base mb-0.5 group-hover:scale-110 transition-transform">👤</span>
+                        <span className="text-[9px] font-bold text-gray-300">Photo</span>
+                      </a>
+                      <a
+                        href={selectedSet.resumeUrl}
+                        download={`${selectedSet.name.replace(/\s+/g, "_")}_resume.pdf`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex flex-col items-center justify-center p-2.5 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 hover:border-brand-teal/30 transition-all text-center group cursor-pointer"
+                      >
+                        <span className="text-base mb-0.5 group-hover:scale-110 transition-transform">📄</span>
+                        <span className="text-[9px] font-bold text-gray-300">Resume</span>
+                      </a>
+                      <a
+                        href={selectedSet.icUrl}
+                        download={`${selectedSet.name.replace(/\s+/g, "_")}_ic.png`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex flex-col items-center justify-center p-2.5 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 hover:border-brand-teal/30 transition-all text-center group cursor-pointer"
+                      >
+                        <span className="text-base mb-0.5 group-hover:scale-110 transition-transform">🪪</span>
+                        <span className="text-[9px] font-bold text-gray-300">IC Card</span>
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -180,3 +180,24 @@ export const mobileUploads = pgTable("mobile_uploads", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+// UAT Resource Sets table
+export const uatResourceSets = pgTable("uat_resource_sets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  photoUrl: text("photo_url").notNull(),
+  resumeUrl: text("resume_url").notNull(),
+  icUrl: text("ic_url").notNull(),
+  testerId: uuid("tester_id").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const uatResourceSetsRelations = relations(uatResourceSets, ({ one }) => ({
+  tester: one(users, {
+    fields: [uatResourceSets.testerId],
+    references: [users.id],
+  }),
+}));
+
+

@@ -143,6 +143,7 @@ export default async function TesterPage() {
       userName={session?.user?.name || "Tester"}
       testerGroup={testerGroup as "JOBSEEKER" | "EMPLOYER" | null}
       employerLocked={employerLocked}
+      testerId={session.user.id}
     />
   )
 }

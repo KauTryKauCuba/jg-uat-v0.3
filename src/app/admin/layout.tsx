@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import { SignOutButton } from "@/components/ui/sign-out-button"
 import Link from "next/link"
-import { LayoutDashboard, ClipboardList, Folder, Users, BarChart3 } from "lucide-react"
+import { LayoutDashboard, ClipboardList, Folder, Users, BarChart3, Files } from "lucide-react"
 import { NavLink } from "./nav-link"
 import { HelpRequestNavLink } from "@/components/admin/HelpRequestNavLink"
 
@@ -53,6 +53,10 @@ export default async function AdminLayout({
             <NavLink href="/admin/test-cases">
               <ClipboardList className="w-5 h-5" />
               <span>Test Cases</span>
+            </NavLink>
+            <NavLink href="/admin/resources">
+              <Files className="w-5 h-5" />
+              <span>Testing Resources</span>
             </NavLink>
             <NavLink href="/admin/results">
               <BarChart3 className="w-5 h-5" />
