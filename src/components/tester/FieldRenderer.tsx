@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { CheckCircle2, XCircle, Upload, X, Loader2, QrCode } from "lucide-react"
+import { CheckCircle2, XCircle, Upload, X, Loader2, QrCode, Camera } from "lucide-react"
 import { TestFieldWithOptions } from "@/types"
 import { QRUploadModal } from "@/components/tester/QRUploadModal"
 
@@ -21,6 +21,7 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
   const [uploading, setUploading] = React.useState(false)
   const [uploadError, setUploadError] = React.useState<string | null>(null)
   const [isQRModalOpen, setIsQRModalOpen] = React.useState(false)
+  const cameraInputRef = React.useRef<HTMLInputElement>(null)
 
   // Current values
   const currentValue = answer?.value ?? null
@@ -199,15 +200,34 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
             </label>
             {uploadError && <p className="text-[10px] text-red-500 mt-1 font-medium">{uploadError}</p>}
             {!disabled && (
-              <button
-                type="button"
-                onClick={() => setIsQRModalOpen(true)}
-                className="mt-3 w-full py-2.5 rounded-xl border border-white/10 hover:border-brand-teal/30 hover:bg-white/5 bg-white/5 text-gray-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-              >
-                <QrCode className="w-4 h-4 text-brand-teal" />
-                <span>Take Photo with Phone (QR Code)</span>
-              </button>
+              <div className="grid grid-cols-2 gap-2 mt-3 w-full">
+                <button
+                  type="button"
+                  onClick={() => setIsQRModalOpen(true)}
+                  className="py-2.5 rounded-xl border border-white/10 hover:border-brand-teal/30 hover:bg-white/5 bg-white/5 text-gray-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <QrCode className="w-4 h-4 text-brand-teal" />
+                  <span>Scan QR Code</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => cameraInputRef.current?.click()}
+                  className="py-2.5 rounded-xl border border-white/10 hover:border-brand-cyan/30 hover:bg-white/5 bg-white/5 text-gray-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Camera className="w-4 h-4 text-brand-cyan" />
+                  <span>Use Camera</span>
+                </button>
+              </div>
             )}
+            <input
+              type="file"
+              ref={cameraInputRef}
+              disabled={disabled || uploading}
+              accept="image/*"
+              capture="environment"
+              onChange={handleFileChange}
+              className="hidden"
+            />
           </div>
         )}
         <QRUploadModal
@@ -440,14 +460,24 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
                   </label>
                   {uploadError && <p className="text-[10px] text-red-500 mt-1 font-medium">{uploadError}</p>}
                   {!disabled && (
-                    <button
-                      type="button"
-                      onClick={() => setIsQRModalOpen(true)}
-                      className={`mt-2.5 w-full py-2.5 rounded-xl border bg-black/20 hover:bg-black/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${defectStyles.uploadBorder}`}
-                    >
-                      <QrCode className="w-4 h-4" />
-                      <span>Take Photo with Phone (QR Code)</span>
-                    </button>
+                    <div className="grid grid-cols-2 gap-2 mt-2.5 w-full">
+                      <button
+                        type="button"
+                        onClick={() => setIsQRModalOpen(true)}
+                        className={`py-2.5 rounded-xl border bg-black/20 hover:bg-black/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${defectStyles.uploadBorder}`}
+                      >
+                        <QrCode className="w-4 h-4" />
+                        <span>Scan QR Code</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => cameraInputRef.current?.click()}
+                        className={`py-2.5 rounded-xl border bg-black/20 hover:bg-black/30 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${defectStyles.uploadBorder}`}
+                      >
+                        <Camera className="w-4 h-4" />
+                        <span>Use Camera</span>
+                      </button>
+                    </div>
                   )}
                 </div>
               )}
