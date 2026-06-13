@@ -193,8 +193,17 @@ export function TesterPageClient({
   const [selectingGroup, setSelectingGroup] = React.useState<string | null>(null)
 
   // UAT Resource Sets states
-  const [resourceSets, setResourceSets] = React.useState<any[]>([])
-  const [selectedSet, setSelectedSet] = React.useState<any | null>(null)
+  interface ResourceSet {
+    id: string
+    name: string
+    photoUrl: string
+    resumeUrl: string
+    icUrl: string
+    testerId: string | null
+  }
+
+  const [resourceSets, setResourceSets] = React.useState<ResourceSet[]>([])
+  const [selectedSet, setSelectedSet] = React.useState<ResourceSet | null>(null)
   const [loadingResources, setLoadingResources] = React.useState(true)
 
   React.useEffect(() => {
@@ -209,7 +218,7 @@ export function TesterPageClient({
         if (json.data && json.data.length > 0) {
           setResourceSets(json.data)
           // Find if this tester has already claimed a set
-          const claimedSet = json.data.find((set: any) => set.testerId === testerId)
+          const claimedSet = json.data.find((set: ResourceSet) => set.testerId === testerId)
           if (claimedSet) {
             setSelectedSet(claimedSet)
           } else {
@@ -228,7 +237,7 @@ export function TesterPageClient({
     }
   }, [testerGroup, testerId])
 
-  const handleSelectSet = async (set: any) => {
+  const handleSelectSet = async (set: ResourceSet) => {
     const isAlreadySelectedByMe = selectedSet?.id === set.id
     const targetSetId = isAlreadySelectedByMe ? null : set.id // Toggle selection / unclaim
 
@@ -243,7 +252,7 @@ export function TesterPageClient({
         alert(json.error)
       } else {
         // Update local sets with new claims
-        const updatedSets = resourceSets.map((s) => {
+        const updatedSets = resourceSets.map((s: ResourceSet) => {
           // If this set was claimed by current tester, set testerId to null
           if (s.testerId === testerId) {
             return { ...s, testerId: null }
@@ -482,7 +491,7 @@ export function TesterPageClient({
                 <div className="flex items-center space-x-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-white/5">
                   {resourceSets.map((set) => {
                     const isSelected = selectedSet?.id === set.id
-                    const isClaimedByOthers = set.testerId && set.testerId !== testerId
+                    const isClaimedByOthers = !!set.testerId && set.testerId !== testerId
                     return (
                       <button
                         key={set.id}
