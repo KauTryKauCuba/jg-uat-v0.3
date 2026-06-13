@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { X, Smartphone, Loader2, QrCode, CheckCircle2 } from "lucide-react"
+import QRCode from "qrcode"
 
 interface QRUploadModalProps {
   isOpen: boolean
@@ -19,6 +20,7 @@ export function QRUploadModal({
   onUploadComplete,
 }: QRUploadModalProps) {
   const [sessionId, setSessionId] = React.useState<string | null>(null)
+  const [qrCodeDataUrl, setQrCodeDataUrl] = React.useState<string | null>(null)
   const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [isCompleted, setIsCompleted] = React.useState(false)
@@ -27,6 +29,7 @@ export function QRUploadModal({
   React.useEffect(() => {
     if (!isOpen) {
       setSessionId(null)
+      setQrCodeDataUrl(null)
       setIsCompleted(false)
       setError(null)
       return
@@ -56,6 +59,18 @@ export function QRUploadModal({
 
     createSession()
   }, [isOpen, testRunId, testFieldId])
+
+  // Generate local QR Code
+  React.useEffect(() => {
+    if (!sessionId) {
+      setQrCodeDataUrl(null)
+      return
+    }
+    const mobilePageUrl = `${window.location.origin}/tester/upload-mobile/${sessionId}`
+    QRCode.toDataURL(mobilePageUrl, { width: 250, margin: 2 })
+      .then((url) => setQrCodeDataUrl(url))
+      .catch((err) => console.error("Failed to generate QR code:", err))
+  }, [sessionId])
 
   // Poll session status
   React.useEffect(() => {
@@ -90,15 +105,6 @@ export function QRUploadModal({
   }, [isOpen, sessionId, isCompleted, onUploadComplete, onClose])
 
   if (!isOpen) return null
-
-  // Generate mobile upload page link
-  const mobilePageUrl = sessionId
-    ? `${window.location.origin}/tester/upload-mobile/${sessionId}`
-    : ""
-
-  const qrCodeUrl = sessionId
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(mobilePageUrl)}`
-    : ""
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
@@ -151,12 +157,16 @@ export function QRUploadModal({
                   </div>
 
                   {/* QR Code Frame */}
-                  <div className="p-3 bg-white rounded-2xl shadow-xl">
-                    <img
-                      src={qrCodeUrl}
-                      alt="Scan to upload screenshot"
-                      className="w-48 h-48"
-                    />
+                  <div className="p-3 bg-white rounded-2xl shadow-xl flex items-center justify-center min-w-[200px] min-h-[200px]">
+                    {qrCodeDataUrl ? (
+                      <img
+                        src={qrCodeDataUrl}
+                        alt="Scan to upload screenshot"
+                        className="w-48 h-48"
+                      />
+                    ) : (
+                      <Loader2 className="w-8 h-8 text-zinc-950 animate-spin" />
+                    )}
                   </div>
 
                   <div className="flex items-center space-x-2 text-[10px] text-brand-cyan font-bold uppercase tracking-wider animate-pulse bg-brand-cyan/5 border border-brand-cyan/20 px-3 py-1.5 rounded-full">

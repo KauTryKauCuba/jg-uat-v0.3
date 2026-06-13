@@ -86,6 +86,7 @@ export default function MobileUploadClient({ sessionId, initialStatus }: MobileU
         ref={fileInputRef}
         onChange={handleFileChange}
         accept="image/*"
+        capture="environment"
         className="hidden"
       />
 
