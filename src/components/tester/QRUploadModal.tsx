@@ -72,6 +72,14 @@ export function QRUploadModal({
       .catch((err) => console.error("Failed to generate QR code:", err))
   }, [sessionId])
 
+  const onUploadCompleteRef = React.useRef(onUploadComplete)
+  const onCloseRef = React.useRef(onClose)
+
+  React.useEffect(() => {
+    onUploadCompleteRef.current = onUploadComplete
+    onCloseRef.current = onClose
+  }, [onUploadComplete, onClose])
+
   // Poll session status using recursive setTimeout to prevent stale closures
   React.useEffect(() => {
     if (!isOpen || !sessionId || isCompleted) return
@@ -91,9 +99,9 @@ export function QRUploadModal({
           const imageUrl = json.data.imageUrl || json.data.image_url
           if (imageUrl) {
             setIsCompleted(true)
-            onUploadComplete(imageUrl)
+            onUploadCompleteRef.current(imageUrl)
             setTimeout(() => {
-              onClose()
+              onCloseRef.current()
             }, 1500)
             return // Stop polling
           }
@@ -115,7 +123,7 @@ export function QRUploadModal({
       active = false
       if (timeoutId) clearTimeout(timeoutId)
     }
-  }, [isOpen, sessionId, isCompleted, onUploadComplete, onClose])
+  }, [isOpen, sessionId, isCompleted])
 
   if (!isOpen) return null
 
