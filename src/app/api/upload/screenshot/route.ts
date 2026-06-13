@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const uploadDir = join(process.cwd(), "public", "uploads", "screenshots");
+    const uploadDir = join(process.cwd(), "uploads", "screenshots");
     
     // Ensure dir exists
     await mkdir(uploadDir, { recursive: true });

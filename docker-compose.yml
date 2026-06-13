@@ -27,7 +27,7 @@ services:
     depends_on:
       - postgres
     volumes:
-      - uploads:/app/public/uploads
+      - uploads:/app/uploads
 
   nginx:
     image: nginx:alpine
