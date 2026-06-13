@@ -267,29 +267,93 @@ export function FieldRenderer({ field, answer, onChange, disabled }: FieldRender
     const isPassed = selectedChoice.toLowerCase() === "passed" || selectedChoice.toLowerCase() === "pass"
     const needsDefectInputs = selectedChoice !== "" && !isPassed
 
+    // Helper functions for dynamic styles based on choice value
+    const getChoiceStyles = (choice: string, isSelected: boolean) => {
+      if (!isSelected) {
+        return {
+          button: "bg-white/5 text-gray-300 border-white/10 hover:bg-white/10",
+          radioBorder: "border-white/20",
+          radioDot: ""
+        }
+      }
+
+      const lower = choice.toLowerCase().trim()
+      if (lower === "passed" || lower === "pass") {
+        return {
+          button: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-md shadow-emerald-500/5",
+          radioBorder: "border-emerald-500 bg-emerald-500",
+          radioDot: "bg-zinc-950"
+        }
+      }
+      if (lower === "failed" || lower === "fail") {
+        return {
+          button: "bg-rose-500/10 text-rose-400 border-rose-500/30 shadow-md shadow-rose-500/5",
+          radioBorder: "border-rose-500 bg-rose-500",
+          radioDot: "bg-zinc-950"
+        }
+      }
+      if (lower === "blocked" || lower === "block") {
+        return {
+          button: "bg-amber-500/10 text-amber-400 border-amber-500/30 shadow-md shadow-amber-500/5",
+          radioBorder: "border-amber-500 bg-amber-500",
+          radioDot: "bg-zinc-950"
+        }
+      }
+      // N/A or others
+      return {
+        button: "bg-blue-500/10 text-blue-400 border-blue-500/30 shadow-md shadow-blue-500/5",
+        radioBorder: "border-blue-500 bg-blue-500",
+        radioDot: "bg-zinc-950"
+      }
+    }
+
+    const getDefectStyles = (choice: string) => {
+      const lower = choice.toLowerCase().trim()
+      if (lower === "failed" || lower === "fail") {
+        return {
+          container: "border-rose-500/20 bg-rose-500/5",
+          label: "text-rose-400",
+          textarea: "focus:border-rose-400 focus:ring-rose-400",
+          uploadBorder: "border-white/10 hover:border-rose-400"
+        }
+      }
+      if (lower === "blocked" || lower === "block") {
+        return {
+          container: "border-amber-500/20 bg-amber-500/5",
+          label: "text-amber-400",
+          textarea: "focus:border-amber-400 focus:ring-amber-400",
+          uploadBorder: "border-white/10 hover:border-amber-400"
+        }
+      }
+      // N/A or others
+      return {
+        container: "border-blue-500/20 bg-blue-500/5",
+        label: "text-blue-400",
+        textarea: "focus:border-blue-400 focus:ring-blue-400",
+        uploadBorder: "border-white/10 hover:border-blue-400"
+      }
+    }
+
+    const defectStyles = getDefectStyles(selectedChoice)
+
     return (
       <div className="space-y-3">
         <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{field.fieldName}</label>
         <div className="space-y-2">
           {choices.map((choice, i) => {
             const isSelected = selectedChoice === choice
+            const styles = getChoiceStyles(choice, isSelected)
             return (
               <button
                 key={i}
                 type="button"
                 disabled={disabled}
                 onClick={() => handleSelectChoice(choice)}
-                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
-                  isSelected
-                    ? "bg-brand-teal/10 text-brand-cyan border-brand-teal/30 shadow-md shadow-brand-teal/5"
-                    : "bg-white/5 text-gray-300 border-white/10 hover:bg-white/10"
-                } disabled:opacity-50`}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${styles.button} disabled:opacity-50`}
               >
                 <span>{choice}</span>
-                <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${
-                  isSelected ? "border-brand-cyan bg-brand-cyan" : "border-white/20"
-                }`}>
-                  {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-zinc-950" />}
+                <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${styles.radioBorder}`}>
+                  {isSelected && <div className={`w-1.5 h-1.5 rounded-full ${styles.radioDot}`} />}
                 </div>
               </button>
             )
@@ -298,23 +362,23 @@ export function FieldRenderer({ field, answer, onChange, disabled }: FieldRender
 
         {/* Dynamic Defect Details & Screenshot Upload */}
         {needsDefectInputs && (
-          <div className="space-y-4 p-4 rounded-xl border border-rose-500/20 bg-rose-500/5 animate-fade-in">
+          <div className={`space-y-4 p-4 rounded-xl border ${defectStyles.container} animate-fade-in`}>
             {/* Defect Details Textarea */}
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-rose-400 uppercase tracking-wider">Defect Details *</label>
+              <label className={`text-[10px] font-bold ${defectStyles.label} uppercase tracking-wider`}>Defect Details *</label>
               <textarea
                 disabled={disabled}
                 value={defectDetails}
                 onChange={handleDefectDetailsChange}
                 placeholder="Please describe the defect or reason for blockage/exclusion..."
                 rows={3}
-                className="w-full rounded-xl border border-white/10 bg-black/40 p-3 text-xs text-white placeholder-gray-500 focus:border-rose-400 focus:outline-none focus:ring-1 focus:ring-rose-400 transition-all disabled:opacity-50"
+                className={`w-full rounded-xl border border-white/10 bg-black/40 p-3 text-xs text-white placeholder-gray-500 focus:outline-none focus:ring-1 transition-all disabled:opacity-50 ${defectStyles.textarea}`}
               />
             </div>
 
             {/* Screenshot Upload */}
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-rose-400 uppercase tracking-wider">Screenshot Attachment *</label>
+              <label className={`text-[10px] font-bold ${defectStyles.label} uppercase tracking-wider`}>Screenshot Attachment *</label>
               {currentScreenshotUrl ? (
                 <div className="relative rounded-xl overflow-hidden border border-white/10 bg-black/30 p-2 group">
                   <img
@@ -334,7 +398,7 @@ export function FieldRenderer({ field, answer, onChange, disabled }: FieldRender
                 </div>
               ) : (
                 <div>
-                  <label className={`border border-dashed border-white/10 rounded-xl p-4 flex flex-col items-center justify-center space-y-1 cursor-pointer transition-all hover:border-rose-400 bg-black/20 hover:bg-black/30 ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}>
+                  <label className={`border border-dashed rounded-xl p-4 flex flex-col items-center justify-center space-y-1 cursor-pointer transition-all bg-black/20 hover:bg-black/30 ${defectStyles.uploadBorder} ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}>
                     {uploading ? (
                       <>
                         <Loader2 className="w-5 h-5 text-brand-teal animate-spin" />
