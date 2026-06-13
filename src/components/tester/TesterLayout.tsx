@@ -35,8 +35,6 @@ export function TesterLayout({ userName, children }: TesterLayoutProps) {
   return (
     <PageTitleContext.Provider value={{ title, setTitle }}>
       <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col font-sans relative overflow-hidden">
-        {/* Background radial lights */}
-        <div className="absolute top-0 left-0 z-0 h-screen w-screen bg-brand-teal/5 bg-[radial-gradient(ellipse_20%_80%_at_50%_-20%,rgba(7,188,202,0.15),rgba(255,255,255,0))]" />
 
         {/* Top Bar */}
         <header className="fixed top-0 left-0 right-0 z-30 h-14 bg-black/60 border-b border-white/5 px-6 flex items-center justify-between shadow-sm backdrop-blur-md">

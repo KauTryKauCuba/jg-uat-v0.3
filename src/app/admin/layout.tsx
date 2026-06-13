@@ -22,8 +22,6 @@ export default async function AdminLayout({
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white flex font-sans">
-      {/* Background radial glow */}
-      <div className="absolute top-0 left-0 z-0 h-screen w-screen bg-brand-teal/5 bg-[radial-gradient(ellipse_20%_80%_at_50%_-20%,rgba(7,188,202,0.15),rgba(255,255,255,0))]" />
 
       {/* Fixed Sidebar */}
       <aside className="fixed inset-y-0 left-0 z-20 w-64 border-r border-white/5 bg-black/60 backdrop-blur-md flex flex-col justify-between p-6">
