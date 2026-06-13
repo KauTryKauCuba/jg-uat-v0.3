@@ -82,8 +82,6 @@ export function QRUploadModal({
       try {
         const res = await fetch(`/api/mobile-upload/${sessionId}`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({}),
         })
         const json = await res.json()
         

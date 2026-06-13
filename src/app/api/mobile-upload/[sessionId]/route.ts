@@ -119,6 +119,11 @@ export async function POST(
 
       return NextResponse.json({ data: { url: fileUrl }, error: null });
     } else {
+      // Consume body stream just in case to prevent socket connection hangs
+      try {
+        await req.text();
+      } catch (e) {}
+
       // It is a desktop status poll query (POST is completely uncacheable)
       console.log(`[POST POLL] Poll status request for sessionId: ${sessionId}. Current DB status: ${session.status}, imageUrl: ${session.imageUrl}`);
       
