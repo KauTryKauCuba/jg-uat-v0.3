@@ -147,43 +147,43 @@ export function ResultsPageClient({ initialRuns }: ResultsPageClientProps) {
 
       {/* Summary stats bar */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="border border-white/5 bg-zinc-900/40 p-5 rounded-2xl flex items-center justify-between">
+        <div className="border border-white/5 bg-zinc-900/40 backdrop-blur-md p-6 rounded-2xl flex items-center justify-between">
           <div className="space-y-1">
-            <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Total Runs</p>
-            <p className="text-2xl font-extrabold">{totalRuns}</p>
+            <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Total Runs</p>
+            <p className="text-3xl font-extrabold">{totalRuns}</p>
           </div>
-          <div className="p-2.5 rounded-lg bg-white/5 text-gray-400 border border-white/5">
-            <Users className="w-5 h-5" />
+          <div className="p-3 rounded-xl bg-white/5 text-gray-400 border border-white/5">
+            <Users className="w-6 h-6" />
           </div>
         </div>
 
-        <div className="border border-white/5 bg-zinc-900/40 p-5 rounded-2xl flex items-center justify-between">
+        <div className="border border-white/5 bg-zinc-900/40 backdrop-blur-md p-6 rounded-2xl flex items-center justify-between">
           <div className="space-y-1">
-            <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Submitted</p>
-            <p className="text-2xl font-extrabold">{submittedRuns}</p>
+            <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Submitted</p>
+            <p className="text-3xl font-extrabold">{submittedRuns}</p>
           </div>
-          <div className="p-2.5 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/25">
-            <Clock className="w-5 h-5" />
+          <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+            <Clock className="w-6 h-6" />
           </div>
         </div>
 
-        <div className="border border-white/5 bg-zinc-900/40 p-5 rounded-2xl flex items-center justify-between">
+        <div className="border border-white/5 bg-zinc-900/40 backdrop-blur-md p-6 rounded-2xl flex items-center justify-between">
           <div className="space-y-1">
-            <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Passed Runs</p>
-            <p className="text-2xl font-extrabold">{passedRuns}</p>
+            <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Passed Runs</p>
+            <p className="text-3xl font-extrabold">{passedRuns}</p>
           </div>
-          <div className="p-2.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
-            <CheckCircle2 className="w-5 h-5" />
+          <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <CheckCircle2 className="w-6 h-6" />
           </div>
         </div>
 
-        <div className="border border-white/5 bg-zinc-900/40 p-5 rounded-2xl flex items-center justify-between">
+        <div className="border border-white/5 bg-zinc-900/40 backdrop-blur-md p-6 rounded-2xl flex items-center justify-between">
           <div className="space-y-1">
-            <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Pass Rate</p>
-            <p className="text-2xl font-extrabold">{passRate}%</p>
+            <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Pass Rate</p>
+            <p className="text-3xl font-extrabold">{passRate}%</p>
           </div>
-          <div className="p-2.5 rounded-lg bg-brand-cyan/15 text-brand-cyan border border-brand-teal/20">
-            <BarChart3 className="w-5 h-5" />
+          <div className="p-3 rounded-xl bg-brand-cyan/15 text-brand-cyan border border-brand-teal/20">
+            <BarChart3 className="w-6 h-6" />
           </div>
         </div>
       </div>
@@ -219,45 +219,45 @@ export function ResultsPageClient({ initialRuns }: ResultsPageClientProps) {
       {/* Runs Table */}
       <div className="border border-white/5 bg-zinc-900/40 rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm border-collapse">
+          <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-white/5 text-gray-400 font-semibold bg-white/[0.01] select-none">
                 <th
-                  className="py-4 px-6 cursor-pointer hover:text-white transition-colors"
+                  className="py-3 px-4 cursor-pointer hover:text-white transition-colors"
                   onClick={() => handleSort("testCaseTitle")}
                 >
                   <span>Scenario Title</span>
                   <SortIcon field="testCaseTitle" />
                 </th>
                 <th
-                  className="py-4 px-6 cursor-pointer hover:text-white transition-colors"
+                  className="py-3 px-4 cursor-pointer hover:text-white transition-colors"
                   onClick={() => handleSort("testerName")}
                 >
                   <span>Tester</span>
                   <SortIcon field="testerName" />
                 </th>
                 <th
-                  className="py-4 px-6 cursor-pointer hover:text-white transition-colors"
+                  className="py-3 px-4 cursor-pointer hover:text-white transition-colors"
                   onClick={() => handleSort("status")}
                 >
                   <span>Status</span>
                   <SortIcon field="status" />
                 </th>
-                <th className="py-4 px-6">Pass/Fail Summary</th>
+                <th className="py-3 px-4">Pass/Fail Summary</th>
                 <th
-                  className="py-4 px-6 cursor-pointer hover:text-white transition-colors"
+                  className="py-3 px-4 cursor-pointer hover:text-white transition-colors"
                   onClick={() => handleSort("submittedAt")}
                 >
                   <span>Submitted Date</span>
                   <SortIcon field="submittedAt" />
                 </th>
-                <th className="py-4 px-6 text-right">Details</th>
+                <th className="py-3 px-4 text-right">Details</th>
               </tr>
             </thead>
             <tbody>
               {processedRuns.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-gray-500 font-medium">
+                  <td colSpan={6} className="py-8 text-center text-gray-500 font-medium">
                     No UAT test runs matches the active filters.
                   </td>
                 </tr>
@@ -273,15 +273,15 @@ export function ResultsPageClient({ initialRuns }: ResultsPageClientProps) {
 
                   return (
                     <tr key={r.id} className="border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
-                      <td className="py-4 px-6">
+                      <td className="py-3 px-4">
                         <div className="font-semibold text-white max-w-xs truncate">{r.testCase.title}</div>
                       </td>
-                      <td className="py-4 px-6">
+                      <td className="py-3 px-4">
                         <div className="font-semibold text-white">{r.tester.name || "Tester"}</div>
-                        <div className="text-[10px] text-gray-500 font-mono mt-0.5">{r.tester.email}</div>
+                        <div className="text-[9px] text-gray-500 font-mono mt-0.5">{r.tester.email}</div>
                       </td>
-                      <td className="py-4 px-6">
-                        <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                      <td className="py-3 px-4">
+                        <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[9px] font-bold ${
                           r.status === "PASSED"
                             ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                             : r.status === "FAILED"
@@ -293,24 +293,24 @@ export function ResultsPageClient({ initialRuns }: ResultsPageClientProps) {
                           {r.status === "PENDING" ? "In Progress" : r.status}
                         </span>
                       </td>
-                      <td className="py-4 px-6 max-w-xs">
+                      <td className="py-3 px-4 max-w-xs">
                         <div className="space-y-1.5">
                           <div className="flex justify-between items-center text-xs">
-                            <span className="font-bold font-mono text-[10px] text-brand-cyan">
+                            <span className="font-bold font-mono text-[9px] text-brand-cyan">
                               {passed}/{total} Passed
                             </span>
                             {f > 0 && (
-                              <span className="font-bold font-mono text-[10px] text-rose-400 ml-2">
+                              <span className="font-bold font-mono text-[9px] text-rose-400 ml-2">
                                 {f} Failed
                               </span>
                             )}
                             {b > 0 && (
-                              <span className="font-bold font-mono text-[10px] text-amber-400 ml-2">
+                              <span className="font-bold font-mono text-[9px] text-amber-400 ml-2">
                                 {b} Blocked
                               </span>
                             )}
                             {n > 0 && (
-                              <span className="font-bold font-mono text-[10px] text-blue-400 ml-2">
+                              <span className="font-bold font-mono text-[9px] text-blue-400 ml-2">
                                 {n} N/A
                               </span>
                             )}
@@ -329,10 +329,10 @@ export function ResultsPageClient({ initialRuns }: ResultsPageClientProps) {
                           </div>
                         </div>
                       </td>
-                      <td className="py-4 px-6 text-gray-400 text-xs font-mono">
+                      <td className="py-3 px-4 text-gray-400 font-mono">
                         {r.submittedAt ? new Date(r.submittedAt).toLocaleString() : "Not submitted yet"}
                       </td>
-                      <td className="py-4 px-6 text-right">
+                      <td className="py-3 px-4 text-right">
                         <Link
                           href={`/admin/test-cases/${r.testCase.id}/results/${r.id}`}
                           className="inline-flex items-center space-x-1.5 text-xs font-bold text-brand-cyan hover:text-brand-cyan/95 hover:underline"

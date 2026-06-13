@@ -283,25 +283,25 @@ export function TestRunClient({ run }: TestRunClientProps) {
         {/* Autosave & Countdown status indicator */}
         <div className="h-12 px-4 flex items-center justify-between border-b border-white/5 bg-black/40">
           <div className="flex items-center space-x-1.5">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Save:</span>
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Save:</span>
             {saveStatus === "saving" && (
-              <span className="inline-flex items-center text-[10px] font-semibold text-brand-cyan">
+              <span className="inline-flex items-center text-xs font-semibold text-brand-cyan">
                 <Loader2 className="w-3 h-3 animate-spin mr-1" />
                 Saving...
               </span>
             )}
             {saveStatus === "saved" && (
-              <span className="text-[10px] font-bold text-emerald-400">
+              <span className="text-xs font-bold text-emerald-400">
                 Saved ✓
               </span>
             )}
             {saveStatus === "error" && (
-              <span className="text-[10px] font-bold text-rose-400">
+              <span className="text-xs font-bold text-rose-400">
                 Save failed!
               </span>
             )}
             {saveStatus === "idle" && (
-              <span className="text-[10px] font-semibold text-gray-500">
+              <span className="text-xs font-semibold text-gray-500">
                 Ready
               </span>
             )}
@@ -324,7 +324,7 @@ export function TestRunClient({ run }: TestRunClientProps) {
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           <div className="space-y-1">
             <h2 className="text-sm font-bold text-white">{run.testCase.title}</h2>
-            <p className="text-[10px] text-gray-500 font-mono">RUN ID: {run.id}</p>
+            <p className="text-xs text-gray-500 font-mono">RUN ID: {run.id}</p>
           </div>
           <hr className="border-white/5" />
 

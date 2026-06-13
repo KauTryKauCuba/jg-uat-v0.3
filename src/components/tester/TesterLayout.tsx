@@ -51,7 +51,7 @@ export function TesterLayout({ userName, children }: TesterLayoutProps) {
           </div>
 
           {/* Center: Title */}
-          <div className="hidden md:block">
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:block">
             <h1 className="text-sm font-semibold text-gray-200">{title}</h1>
           </div>
 
@@ -61,7 +61,7 @@ export function TesterLayout({ userName, children }: TesterLayoutProps) {
               <span className="text-xs font-semibold text-gray-300 truncate max-w-[80px] sm:max-w-[150px]" title={userName}>
                 {userName}
               </span>
-              <span className="hidden sm:inline-block text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-brand-teal/10 border border-brand-teal/20 text-brand-cyan">
+              <span className="hidden sm:inline-block text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-brand-teal/10 border border-brand-teal/20 text-brand-cyan">
                 TESTER
               </span>
             </div>

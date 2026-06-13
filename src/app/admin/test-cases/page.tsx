@@ -15,6 +15,7 @@ interface TestCase {
   fieldsCount: number
   runsCount: number
   passRate: number
+  timer: number | null
   createdAt: string
 }
 
@@ -39,11 +40,26 @@ export default function TestCasesPage() {
   // Collapsed categories state
   const [collapsedCategories, setCollapsedCategories] = React.useState<Record<string, boolean>>({})
 
+  React.useEffect(() => {
+    const saved = localStorage.getItem("jg-admin-collapsed-categories")
+    if (saved) {
+      try {
+        setCollapsedCategories(JSON.parse(saved))
+      } catch (e) {
+        console.error(e)
+      }
+    }
+  }, [])
+
   const toggleCategoryCollapse = (categoryId: string) => {
-    setCollapsedCategories((prev) => ({
-      ...prev,
-      [categoryId]: !prev[categoryId],
-    }))
+    setCollapsedCategories((prev) => {
+      const updated = {
+        ...prev,
+        [categoryId]: !prev[categoryId],
+      }
+      localStorage.setItem("jg-admin-collapsed-categories", JSON.stringify(updated))
+      return updated
+    })
   }
 
   const isAllCollapsed = React.useMemo(() => {
@@ -56,12 +72,14 @@ export default function TestCasesPage() {
     const activeCats = categories.filter((cat) => cat.targetGroup === activeTab)
     if (isAllCollapsed) {
       setCollapsedCategories({})
+      localStorage.setItem("jg-admin-collapsed-categories", JSON.stringify({}))
     } else {
       const collapsed: Record<string, boolean> = {}
       activeCats.forEach((cat) => {
         collapsed[cat.id] = true
       })
       setCollapsedCategories(collapsed)
+      localStorage.setItem("jg-admin-collapsed-categories", JSON.stringify(collapsed))
     }
   }
 
@@ -173,6 +191,7 @@ export default function TestCasesPage() {
   }
 
   const uncategorizedCases = getFilteredCasesForCategory(null).filter(() => activeTab === "JOBSEEKER")
+  const uncategorizedDuration = uncategorizedCases.reduce((sum, c) => sum + (c.timer || 0), 0)
 
   return (
     <main className="p-8 space-y-6 flex-1">
@@ -268,6 +287,7 @@ export default function TestCasesPage() {
             const catCases = getFilteredCasesForCategory(cat.id)
             if (catCases.length === 0 && searchQuery !== "") return null;
             const isCollapsed = !!collapsedCategories[cat.id]
+            const totalDuration = catCases.reduce((sum, c) => sum + (c.timer || 0), 0)
 
             return (
               <div key={cat.id} className="space-y-4">
@@ -286,6 +306,11 @@ export default function TestCasesPage() {
                     <span className="text-xs px-2.5 py-0.5 rounded-full bg-white/5 border border-white/5 text-gray-400 font-mono">
                       {catCases.length} {catCases.length === 1 ? "case" : "cases"}
                     </span>
+                    {totalDuration > 0 && (
+                      <span className="text-xs px-2.5 py-0.5 rounded-full bg-brand-teal/10 border border-brand-teal/20 text-brand-cyan font-mono font-semibold" title="Total Category Duration">
+                        {totalDuration} min
+                      </span>
+                    )}
                   </button>
                   <Link
                     href={`/admin/test-cases/new?categoryId=${cat.id}`}
@@ -394,6 +419,11 @@ export default function TestCasesPage() {
                 <span className="text-xs px-2.5 py-0.5 rounded-full bg-white/5 border border-white/5 text-gray-400 font-mono">
                   {uncategorizedCases.length} {uncategorizedCases.length === 1 ? "case" : "cases"}
                 </span>
+                {uncategorizedDuration > 0 && (
+                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-white/5 border border-white/5 text-gray-400 font-mono font-semibold" title="Total Category Duration">
+                    {uncategorizedDuration} min
+                  </span>
+                )}
               </div>
 
               <div className="border border-white/5 bg-zinc-900/40 backdrop-blur-md rounded-2xl overflow-hidden ml-0 md:ml-8">

@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { Folder, Loader2, Clock, Lock, ShieldAlert, User, Briefcase, ChevronRight } from "lucide-react"
+import { Folder, Loader2, Clock, Lock, ShieldAlert, User, Briefcase, ChevronRight, ChevronDown } from "lucide-react"
 import { StatusBadge } from "@/components/ui/status-badge"
 import { usePageTitle } from "@/components/tester/TesterLayout"
 
@@ -93,7 +93,7 @@ function CaseCard({
         </p>
         <div className="flex items-center justify-between text-xs font-semibold text-gray-500">
           {c.testerStatus === "submitted" && c.runResult ? (
-            <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all ${
+            <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold border transition-all ${
               c.runResult.toLowerCase() === "passed" || c.runResult.toLowerCase() === "pass"
                 ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/25"
                 : c.runResult.toLowerCase() === "failed" || c.runResult.toLowerCase() === "fail"
@@ -180,6 +180,8 @@ export function TesterPageClient({
   testerId,
 }: TesterPageClientProps) {
   const router = useRouter()
+  const uncategorizedCases = initialCases.filter((c) => !c.categoryId)
+  const uncategorizedDuration = uncategorizedCases.reduce((sum, c) => sum + (c.timer || 0), 0)
   usePageTitle(
     !testerGroup
       ? "Choose UAT Profile"
@@ -191,6 +193,59 @@ export function TesterPageClient({
   const [loadingId, setLoadingId] = React.useState<string | null>(null)
   const [startTime, setStartTime] = React.useState("")
   const [selectingGroup, setSelectingGroup] = React.useState<string | null>(null)
+
+  // Collapsed categories state
+  const [collapsedCategories, setCollapsedCategories] = React.useState<Record<string, boolean>>({})
+
+  React.useEffect(() => {
+    const saved = localStorage.getItem("jg-tester-collapsed-categories")
+    if (saved) {
+      try {
+        setCollapsedCategories(JSON.parse(saved))
+      } catch (e) {
+        console.error(e)
+      }
+    }
+  }, [])
+
+  const toggleCategoryCollapse = (categoryId: string) => {
+    setCollapsedCategories((prev) => {
+      const updated = {
+        ...prev,
+        [categoryId]: !prev[categoryId],
+      }
+      localStorage.setItem("jg-tester-collapsed-categories", JSON.stringify(updated))
+      return updated
+    })
+  }
+
+  const isAllCollapsed = React.useMemo(() => {
+    if (initialCategories.length === 0 && uncategorizedCases.length === 0) return false
+
+    const allCategoryIds = initialCategories.map((c) => c.id)
+    if (uncategorizedCases.length > 0) {
+      allCategoryIds.push("uncategorized")
+    }
+
+    return allCategoryIds.every((id) => !!collapsedCategories[id])
+  }, [initialCategories, uncategorizedCases, collapsedCategories])
+
+  const toggleCollapseAll = () => {
+    if (isAllCollapsed) {
+      setCollapsedCategories({})
+      localStorage.setItem("jg-tester-collapsed-categories", JSON.stringify({}))
+    } else {
+      const collapsed: Record<string, boolean> = {}
+      initialCategories.forEach((cat) => {
+        collapsed[cat.id] = true
+      })
+      if (uncategorizedCases.length > 0) {
+        collapsed["uncategorized"] = true
+      }
+      setCollapsedCategories(collapsed)
+      localStorage.setItem("jg-tester-collapsed-categories", JSON.stringify(collapsed))
+    }
+  }
 
   // UAT Resource Sets states
   interface ResourceSet {
@@ -421,7 +476,7 @@ export function TesterPageClient({
             <p className="text-xs text-gray-500">
               UAT Tester: <span className="font-semibold text-gray-300">{userName}</span>
             </p>
-            <p className="text-[10px] text-gray-600 font-mono">
+            <p className="text-xs text-gray-600 font-mono">
               Status: PENDING_ADMIN_ACTIVATION
             </p>
           </div>
@@ -430,7 +485,6 @@ export function TesterPageClient({
     )
   }
 
-  const uncategorizedCases = initialCases.filter((c) => !c.categoryId)
   const isEmpty = initialCategories.length === 0 && initialCases.length === 0
 
   return (
@@ -440,13 +494,13 @@ export function TesterPageClient({
           {/* Welcome Card */}
           <div className="lg:col-span-2 bg-zinc-900/40 border border-white/5 rounded-3xl p-8 backdrop-blur-md shadow-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div className="space-y-1">
-              <h1 className="text-2xl font-extrabold tracking-tight">Welcome, {userName}!</h1>
+              <h1 className="text-3xl font-extrabold tracking-tight">Welcome, {userName}!</h1>
               <p className="text-sm text-gray-400">
                 Thank you for joining. Testing UAT flow as: <span className="font-semibold text-brand-cyan">{testerGroup === "EMPLOYER" ? "Employer" : "Jobseeker"}</span>
               </p>
             </div>
             <div className="text-xs text-gray-500 font-mono bg-white/5 px-4 py-2.5 rounded-xl border border-white/5 flex flex-col sm:items-end w-full sm:w-auto">
-              <span className="font-bold text-brand-teal uppercase tracking-wider block mb-0.5 text-[10px]">Session Started</span>
+              <span className="font-bold text-brand-teal uppercase tracking-wider block mb-0.5 text-xs">Session Started</span>
               <span>{startTime}</span>
             </div>
           </div>
@@ -457,14 +511,14 @@ export function TesterPageClient({
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-bold uppercase tracking-wider text-brand-cyan">Testing Resources</h2>
                 {selectCount >= 2 ? (
-                  <span className="text-[9px] font-bold text-rose-400 bg-rose-950/40 border border-rose-900/50 px-2 py-0.5 rounded-full uppercase tracking-wider">Permanent</span>
+                  <span className="text-[10px] font-bold text-rose-400 bg-rose-950/40 border border-rose-900/50 px-2 py-0.5 rounded-full uppercase tracking-wider">Permanent</span>
                 ) : selectCount === 1 ? (
-                  <span className="text-[9px] font-bold text-amber-400 bg-amber-950/40 border border-amber-900/50 px-2 py-0.5 rounded-full uppercase tracking-wider">1 Change Left</span>
+                  <span className="text-[10px] font-bold text-amber-400 bg-amber-950/40 border border-amber-900/50 px-2 py-0.5 rounded-full uppercase tracking-wider">1 Change Left</span>
                 ) : (
-                  <span className="text-[9px] font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-900/50 px-2 py-0.5 rounded-full uppercase tracking-wider">First Choice</span>
+                  <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-900/50 px-2 py-0.5 rounded-full uppercase tracking-wider">First Choice</span>
                 )}
               </div>
-              <p className="text-[11px] text-gray-400">
+              <p className="text-xs text-gray-400">
                 Choose a photo set. The resume and IC card are linked as a set.
               </p>
             </div>
@@ -477,7 +531,7 @@ export function TesterPageClient({
             ) : resourceSets.length === 0 ? (
               /* Fallback to local default assets if no sets configured */
               <div className="space-y-2">
-                <p className="text-[10px] text-gray-500 italic">Using default fallback specimen set.</p>
+                <p className="text-xs text-gray-500 italic">Using default fallback specimen set.</p>
                 <div className="grid grid-cols-3 gap-2">
                   <a
                     href="/sample-photo.png"
@@ -485,7 +539,7 @@ export function TesterPageClient({
                     className="flex flex-col items-center justify-center p-3 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 hover:border-brand-teal/30 transition-all text-center group cursor-pointer"
                   >
                     <span className="text-lg mb-1">👤</span>
-                    <span className="text-[10px] font-bold text-gray-300">Photo</span>
+                    <span className="text-xs font-bold text-gray-300">Photo</span>
                   </a>
                   <a
                     href="/sample-resume.pdf"
@@ -493,7 +547,7 @@ export function TesterPageClient({
                     className="flex flex-col items-center justify-center p-3 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 hover:border-brand-teal/30 transition-all text-center group cursor-pointer"
                   >
                     <span className="text-lg mb-1">📄</span>
-                    <span className="text-[10px] font-bold text-gray-300">Resume</span>
+                    <span className="text-xs font-bold text-gray-300">Resume</span>
                   </a>
                   <a
                     href="/sample-ic.png"
@@ -501,7 +555,7 @@ export function TesterPageClient({
                     className="flex flex-col items-center justify-center p-3 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 hover:border-brand-teal/30 transition-all text-center group cursor-pointer"
                   >
                     <span className="text-lg mb-1">🪪</span>
-                    <span className="text-[10px] font-bold text-gray-300">IC Card</span>
+                    <span className="text-xs font-bold text-gray-300">IC Card</span>
                   </a>
                 </div>
               </div>
@@ -534,12 +588,12 @@ export function TesterPageClient({
                         <img src={set.photoUrl} className="w-full h-full object-cover" alt={set.name} />
                         {isClaimedByOthers && (
                           <div className="absolute inset-0 bg-red-900/60 flex items-center justify-center">
-                            <span className="text-[10px] font-bold text-red-200 uppercase tracking-tighter">🔒</span>
+                            <span className="text-xs font-bold text-red-200 uppercase tracking-tighter">🔒</span>
                           </div>
                         )}
                         {isPermanent && (
                           <div className="absolute inset-0 bg-zinc-900/70 flex items-center justify-center">
-                            <span className="text-[10px] font-bold text-gray-400">🔒</span>
+                            <span className="text-xs font-bold text-gray-400">🔒</span>
                           </div>
                         )}
                       </button>
@@ -550,7 +604,7 @@ export function TesterPageClient({
                 {/* Info and download buttons for selected set */}
                 {selectedSet && (
                   <div className="space-y-3 animate-fade-in">
-                    <p className="text-[10px] text-gray-400 font-semibold truncate">
+                    <p className="text-xs text-gray-400 font-semibold truncate">
                       Selected Set: <span className="text-gray-200">{selectedSet.name}</span>
                     </p>
                     <div className="grid grid-cols-3 gap-2">
@@ -562,7 +616,7 @@ export function TesterPageClient({
                         className="flex flex-col items-center justify-center p-2.5 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 hover:border-brand-teal/30 transition-all text-center group cursor-pointer"
                       >
                         <span className="text-base mb-0.5 group-hover:scale-110 transition-transform">👤</span>
-                        <span className="text-[9px] font-bold text-gray-300">Photo</span>
+                        <span className="text-xs font-bold text-gray-300">Photo</span>
                       </a>
                       <a
                         href={selectedSet.resumeUrl}
@@ -572,7 +626,7 @@ export function TesterPageClient({
                         className="flex flex-col items-center justify-center p-2.5 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 hover:border-brand-teal/30 transition-all text-center group cursor-pointer"
                       >
                         <span className="text-base mb-0.5 group-hover:scale-110 transition-transform">📄</span>
-                        <span className="text-[9px] font-bold text-gray-300">Resume</span>
+                        <span className="text-xs font-bold text-gray-300">Resume</span>
                       </a>
                       <a
                         href={selectedSet.icUrl}
@@ -582,7 +636,7 @@ export function TesterPageClient({
                         className="flex flex-col items-center justify-center p-2.5 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 hover:border-brand-teal/30 transition-all text-center group cursor-pointer"
                       >
                         <span className="text-base mb-0.5 group-hover:scale-110 transition-transform">🪪</span>
-                        <span className="text-[9px] font-bold text-gray-300">IC Card</span>
+                        <span className="text-xs font-bold text-gray-300">IC Card</span>
                       </a>
                     </div>
                   </div>
@@ -599,59 +653,120 @@ export function TesterPageClient({
           <p className="text-xs text-gray-500">Your administrator hasn&apos;t published any UAT test case scenarios for {testerGroup === "EMPLOYER" ? "Employers" : "Jobseekers"} yet.</p>
         </div>
       ) : (
-        <div className="space-y-12">
-          {/* Grouped by categories */}
-          {initialCategories.map((cat) => {
-            const catCases = initialCases.filter((c) => c.categoryId === cat.id)
-            if (catCases.length === 0) return null
+        <div className="space-y-10">
+          <div className="flex justify-between items-center pb-2 border-b border-white/5">
+            <h2 className="text-xl font-bold text-white">UAT Test Scenarios</h2>
+            <button
+              onClick={toggleCollapseAll}
+              className="flex items-center justify-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white/5 border border-white/5 hover:bg-white/10 text-gray-300 transition-all cursor-pointer whitespace-nowrap select-none"
+            >
+              {isAllCollapsed ? (
+                <>
+                  <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+                  <span>Expand All</span>
+                </>
+              ) : (
+                <>
+                  <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+                  <span>Collapse All</span>
+                </>
+              )}
+            </button>
+          </div>
 
-            return (
-              <div key={cat.id} className="space-y-4">
-                <div className="flex items-center space-x-2.5 pb-2 border-b border-white/5">
-                  <Folder className="w-5 h-5 text-brand-cyan" />
-                  <h2 className="text-lg font-bold text-white">{cat.name}</h2>
-                  <span className="text-xs px-2.5 py-0.5 rounded-full bg-white/5 border border-white/5 text-gray-400 font-mono font-bold">
-                    {catCases.length} {catCases.length === 1 ? "test" : "tests"}
-                  </span>
+          <div className="space-y-12">
+            {/* Grouped by categories */}
+            {initialCategories.map((cat) => {
+              const catCases = initialCases.filter((c) => c.categoryId === cat.id)
+              if (catCases.length === 0) return null
+              const totalDuration = catCases.reduce((sum, c) => sum + (c.timer || 0), 0)
+              const isCollapsed = !!collapsedCategories[cat.id]
+
+              return (
+                <div key={cat.id} className="space-y-4">
+                  <div className="pb-2 border-b border-white/5">
+                    <button
+                      onClick={() => toggleCategoryCollapse(cat.id)}
+                      className="flex items-center space-x-2.5 text-left focus:outline-none group cursor-pointer"
+                    >
+                      {isCollapsed ? (
+                        <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />
+                      )}
+                      <Folder className="w-5 h-5 text-brand-cyan" />
+                      <h2 className="text-lg font-bold text-white group-hover:text-brand-cyan transition-colors">{cat.name}</h2>
+                      <span className="text-xs px-2.5 py-0.5 rounded-full bg-white/5 border border-white/5 text-gray-400 font-mono font-bold">
+                        {catCases.length} {catCases.length === 1 ? "test" : "tests"}
+                      </span>
+                      {totalDuration > 0 && (
+                        <span className="text-xs px-2.5 py-0.5 rounded-full bg-brand-teal/10 border border-brand-teal/20 text-brand-cyan font-mono font-semibold" title="Total Category Duration">
+                          {totalDuration} min
+                        </span>
+                      )}
+                    </button>
+                  </div>
+
+                  {!isCollapsed && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {catCases.map((c) => (
+                        <CaseCard
+                          key={c.id}
+                          c={c}
+                          handleAction={handleAction}
+                          loadingId={loadingId}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
+              )
+            })}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {catCases.map((c) => (
-                    <CaseCard
-                      key={c.id}
-                      c={c}
-                      handleAction={handleAction}
-                      loadingId={loadingId}
-                    />
-                  ))}
+            {/* Uncategorized Fallback */}
+            {uncategorizedCases.length > 0 && (() => {
+              const isCollapsed = !!collapsedCategories["uncategorized"]
+              return (
+                <div className="space-y-4">
+                  <div className="pb-2 border-b border-white/5">
+                    <button
+                      onClick={() => toggleCategoryCollapse("uncategorized")}
+                      className="flex items-center space-x-2.5 text-left focus:outline-none group cursor-pointer"
+                    >
+                      {isCollapsed ? (
+                        <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />
+                      )}
+                      <Folder className="w-5 h-5 text-gray-500" />
+                      <h2 className="text-lg font-bold text-gray-400 group-hover:text-white transition-colors">Uncategorized</h2>
+                      <span className="text-xs px-2.5 py-0.5 rounded-full bg-white/5 border border-white/5 text-gray-400 font-mono font-bold">
+                        {uncategorizedCases.length} {uncategorizedCases.length === 1 ? "test" : "tests"}
+                      </span>
+                      {uncategorizedDuration > 0 && (
+                        <span className="text-xs px-2.5 py-0.5 rounded-full bg-white/5 border border-white/5 text-gray-400 font-mono font-semibold" title="Total Category Duration">
+                          {uncategorizedDuration} min
+                        </span>
+                      )}
+                    </button>
+                  </div>
+
+                  {!isCollapsed && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {uncategorizedCases.map((c) => (
+                        <CaseCard
+                          key={c.id}
+                          c={c}
+                          handleAction={handleAction}
+                          loadingId={loadingId}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </div>
-            )
-          })}
-
-          {/* Uncategorized Fallback */}
-          {uncategorizedCases.length > 0 && (
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2.5 pb-2 border-b border-white/5">
-                <Folder className="w-5 h-5 text-gray-500" />
-                <h2 className="text-lg font-bold text-gray-400">Uncategorized</h2>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-white/5 border border-white/5 text-gray-400 font-mono font-bold">
-                  {uncategorizedCases.length} {uncategorizedCases.length === 1 ? "test" : "tests"}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {uncategorizedCases.map((c) => (
-                  <CaseCard
-                    key={c.id}
-                    c={c}
-                    handleAction={handleAction}
-                    loadingId={loadingId}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+              )
+            })()}
+          </div>
         </div>
       )}
     </main>

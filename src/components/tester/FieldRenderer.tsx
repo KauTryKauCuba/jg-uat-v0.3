@@ -87,7 +87,7 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
             placeholder="Enter your notes here..."
             className="w-full rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-white placeholder-gray-500 focus:border-brand-cyan focus:outline-none focus:ring-1 focus:ring-brand-cyan transition-all disabled:bg-white/5 disabled:text-gray-500"
           />
-          <div className="text-[10px] text-gray-500 text-right mt-1 font-mono">
+          <div className="text-xs text-gray-500 text-right mt-1 font-mono">
             {textVal.length} chars
           </div>
         </div>
@@ -186,7 +186,7 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
                 <>
                   <Upload className="w-6 h-6 text-gray-400" />
                   <span className="text-xs font-semibold text-gray-300">Click to upload screenshot</span>
-                  <span className="text-[10px] text-gray-500">PNG, JPG, WEBP (max 5MB)</span>
+                  <span className="text-xs text-gray-500">PNG, JPG, WEBP (max 5MB)</span>
                 </>
               )}
               <input
@@ -197,7 +197,7 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
                 className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
               />
             </label>
-            {uploadError && <p className="text-[10px] text-red-500 mt-1 font-medium">{uploadError}</p>}
+            {uploadError && <p className="text-xs text-red-500 mt-1 font-medium">{uploadError}</p>}
             {!disabled && (
               <div className="grid grid-cols-2 gap-2 mt-3 w-full">
                 <button
@@ -399,7 +399,7 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
           <div className={`space-y-4 p-4 rounded-xl border ${defectStyles.container} animate-fade-in`}>
             {/* Defect Details Textarea */}
             <div className="space-y-1.5">
-              <label className={`text-[10px] font-bold ${defectStyles.label} uppercase tracking-wider`}>Defect Details *</label>
+              <label className={`text-xs font-bold ${defectStyles.label} uppercase tracking-wider`}>Defect Details *</label>
               <textarea
                 disabled={disabled}
                 value={defectDetails}
@@ -412,7 +412,7 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
 
             {/* Screenshot Upload */}
             <div className="space-y-1.5">
-              <label className={`text-[10px] font-bold ${defectStyles.label} uppercase tracking-wider`}>Screenshot Attachment *</label>
+              <label className={`text-xs font-bold ${defectStyles.label} uppercase tracking-wider`}>Screenshot Attachment *</label>
               {currentScreenshotUrl ? (
                 <div className="relative rounded-xl overflow-hidden border border-white/10 bg-black/30 p-2 group">
                   <img
@@ -436,12 +436,12 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
                     {uploading ? (
                       <>
                         <Loader2 className="w-5 h-5 text-brand-teal animate-spin" />
-                        <span className="text-[10px] text-gray-400">Uploading screenshot...</span>
+                        <span className="text-xs text-gray-400">Uploading screenshot...</span>
                       </>
                     ) : (
                       <>
                         <Upload className="w-5 h-5 text-gray-400" />
-                        <span className="text-[10px] font-semibold text-gray-300">Click to upload defect screenshot</span>
+                        <span className="text-xs font-semibold text-gray-300">Click to upload defect screenshot</span>
                       </>
                     )}
                     <input
@@ -452,7 +452,7 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
                       className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                     />
                   </label>
-                  {uploadError && <p className="text-[10px] text-red-500 mt-1 font-medium">{uploadError}</p>}
+                  {uploadError && <p className="text-xs text-red-500 mt-1 font-medium">{uploadError}</p>}
                   {!disabled && (
                     <div className="grid grid-cols-2 gap-2 mt-2.5 w-full">
                       <button

@@ -193,7 +193,7 @@ export function HelpWidget() {
                   <p className="text-xs font-bold text-brand-teal">
                     {request.type === "IN_PERSON" ? "In-Person Request Active" : "Chat Session Active"}
                   </p>
-                  <p className="text-[11px] text-gray-400">
+                  <p className="text-xs text-gray-400">
                     {request.type === "IN_PERSON"
                       ? "Please wait at your desk. The admin is coming to you."
                       : "Type your query below to chat with the admin."}
@@ -206,7 +206,7 @@ export function HelpWidget() {
                     const isSelf = m.senderRole === "TESTER"
                     return (
                       <div key={m.id} className={`flex flex-col ${isSelf ? "items-end" : "items-start"}`}>
-                        <span className="text-[9px] text-gray-500 px-1 font-semibold">
+                        <span className="text-[10px] text-gray-500 px-1 font-semibold">
                           {isSelf ? "You" : m.senderName || "Admin"}
                         </span>
                         <div className={`mt-0.5 max-w-[85%] p-2.5 rounded-xl text-xs leading-relaxed ${

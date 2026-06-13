@@ -172,7 +172,7 @@ export function QRUploadModal({
                 <div className="space-y-6 flex flex-col items-center">
                   <div className="space-y-1">
                     <p className="text-xs text-gray-300 font-semibold">Scan QR Code with your Phone</p>
-                    <p className="text-[10px] text-gray-500 max-w-[280px] leading-relaxed mx-auto">
+                    <p className="text-xs text-gray-500 max-w-[280px] leading-relaxed mx-auto">
                       Open your phone camera, scan the QR code to take a photo directly and instantly link it here.
                     </p>
                   </div>
@@ -190,7 +190,7 @@ export function QRUploadModal({
                     )}
                   </div>
 
-                  <div className="flex items-center space-x-2 text-[10px] text-brand-cyan font-bold uppercase tracking-wider animate-pulse bg-brand-cyan/5 border border-brand-cyan/20 px-3 py-1.5 rounded-full">
+                  <div className="flex items-center space-x-2 text-xs text-brand-cyan font-bold uppercase tracking-wider animate-pulse bg-brand-cyan/5 border border-brand-cyan/20 px-3 py-1.5 rounded-full">
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     <span>Waiting for mobile capture...</span>
                   </div>
