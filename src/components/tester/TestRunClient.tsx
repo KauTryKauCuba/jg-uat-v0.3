@@ -123,7 +123,7 @@ export function TestRunClient({ run }: TestRunClientProps) {
     }
   }, [])
 
-  const handleAnswerChange = (fieldId: string, value: any, screenshotUrl?: string) => {
+  const handleAnswerChange = (fieldId: string, value: any, screenshotUrl?: string | null) => {
     if (isSubmitted) return
 
     // Optimistically update state

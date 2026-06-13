@@ -12,7 +12,7 @@ interface FieldRendererProps {
     value: any
     screenshotUrl?: string | null
   } | null
-  onChange: (testFieldId: string, value: any, screenshotUrl?: string) => void
+  onChange: (testFieldId: string, value: any, screenshotUrl?: string | null) => void
   disabled: boolean
   testRunId: string
 }
@@ -150,7 +150,7 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
 
     const handleRemoveScreenshot = () => {
       if (disabled) return
-      onChange(field.id, currentValue, undefined)
+      onChange(field.id, currentValue, null)
     }
 
     return (
@@ -281,7 +281,7 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
 
     const handleRemoveScreenshot = () => {
       if (disabled) return
-      onChange(field.id, { choice: selectedChoice, defectDetails }, undefined)
+      onChange(field.id, { choice: selectedChoice, defectDetails }, null)
     }
 
     const isPassed = selectedChoice.toLowerCase() === "passed" || selectedChoice.toLowerCase() === "pass"
