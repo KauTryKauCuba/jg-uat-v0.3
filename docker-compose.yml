@@ -26,6 +26,8 @@ services:
       NEXTAUTH_URL: http://localhost:3100
     depends_on:
       - postgres
+    volumes:
+      - uploads:/app/public/uploads
 
   nginx:
     image: nginx:alpine
@@ -40,3 +42,4 @@ services:
 
 volumes:
   pgdata:
+  uploads:
