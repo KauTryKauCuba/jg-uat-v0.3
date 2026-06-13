@@ -42,7 +42,9 @@ export function AuthForm() {
       if (res && res.error) {
         setError(res.error === "CredentialsSignin" ? "Invalid email or password" : res.error)
       } else if (res && res.ok) {
-        window.location.href = "/"
+        const params = new URLSearchParams(window.location.search)
+        const callbackUrl = params.get("callbackUrl")
+        window.location.href = callbackUrl || "/"
       }
     } catch (err: any) {
       setError("An unexpected error occurred. Please try again.")

@@ -51,18 +51,18 @@ export function TesterLayout({ userName, children }: TesterLayoutProps) {
           </div>
 
           {/* Right: User + Sign Out */}
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <span className="text-xs font-semibold text-gray-300 truncate max-w-[150px]" title={userName}>
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            <div className="flex items-center space-x-1 sm:space-x-2">
+              <span className="text-xs font-semibold text-gray-300 truncate max-w-[80px] sm:max-w-[150px]" title={userName}>
                 {userName}
               </span>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-brand-teal/10 border border-brand-teal/20 text-brand-cyan">
+              <span className="hidden sm:inline-block text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-brand-teal/10 border border-brand-teal/20 text-brand-cyan">
                 TESTER
               </span>
             </div>
             <button
               onClick={() => signOut({ callbackUrl: "/" })}
-              className="text-xs font-semibold px-4 py-2 rounded-xl border border-white/10 hover:bg-white/5 text-gray-300 transition-all cursor-pointer"
+              className="text-xs font-semibold px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-white/10 hover:bg-white/5 text-gray-300 transition-all cursor-pointer shrink-0"
             >
               Sign Out
             </button>

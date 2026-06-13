@@ -11,8 +11,16 @@ export default async function proxy(req: NextRequest) {
 
   // If user is authenticated
   if (token) {
-    // Redirect logged in user from root "/" to their respective dashboard
+    // Redirect logged in user from root "/" to their respective dashboard or callbackUrl
     if (pathname === "/") {
+      const callbackUrl = req.nextUrl.searchParams.get("callbackUrl");
+      if (callbackUrl) {
+        try {
+          return NextResponse.redirect(new URL(callbackUrl, req.url));
+        } catch {
+          // Fallback if callbackUrl is invalid
+        }
+      }
       if (token.role === "ADMIN") {
         return NextResponse.redirect(new URL("/admin/dashboard", req.url));
       } else if (token.role === "TESTER") {
@@ -30,9 +38,11 @@ export default async function proxy(req: NextRequest) {
       return NextResponse.redirect(new URL("/", req.url));
     }
   } else {
-    // If NOT authenticated, block access to dashboards and redirect to login page "/"
+    // If NOT authenticated, block access to dashboards/upload-mobile and redirect to login page "/" with callbackUrl
     if (pathname.startsWith("/admin") || pathname.startsWith("/tester")) {
-      return NextResponse.redirect(new URL("/", req.url));
+      const redirectUrl = new URL("/", req.url);
+      redirectUrl.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(redirectUrl);
     }
   }
 

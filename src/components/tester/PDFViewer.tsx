@@ -122,7 +122,7 @@ export function PDFViewer({ fileUrl }: PDFViewerProps) {
                       renderAnnotationLayer={false}
                       renderTextLayer={false}
                       width={700}
-                      className="max-w-full"
+                      className="max-w-full [&>canvas]:!max-w-full [&>canvas]:!h-auto"
                     />
                   </div>
                 )

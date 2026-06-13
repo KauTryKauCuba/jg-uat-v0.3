@@ -48,23 +48,22 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
     ref,
   ) => {
     return (
-      <div className={cn("relative", className)} ref={ref} {...props}>
-        <div className="absolute top-0 z-[0] h-screen w-screen bg-brand-teal/5 dark:bg-brand-teal/10 bg-[radial-gradient(ellipse_20%_80%_at_50%_-20%,rgba(7,188,202,0.15),rgba(255,255,255,0))] dark:bg-[radial-gradient(ellipse_20%_80%_at_50%_-20%,rgba(0,137,144,0.3),rgba(255,255,255,0))]" />
+      <div className={cn("relative overflow-hidden w-full min-h-screen", className)} ref={ref} {...props}>
         <section className="relative max-w-full mx-auto z-1">
           
-          <div className="max-w-screen-xl z-10 mx-auto px-4 py-28 gap-12 md:px-8">
+          <div className="max-w-screen-xl z-10 mx-auto px-4 py-12 md:py-28 gap-12 md:px-8">
             <div className="space-y-5 max-w-3xl leading-0 lg:leading-5 mx-auto text-center">
-              <h1 className="text-sm text-gray-600 dark:text-gray-400 group font-geist mx-auto px-5 py-2 bg-gradient-to-tr from-zinc-300/20 via-gray-400/20 to-transparent dark:from-zinc-300/5 dark:via-gray-400/5 border-[2px] border-black/5 dark:border-white/5 rounded-3xl w-fit">
+              <h1 className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 group font-geist mx-auto px-4 py-1.5 sm:px-5 sm:py-2 bg-gradient-to-tr from-zinc-300/20 via-gray-400/20 to-transparent dark:from-zinc-300/5 dark:via-gray-400/5 border-[2px] border-black/5 dark:border-white/5 rounded-3xl w-fit">
                 {title}
                 <ChevronRight className="inline w-4 h-4 ml-2 group-hover:translate-x-1 duration-300" />
               </h1>
-              <h2 className="text-4xl tracking-tighter font-geist bg-clip-text text-transparent mx-auto md:text-6xl bg-[linear-gradient(180deg,_#000_0%,_rgba(0,_0,_0,_0.75)_100%)] dark:bg-[linear-gradient(180deg,_#FFF_0%,_rgba(255,_255,_255,_0.00)_202.08%)]">
+              <h2 className="text-3xl tracking-tighter font-geist bg-clip-text text-transparent mx-auto sm:text-4xl md:text-6xl bg-[linear-gradient(180deg,_#000_0%,_rgba(0,_0,_0,_0.75)_100%)] dark:bg-[linear-gradient(180deg,_#FFF_0%,_rgba(255,_255,_255,_0.00)_202.08%)]">
                 {subtitle.regular}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-brand-cyan">
                   {subtitle.gradient}
                 </span>
               </h2>
-              <p className="max-w-2xl mx-auto text-gray-600 dark:text-gray-300">
+              <p className="max-w-2xl mx-auto text-sm text-gray-600 dark:text-gray-300 px-2 sm:px-0">
                 {description}
               </p>
               {children ? children : (
@@ -84,13 +83,12 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
               )}
             </div>
             {bottomImage && (
-              <div className="mt-32 mx-10 relative z-10">
+              <div className="mt-16 md:mt-32 mx-4 md:mx-10 relative z-10">
                 <img
                   src={bottomImage.light}
                   className="w-full shadow-lg rounded-lg border border-gray-200 dark:hidden"
                   alt="Dashboard preview"
                 />
-
               </div>
             )}
           </div>

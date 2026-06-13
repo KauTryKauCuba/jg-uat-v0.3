@@ -257,6 +257,9 @@ export function TestRunClient({ run }: TestRunClientProps) {
     setIsSubmitModalOpen(true)
   }
 
+  // Mobile active tab: pdf vs form
+  const [mobileTab, setMobileTab] = React.useState<"pdf" | "form">("pdf")
+
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60)
     const s = secs % 60
@@ -264,21 +267,51 @@ export function TestRunClient({ run }: TestRunClientProps) {
   }
 
   return (
-    <div className="h-[calc(100vh-56px)] flex overflow-hidden w-full relative">
+    <div className="h-[calc(100vh-56px)] flex flex-col md:flex-row overflow-hidden w-full relative">
+      {/* Mobile Tab Switcher */}
+      <div className="md:hidden flex border-b border-white/5 bg-black/40 flex-none w-full">
+        <button
+          type="button"
+          onClick={() => setMobileTab("pdf")}
+          className={`flex-1 py-3 text-xs font-bold transition-all border-b-2 text-center ${
+            mobileTab === "pdf"
+              ? "text-brand-teal border-brand-teal bg-white/5"
+              : "text-gray-400 border-transparent hover:text-gray-200"
+          }`}
+        >
+          Verification Instructions
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileTab("form")}
+          className={`flex-1 py-3 text-xs font-bold transition-all border-b-2 text-center ${
+            mobileTab === "form"
+              ? "text-brand-teal border-brand-teal bg-white/5"
+              : "text-gray-400 border-transparent hover:text-gray-200"
+          }`}
+        >
+          Test Form
+        </button>
+      </div>
+
       {/* Left PDF panel */}
-      <div className="w-3/4 h-full relative border-r border-white/5">
+      <div className={`relative border-r border-white/5 transition-all duration-200 ${
+        mobileTab === "pdf" ? "flex flex-1 w-full md:w-3/4 md:h-full" : "hidden md:flex md:w-3/4 md:h-full"
+      }`}>
         {run.testCase.pdfUrl ? (
           <PDFViewer fileUrl={run.testCase.pdfUrl} />
         ) : (
-          <div className="flex items-center justify-center h-full bg-[#0a0a0a] text-gray-500">
+          <div className="flex items-center justify-center h-full bg-[#0a0a0a] text-gray-500 w-full">
             No verification PDF assigned to this test case.
           </div>
         )}
       </div>
 
       {/* Right control panel */}
-      <div className={`w-1/4 h-full flex flex-col bg-black/60 border-l backdrop-blur-md text-white overflow-hidden shadow-2xl relative z-10 transition-colors duration-300 ${
+      <div className={`flex flex-col bg-black/60 border-l backdrop-blur-md text-white overflow-hidden shadow-2xl relative z-10 transition-colors duration-300 ${
         timeLeft !== null && timeLeft <= 0 ? "border-rose-500 shadow-rose-950/20" : "border-white/5"
+      } ${
+        mobileTab === "form" ? "flex flex-1 w-full md:w-1/4 md:h-full" : "hidden md:flex md:w-1/4 md:h-full"
       }`}>
         {/* Autosave & Countdown status indicator */}
         <div className="h-12 px-4 flex items-center justify-between border-b border-white/5 bg-black/40">
