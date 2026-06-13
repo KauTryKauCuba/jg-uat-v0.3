@@ -20,8 +20,6 @@ services:
       dockerfile: Dockerfile
     container_name: jg_nextjs
     restart: always
-    ports:
-      - "3000:3000"
     environment:
       DATABASE_URL: postgresql://postgres:postgrespassword@postgres:5432/jg_uat
       NEXTAUTH_SECRET: default_secret_for_uat_phase1_super_secret
