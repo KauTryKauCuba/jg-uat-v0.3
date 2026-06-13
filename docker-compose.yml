@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -18,6 +16,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      network: host
     container_name: jg_nextjs
     restart: always
     environment:
