@@ -52,6 +52,7 @@ export async function PUT(
         .set({
           testerGroup: null,
           employerLocked: true, // Reset back to default lock
+          resourceSelectCount: 0,
           updatedAt: new Date(),
         })
         .where(eq(users.id, id));

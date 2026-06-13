@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { db } from "@/lib/db";
-import { uatResourceSets } from "@/db/schema";
-import { desc } from "drizzle-orm";
+import { uatResourceSets, users } from "@/db/schema";
+import { desc, eq } from "drizzle-orm";
 
 export async function GET() {
   try {
@@ -17,7 +17,17 @@ export async function GET() {
       .from(uatResourceSets)
       .orderBy(desc(uatResourceSets.createdAt));
 
-    return NextResponse.json({ data: sets });
+    const user = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, session.user.id))
+      .limit(1)
+      .then((res) => res[0]);
+
+    return NextResponse.json({
+      data: sets,
+      selectCount: user?.resourceSelectCount ?? 0
+    });
   } catch (error: any) {
     return NextResponse.json({ error: error.message || "Failed to fetch resource sets" }, { status: 500 });
   }

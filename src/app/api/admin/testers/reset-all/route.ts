@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
       .set({
         testerGroup: null,
         employerLocked: true, // Lock employer profile by default
+        resourceSelectCount: 0,
         updatedAt: new Date(),
       })
       .where(eq(users.role, "TESTER"));

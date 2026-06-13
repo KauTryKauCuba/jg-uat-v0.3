@@ -205,6 +205,7 @@ export function TesterPageClient({
   const [resourceSets, setResourceSets] = React.useState<ResourceSet[]>([])
   const [selectedSet, setSelectedSet] = React.useState<ResourceSet | null>(null)
   const [loadingResources, setLoadingResources] = React.useState(true)
+  const [selectCount, setSelectCount] = React.useState<number>(0)
 
   React.useEffect(() => {
     setStartTime(new Date().toLocaleString())
@@ -215,7 +216,7 @@ export function TesterPageClient({
       try {
         const res = await fetch("/api/tester/resources")
         const json = await res.json()
-        if (json.data && json.data.length > 0) {
+        if (json.data) {
           setResourceSets(json.data)
           // Find if this tester has already claimed a set
           const claimedSet = json.data.find((set: ResourceSet) => set.testerId === testerId)
@@ -224,6 +225,9 @@ export function TesterPageClient({
           } else {
             setSelectedSet(null) // No set claimed yet
           }
+        }
+        if (typeof json.selectCount === "number") {
+          setSelectCount(json.selectCount)
         }
       } catch (err) {
         console.error("Failed to load UAT resources:", err)
@@ -265,6 +269,13 @@ export function TesterPageClient({
         })
         setResourceSets(updatedSets)
         setSelectedSet(targetSetId ? set : null)
+
+        // Sync count
+        const syncRes = await fetch("/api/tester/resources")
+        const syncJson = await syncRes.json()
+        if (typeof syncJson.selectCount === "number") {
+          setSelectCount(syncJson.selectCount)
+        }
       }
     } catch {
       alert("Failed to update resource set selection.")
@@ -442,8 +453,17 @@ export function TesterPageClient({
 
           {/* Download Resources Card */}
           <div className="bg-zinc-900/40 border border-white/5 rounded-3xl p-6 backdrop-blur-md shadow-xl flex flex-col justify-between space-y-4">
-            <div className="space-y-1">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-brand-cyan">Testing Resources</h2>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-bold uppercase tracking-wider text-brand-cyan">Testing Resources</h2>
+                {selectCount >= 2 ? (
+                  <span className="text-[9px] font-bold text-rose-400 bg-rose-950/40 border border-rose-900/50 px-2 py-0.5 rounded-full uppercase tracking-wider">Permanent</span>
+                ) : selectCount === 1 ? (
+                  <span className="text-[9px] font-bold text-amber-400 bg-amber-950/40 border border-amber-900/50 px-2 py-0.5 rounded-full uppercase tracking-wider">1 Change Left</span>
+                ) : (
+                  <span className="text-[9px] font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-900/50 px-2 py-0.5 rounded-full uppercase tracking-wider">First Choice</span>
+                )}
+              </div>
               <p className="text-[11px] text-gray-400">
                 Choose a photo set. The resume and IC card are linked as a set.
               </p>
