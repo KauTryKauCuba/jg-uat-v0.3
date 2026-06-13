@@ -72,44 +72,48 @@ export function QRUploadModal({
       .catch((err) => console.error("Failed to generate QR code:", err))
   }, [sessionId])
 
-  // Poll session status
+  // Poll session status using recursive setTimeout to prevent stale closures
   React.useEffect(() => {
     if (!isOpen || !sessionId || isCompleted) return
 
-    let intervalId: NodeJS.Timeout
+    let timeoutId: NodeJS.Timeout
+    let active = true
 
     const checkStatus = async () => {
+      if (!active) return
       try {
-        const res = await fetch(`/api/mobile-upload/${sessionId}`, {
-          method: "POST",
-        })
+        const res = await fetch(`/api/mobile-upload/${sessionId}?t=${Date.now()}`)
         const json = await res.json()
         
-        // Log status to help debugging
-        console.log("QR Poll Response:", json.data)
+        console.log("QR Poll Response Status:", json.data?.status)
 
         if (json.data && json.data.status === "COMPLETED") {
           const imageUrl = json.data.imageUrl || json.data.image_url
           if (imageUrl) {
             setIsCompleted(true)
-            clearInterval(intervalId)
-            
-            // Let the user see completion before closing
+            onUploadComplete(imageUrl)
             setTimeout(() => {
-              onUploadComplete(imageUrl)
               onClose()
             }, 1500)
+            return // Stop polling
           }
         }
       } catch (err) {
         console.error("Polling error:", err)
       }
+
+      // Schedule next check if still active
+      if (active) {
+        timeoutId = setTimeout(checkStatus, 2000)
+      }
     }
 
-    intervalId = setInterval(checkStatus, 2000)
+    // Start first poll
+    timeoutId = setTimeout(checkStatus, 2000)
 
     return () => {
-      if (intervalId) clearInterval(intervalId)
+      active = false
+      if (timeoutId) clearTimeout(timeoutId)
     }
   }, [isOpen, sessionId, isCompleted, onUploadComplete, onClose])
 
