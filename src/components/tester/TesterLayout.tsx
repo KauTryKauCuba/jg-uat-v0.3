@@ -5,6 +5,7 @@ import Link from "next/link"
 import { signOut } from "next-auth/react"
 
 import { HelpWidget } from "@/components/tester/HelpWidget"
+import { LavaLampBackground } from "@/components/ui/lava-lamp-background"
 
 const PageTitleContext = React.createContext<{
   title: string
@@ -35,6 +36,10 @@ export function TesterLayout({ userName, children }: TesterLayoutProps) {
   return (
     <PageTitleContext.Provider value={{ title, setTitle }}>
       <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col font-sans relative overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-[200px] overflow-hidden pointer-events-none z-0">
+          <LavaLampBackground className="w-full h-full" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#0a0a0a]" />
+        </div>
 
         {/* Top Bar */}
         <header className="fixed top-0 left-0 right-0 z-30 h-14 bg-black/60 border-b border-white/5 px-6 flex items-center justify-between shadow-sm backdrop-blur-md">

@@ -6,6 +6,7 @@ import Link from "next/link"
 import { LayoutDashboard, ClipboardList, Folder, Users, BarChart3, Files } from "lucide-react"
 import { NavLink } from "./nav-link"
 import { HelpRequestNavLink } from "@/components/admin/HelpRequestNavLink"
+import { LavaLampBackground } from "@/components/ui/lava-lamp-background"
 
 export default async function AdminLayout({
   children,
@@ -77,8 +78,14 @@ export default async function AdminLayout({
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 ml-64 min-h-screen flex flex-col relative z-10">
-        {children}
+      <div className="flex-1 ml-64 min-h-screen flex flex-col relative z-10 overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-[200px] overflow-hidden pointer-events-none z-0">
+          <LavaLampBackground className="w-full h-full" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#0a0a0a]" />
+        </div>
+        <div className="relative z-10 flex-1 flex flex-col">
+          {children}
+        </div>
       </div>
     </div>
   )

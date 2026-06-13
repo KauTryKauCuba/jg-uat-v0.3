@@ -1,6 +1,7 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 import { ChevronRight } from "lucide-react"
+import { LavaLampBackground } from "@/components/ui/lava-lamp-background"
 
 interface HeroSectionProps extends React.HTMLAttributes<HTMLDivElement> {
   title?: string
@@ -49,7 +50,8 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
   ) => {
     return (
       <div className={cn("relative overflow-hidden w-full min-h-screen", className)} ref={ref} {...props}>
-        <section className="relative max-w-full mx-auto z-1">
+        <LavaLampBackground className="absolute inset-0 z-0 pointer-events-none" />
+        <section className="relative max-w-full mx-auto z-10">
           
           <div className="max-w-screen-xl z-10 mx-auto px-4 py-12 md:py-28 gap-12 md:px-8">
             <div className="space-y-5 max-w-3xl leading-0 lg:leading-5 mx-auto text-center">
