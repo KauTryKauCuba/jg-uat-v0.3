@@ -23,7 +23,7 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:postgrespassword@postgres:5432/jg_uat
       NEXTAUTH_SECRET: default_secret_for_uat_phase1_super_secret
-      NEXTAUTH_URL: http://localhost:3100
+      NEXTAUTH_URL: https://jg-uat.jejaku.my
     depends_on:
       - postgres
     volumes:
