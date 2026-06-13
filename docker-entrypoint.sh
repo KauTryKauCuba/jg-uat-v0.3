@@ -2,7 +2,7 @@
 set -e
 
 # Wait for database to be ready
-node wait-for-db.js
+NODE_PATH=./dev_node_modules node wait-for-db.js
 
 # Push database schema changes
 echo "Synchronizing database schema..."
