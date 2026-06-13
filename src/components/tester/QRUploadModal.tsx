@@ -82,15 +82,22 @@ export function QRUploadModal({
       try {
         const res = await fetch(`/api/mobile-upload/${sessionId}`)
         const json = await res.json()
-        if (json.data && json.data.status === "COMPLETED" && json.data.imageUrl) {
-          setIsCompleted(true)
-          clearInterval(intervalId)
-          
-          // Let the user see completion before closing
-          setTimeout(() => {
-            onUploadComplete(json.data.imageUrl)
-            onClose()
-          }, 1500)
+        
+        // Log status to help debugging
+        console.log("QR Poll Response:", json.data)
+
+        if (json.data && json.data.status === "COMPLETED") {
+          const imageUrl = json.data.imageUrl || json.data.image_url
+          if (imageUrl) {
+            setIsCompleted(true)
+            clearInterval(intervalId)
+            
+            // Let the user see completion before closing
+            setTimeout(() => {
+              onUploadComplete(imageUrl)
+              onClose()
+            }, 1500)
+          }
         }
       } catch (err) {
         console.error("Polling error:", err)
