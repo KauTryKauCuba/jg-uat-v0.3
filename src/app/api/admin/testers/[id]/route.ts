@@ -72,3 +72,41 @@ export async function PUT(
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user || session.user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = await params;
+
+    // Check if user exists and is a tester
+    const foundUsers = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, id))
+      .limit(1);
+
+    if (foundUsers.length === 0) {
+      return NextResponse.json({ error: "Tester not found" }, { status: 404 });
+    }
+
+    const user = foundUsers[0];
+    if (user.role !== "TESTER") {
+      return NextResponse.json({ error: "Cannot delete non-tester users" }, { status: 400 });
+    }
+
+    await db.delete(users).where(eq(users.id, id));
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error("Failed to delete tester:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+

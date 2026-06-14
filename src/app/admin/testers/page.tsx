@@ -2,7 +2,8 @@
 
 import * as React from "react"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
-import { Users, RefreshCw, CheckCircle, XCircle } from "lucide-react"
+import { Users, RefreshCw, CheckCircle, XCircle, Trash2 } from "lucide-react"
+import { ConfirmModal } from "@/components/ui/confirm-modal"
 
 interface Tester {
   id: string
@@ -18,6 +19,7 @@ export default function AdminTestersPage() {
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const [updatingId, setUpdatingId] = React.useState<string | null>(null)
+  const [deletingId, setDeletingId] = React.useState<string | null>(null)
 
   const fetchTesters = async () => {
     try {
@@ -75,6 +77,27 @@ export default function AdminTestersPage() {
       alert("Failed to update tester status")
     } finally {
       setUpdatingId(null)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!deletingId) return
+    try {
+      setUpdatingId(deletingId)
+      const res = await fetch(`/api/admin/testers/${deletingId}`, {
+        method: "DELETE",
+      })
+      const json = await res.json()
+      if (json.error) {
+        alert(json.error)
+      } else {
+        setTesters((prev) => prev.filter((t) => t.id !== deletingId))
+      }
+    } catch (err) {
+      alert("Failed to delete tester")
+    } finally {
+      setUpdatingId(null)
+      setDeletingId(null)
     }
   }
 
@@ -156,6 +179,13 @@ export default function AdminTestersPage() {
                             <RefreshCw className="w-3.5 h-3.5" /> Reset Choice
                           </button>
                         )}
+                        <button
+                          onClick={() => setDeletingId(tester.id)}
+                          disabled={isUpdating}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-red-500/20 bg-red-500/5 text-red-400 hover:bg-red-500/10 hover:border-red-500/30 transition-all cursor-pointer disabled:opacity-50"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Delete
+                        </button>
                       </td>
                     </tr>
                   )
@@ -165,6 +195,16 @@ export default function AdminTestersPage() {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={deletingId !== null}
+        onClose={() => setDeletingId(null)}
+        onConfirm={handleDelete}
+        title="Delete Tester Account?"
+        description="Are you sure you want to delete this tester account? This will permanently delete their profile, help requests, answers, and reset any claimed UAT resources."
+        confirmText="Delete permanently"
+        variant="destructive"
+      />
     </main>
   )
 }

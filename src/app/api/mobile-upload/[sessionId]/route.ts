@@ -137,7 +137,14 @@ export async function POST(
         return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
       }
 
-      // 3. File extension validation
+      // 3. File size validation (max 5MB)
+      const MAX_SIZE = 5 * 1024 * 1024;
+      if (file.size > MAX_SIZE) {
+        console.log(`[UPLOAD ERROR] File size ${file.size} exceeds 5MB limit for sessionId: ${sessionId}`);
+        return NextResponse.json({ error: "File size exceeds 5MB limit" }, { status: 400 });
+      }
+
+      // 4. File extension validation
       const fileName = file.name.toLowerCase();
       const allowedExtensions = [".png", ".jpeg", ".jpg", ".webp"];
       const hasAllowedExtension = allowedExtensions.some(ext => fileName.endsWith(ext));

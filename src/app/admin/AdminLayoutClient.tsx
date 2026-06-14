@@ -16,12 +16,17 @@ interface AdminLayoutClientProps {
 
 export function AdminLayoutClient({ userEmail, children }: AdminLayoutClientProps) {
   const [isCollapsed, setIsCollapsed] = React.useState(false)
+  const [isMounted, setIsMounted] = React.useState(false)
 
   React.useEffect(() => {
     const saved = localStorage.getItem("admin-sidebar-collapsed")
     if (saved !== null) {
       setIsCollapsed(saved === "true")
     }
+    const timer = setTimeout(() => {
+      setIsMounted(true)
+    }, 100)
+    return () => clearTimeout(timer)
   }, [])
 
   const handleToggle = () => {
@@ -41,7 +46,8 @@ export function AdminLayoutClient({ userEmail, children }: AdminLayoutClientProp
       {/* Fixed Sidebar - Floating Pill Design */}
       <aside
         className={cn(
-          "fixed top-5 bottom-5 left-5 z-20 border border-white/[0.08] bg-zinc-950/40 backdrop-blur-xl flex flex-col justify-between p-4 rounded-[15px] transition-all duration-300 ease-in-out shadow-2xl shadow-black/80",
+          "fixed top-5 bottom-5 left-5 z-20 border border-white/[0.08] bg-zinc-950/40 backdrop-blur-xl flex flex-col justify-between p-4 rounded-[15px] shadow-2xl shadow-black/80",
+          isMounted ? "transition-all duration-300 ease-in-out" : "transition-none duration-0",
           isCollapsed ? "w-20" : "w-64"
         )}
       >
@@ -130,7 +136,8 @@ export function AdminLayoutClient({ userEmail, children }: AdminLayoutClientProp
       {/* Main Content Area */}
       <div
         className={cn(
-          "flex-1 min-h-screen flex flex-col relative z-10 overflow-hidden transition-all duration-300 ease-in-out",
+          "flex-1 min-h-screen flex flex-col relative z-10 overflow-hidden",
+          isMounted ? "transition-all duration-300 ease-in-out" : "transition-none duration-0",
           isCollapsed ? "ml-[100px]" : "ml-[276px]"
         )}
       >

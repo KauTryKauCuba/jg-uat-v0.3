@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
-import { Plus, Image as ImageIcon, FileText, Trash2, Loader2, Upload, Check } from "lucide-react"
+import { Plus, Image as ImageIcon, FileText, Trash2, Loader2, Upload, Check, Pencil } from "lucide-react"
 import { ConfirmModal } from "@/components/ui/confirm-modal"
 
 interface ResourceSet {
@@ -32,6 +32,7 @@ export default function ResourcesPage() {
 
   const [submitting, setSubmitting] = React.useState(false)
   const [deletingId, setDeletingId] = React.useState<string | null>(null)
+  const [editingId, setEditingId] = React.useState<string | null>(null)
 
   const fetchSets = async () => {
     try {
@@ -120,23 +121,42 @@ export default function ResourcesPage() {
     setSubmitting(true)
 
     try {
-      const res = await fetch("/api/admin/resources", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, photoUrl, resumeUrl, icUrl }),
-      })
-      const json = await res.json()
-      if (json.error) {
-        alert(json.error)
+      if (editingId) {
+        const res = await fetch(`/api/admin/resources/${editingId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, photoUrl, resumeUrl, icUrl }),
+        })
+        const json = await res.json()
+        if (json.error) {
+          alert(json.error)
+        } else {
+          setResourceSets(resourceSets.map((s) => (s.id === editingId ? json.data : s)))
+          setEditingId(null)
+          setName("")
+          setPhotoUrl("")
+          setResumeUrl("")
+          setIcUrl("")
+        }
       } else {
-        setResourceSets([json.data, ...resourceSets])
-        setName("")
-        setPhotoUrl("")
-        setResumeUrl("")
-        setIcUrl("")
+        const res = await fetch("/api/admin/resources", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, photoUrl, resumeUrl, icUrl }),
+        })
+        const json = await res.json()
+        if (json.error) {
+          alert(json.error)
+        } else {
+          setResourceSets([json.data, ...resourceSets])
+          setName("")
+          setPhotoUrl("")
+          setResumeUrl("")
+          setIcUrl("")
+        }
       }
     } catch (err: any) {
-      alert("Failed to create resource set.")
+      alert(editingId ? "Failed to update resource set." : "Failed to create resource set.")
     } finally {
       setSubmitting(false)
     }
@@ -150,11 +170,15 @@ export default function ResourcesPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Add Resource Set Form */}
+        {/* Add/Edit Resource Set Form */}
         <div className="border border-white/5 bg-zinc-900/40 backdrop-blur-md p-6 rounded-2xl h-fit space-y-4">
           <h2 className="text-xl font-bold flex items-center gap-2">
-            <Plus className="w-5 h-5 text-brand-cyan" />
-            <span>New Resource Set</span>
+            {editingId ? (
+              <Pencil className="w-5 h-5 text-brand-cyan" />
+            ) : (
+              <Plus className="w-5 h-5 text-brand-cyan" />
+            )}
+            <span>{editingId ? "Edit Resource Set" : "New Resource Set"}</span>
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1">
@@ -283,18 +307,45 @@ export default function ResourcesPage() {
               )}
             </div>
 
-            <button
-              type="submit"
-              disabled={submitting || !name || !photoUrl || !resumeUrl || !icUrl}
-              className="w-full py-3.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-brand-teal to-brand-cyan hover:opacity-90 active:scale-[0.98] disabled:opacity-50 transition-all cursor-pointer shadow-lg shadow-brand-teal/10 flex items-center justify-center space-x-1.5"
-            >
-              {submitting ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Plus className="w-4 h-4" />
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={submitting || !name || !photoUrl || !resumeUrl || !icUrl}
+                className="flex-1 py-3.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-brand-teal to-brand-cyan hover:opacity-90 active:scale-[0.98] disabled:opacity-50 transition-all cursor-pointer shadow-lg shadow-brand-teal/10 flex items-center justify-center space-x-1.5"
+              >
+                {submitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : editingId ? (
+                  <Check className="w-4 h-4" />
+                ) : (
+                  <Plus className="w-4 h-4" />
+                )}
+                <span>
+                  {submitting
+                    ? editingId
+                      ? "Updating Set..."
+                      : "Creating Set..."
+                    : editingId
+                    ? "Save Changes"
+                    : "Create Resource Set"}
+                </span>
+              </button>
+              {editingId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingId(null)
+                    setName("")
+                    setPhotoUrl("")
+                    setResumeUrl("")
+                    setIcUrl("")
+                  }}
+                  className="px-4 py-3.5 rounded-xl text-sm font-semibold border border-white/10 bg-white/5 hover:bg-white/10 transition-all text-gray-300 cursor-pointer"
+                >
+                  Cancel
+                </button>
               )}
-              <span>{submitting ? "Creating Set..." : "Create Resource Set"}</span>
-            </button>
+            </div>
           </form>
         </div>
 
@@ -345,7 +396,21 @@ export default function ResourcesPage() {
                           <img src={set.icUrl} className="w-8 h-8 object-cover rounded-lg border border-white/10 group-hover:scale-105 transition-transform" alt="IC" />
                         </a>
                       </td>
-                      <td className="py-4 px-6 text-right">
+                      <td className="py-4 px-6 text-right space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingId(set.id)
+                            setName(set.name)
+                            setPhotoUrl(set.photoUrl)
+                            setResumeUrl(set.resumeUrl)
+                            setIcUrl(set.icUrl)
+                          }}
+                          className="p-2 rounded-lg border border-white/5 hover:bg-brand-cyan/10 text-brand-cyan transition-colors cursor-pointer"
+                          title="Edit Set"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
                         <button
                           type="button"
                           onClick={() => setDeletingId(set.id)}
