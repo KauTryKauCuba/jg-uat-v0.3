@@ -4,6 +4,8 @@ import { eq } from "drizzle-orm";
 import MobileUploadClient from "./MobileUploadClient";
 import Link from "next/link";
 import { Camera } from "lucide-react";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +23,7 @@ export default async function MobileUploadPage({
       status: mobileUploads.status,
       caseTitle: testCases.title,
       fieldName: testFields.fieldName,
+      testerId: testRuns.testerId,
     })
     .from(mobileUploads)
     .leftJoin(testRuns, eq(testRuns.id, mobileUploads.testRunId))
@@ -43,6 +46,21 @@ export default async function MobileUploadPage({
   }
 
   const session = sessionList[0];
+
+  const authSession = await getServerSession(authOptions);
+  if (!authSession?.user || authSession.user.id !== session.testerId) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col items-center justify-center p-6 text-center font-sans">
+        <div className="space-y-4 max-w-md border border-white/5 bg-zinc-900/40 p-8 rounded-3xl backdrop-blur-md shadow-xl">
+          <h1 className="text-xl font-bold text-rose-400">Unauthorized Upload</h1>
+          <p className="text-sm text-gray-400 leading-relaxed">
+            You are signed in as <span className="text-gray-200 font-semibold">{authSession?.user?.email || "unknown user"}</span>.
+            Only the user who started this UAT run can upload photos for it.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col font-sans">

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { mobileUploads } from "@/db/schema";
+import { mobileUploads, testRuns } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
+import { getToken } from "next-auth/jwt";
 
 export const dynamic = "force-dynamic";
 
@@ -17,21 +18,42 @@ export async function GET(
     sessionId = parsedParams.sessionId;
     console.log(`[GET POLL] Request for sessionId: ${sessionId}`);
 
-    const session = await db
-      .select()
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const sessionList = await db
+      .select({
+        id: mobileUploads.id,
+        testRunId: mobileUploads.testRunId,
+        testFieldId: mobileUploads.testFieldId,
+        imageUrl: mobileUploads.imageUrl,
+        status: mobileUploads.status,
+        createdAt: mobileUploads.createdAt,
+        updatedAt: mobileUploads.updatedAt,
+        testerId: testRuns.testerId,
+      })
       .from(mobileUploads)
+      .leftJoin(testRuns, eq(testRuns.id, mobileUploads.testRunId))
       .where(eq(mobileUploads.id, sessionId))
       .limit(1);
 
-    if (session.length === 0) {
+    if (sessionList.length === 0) {
       console.log(`[GET POLL] Session ${sessionId} not found in DB`);
       return NextResponse.json({ error: "Session not found" }, { status: 404 });
     }
 
-    console.log(`[GET POLL] Session ${sessionId} status is currently: ${session[0].status}`);
+    const session = sessionList[0];
+
+    if (token.id !== session.testerId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    console.log(`[GET POLL] Session ${sessionId} status is currently: ${session.status}`);
 
     return NextResponse.json(
-      { data: session[0], error: null },
+      { data: session, error: null },
       {
         headers: {
           "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
@@ -55,10 +77,25 @@ export async function POST(
     const parsedParams = await params;
     sessionId = parsedParams.sessionId;
 
-    // Check if session exists
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Check if session exists and get the testerId
     const sessionList = await db
-      .select()
+      .select({
+        id: mobileUploads.id,
+        testRunId: mobileUploads.testRunId,
+        testFieldId: mobileUploads.testFieldId,
+        imageUrl: mobileUploads.imageUrl,
+        status: mobileUploads.status,
+        createdAt: mobileUploads.createdAt,
+        updatedAt: mobileUploads.updatedAt,
+        testerId: testRuns.testerId,
+      })
       .from(mobileUploads)
+      .leftJoin(testRuns, eq(testRuns.id, mobileUploads.testRunId))
       .where(eq(mobileUploads.id, sessionId))
       .limit(1);
 
@@ -68,6 +105,11 @@ export async function POST(
     }
 
     const session = sessionList[0];
+
+    if (token.id !== session.testerId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const contentType = req.headers.get("content-type") || "";
 
     // If it's multipart/form-data, it is the phone uploading the photo!
