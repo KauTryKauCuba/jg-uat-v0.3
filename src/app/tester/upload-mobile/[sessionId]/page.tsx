@@ -46,9 +46,9 @@ export default async function MobileUploadPage({
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col font-sans">
-      {/* Mini Header */}
-      <header className="h-14 bg-black/60 border-b border-white/5 px-6 flex items-center justify-center shadow-sm backdrop-blur-md">
-        <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-teal to-brand-cyan">
+      <header className="h-14 bg-black/60 border-b border-white/5 px-6 flex items-center justify-center space-x-2 shadow-sm backdrop-blur-md">
+        <img src="/icon.png" alt="JobGiga Logo" className="w-5 h-5 object-contain" />
+        <span className="text-base font-bold text-white">
           JobGiga UAT Mobile Upload
         </span>
       </header>

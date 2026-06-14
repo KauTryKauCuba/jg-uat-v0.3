@@ -41,12 +41,13 @@ export function TesterLayout({ userName, children }: TesterLayoutProps) {
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#0a0a0a]" />
         </div>
 
-        {/* Top Bar */}
-        <header className="fixed top-0 left-0 right-0 z-30 h-14 bg-black/60 border-b border-white/5 px-6 flex items-center justify-between shadow-sm backdrop-blur-md">
+        {/* Top Bar - Floating Header */}
+        <header className="fixed top-5 left-5 right-5 z-30 h-14 bg-zinc-950/40 border border-white/[0.08] px-6 flex items-center justify-between rounded-[15px] shadow-2xl shadow-black/80 backdrop-blur-xl">
           {/* Left: Logo */}
           <div className="flex items-center space-x-2">
-            <Link href="/tester" className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-teal to-brand-cyan select-none">
-              JobGiga UAT
+            <Link href="/tester" className="flex items-center space-x-2 text-base font-bold text-white select-none">
+              <img src="/icon.png" alt="JobGiga Logo" className="w-5 h-5 object-contain" />
+              <span>JobGiga UAT</span>
             </Link>
           </div>
 
@@ -67,7 +68,7 @@ export function TesterLayout({ userName, children }: TesterLayoutProps) {
             </div>
             <button
               onClick={() => signOut({ callbackUrl: "/" })}
-              className="text-xs font-semibold px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-xl border border-white/10 hover:bg-white/5 text-gray-300 transition-all cursor-pointer shrink-0"
+              className="text-xs font-semibold px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-gray-200 hover:text-white transition-all cursor-pointer shrink-0 hover:scale-[1.02] active:scale-[0.98]"
             >
               Sign Out
             </button>
@@ -75,7 +76,7 @@ export function TesterLayout({ userName, children }: TesterLayoutProps) {
         </header>
 
         {/* Main Content Area */}
-        <div className="pt-14 flex-1 flex flex-col relative z-10">
+        <div className="pt-24 flex-1 flex flex-col relative z-10">
           {children}
         </div>
 

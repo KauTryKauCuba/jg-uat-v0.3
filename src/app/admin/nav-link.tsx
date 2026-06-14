@@ -7,9 +7,10 @@ import { cn } from "@/lib/utils"
 interface NavLinkProps {
   href: string
   children: React.ReactNode
+  isCollapsed?: boolean
 }
 
-export function NavLink({ href, children }: NavLinkProps) {
+export function NavLink({ href, children, isCollapsed }: NavLinkProps) {
   const pathname = usePathname()
   const isActive = pathname === href
 
@@ -17,7 +18,8 @@ export function NavLink({ href, children }: NavLinkProps) {
     <Link
       href={href}
       className={cn(
-        "flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200",
+        "flex items-center rounded-xl text-sm font-semibold transition-all duration-200",
+        isCollapsed ? "justify-center p-3" : "space-x-3 px-4 py-3",
         isActive
           ? "bg-gradient-to-r from-brand-teal/15 to-brand-cyan/15 border border-brand-teal/20 text-brand-cyan"
           : "text-gray-400 hover:text-gray-200 hover:bg-white/5 border border-transparent"
