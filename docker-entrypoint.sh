@@ -4,9 +4,9 @@ set -e
 # Wait for database to be ready
 node wait-for-db.js
 
-# Push database schema changes
-echo "Synchronizing database schema..."
-npx drizzle-kit push
+# Apply database migrations
+echo "Applying database migrations..."
+npx drizzle-kit migrate
 
 # Seed database with default admin/tester if not already present
 echo "Running database seed..."
