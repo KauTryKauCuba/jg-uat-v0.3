@@ -6,7 +6,7 @@ import bcrypt from "bcrypt";
 async function main() {
   console.log("Seeding database with bcrypt hashed users...");
   
-  const saltRounds = 12;
+  const saltRounds = 10;
   const adminPassword = await bcrypt.hash("admin123", saltRounds);
   const testerPassword = await bcrypt.hash("tester123", saltRounds);
 

@@ -38,7 +38,7 @@ export const authOptions: NextAuthOptions = {
         if (!user) {
           if (credentials.email === "admin@jobgiga.com" && credentials.password === "admin123") {
             // We hash admin123 on the fly for verification safety
-            const adminHash = await bcrypt.hash("admin123", 12);
+            const adminHash = await bcrypt.hash("admin123", 10);
             user = {
               id: "admin-static-id",
               name: "Admin User",
@@ -47,7 +47,7 @@ export const authOptions: NextAuthOptions = {
               role: "ADMIN" as const,
             };
           } else if (credentials.email === "tester@jobgiga.com" && credentials.password === "tester123") {
-            const testerHash = await bcrypt.hash("tester123", 12);
+            const testerHash = await bcrypt.hash("tester123", 10);
             user = {
               id: "tester-static-id",
               name: "Tester User",

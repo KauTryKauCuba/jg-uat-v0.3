@@ -5,11 +5,19 @@ import { db } from "@/lib/db";
 import { testCases, testFields, testRuns, testCaseCategories, testAnswers } from "@/db/schema";
 import { eq, sql, and } from "drizzle-orm";
 
+import { memoryCache } from "@/lib/cache";
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ data: null, error: "Unauthorized" }, { status: 401 });
+    }
+
+    const cacheKey = `test-cases:${session.user.role}:${session.user.id}:${session.user.testerGroup || ""}`;
+    const cached = memoryCache.get(cacheKey, 5000);
+    if (cached) {
+      return NextResponse.json({ data: cached, error: null });
     }
 
     if (session.user.role === "TESTER") {
@@ -77,6 +85,7 @@ export async function GET() {
         };
       });
 
+      memoryCache.set(cacheKey, mappedList);
       return NextResponse.json({ data: mappedList, error: null });
     }
 
@@ -179,6 +188,7 @@ export async function GET() {
       };
     });
 
+    memoryCache.set(cacheKey, mappedList);
     return NextResponse.json({ data: mappedList, error: null });
   } catch (error: any) {
     console.error("GET test cases failed:", error);
@@ -216,6 +226,7 @@ export async function POST(req: NextRequest) {
       })
       .returning();
 
+    memoryCache.clear();
     return NextResponse.json({ data: newTestCase[0], error: null }, { status: 201 });
   } catch (error: any) {
     console.error("POST test case failed:", error);

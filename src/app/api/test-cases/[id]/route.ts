@@ -4,6 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { db } from "@/lib/db";
 import { testCases, testFields } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
+import { memoryCache } from "@/lib/cache";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -78,6 +79,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ data: null, error: "Test case not found" }, { status: 404 });
     }
 
+    memoryCache.clear();
     return NextResponse.json({ data: updatedCase[0], error: null });
   } catch (error: any) {
     console.error("PUT test case failed:", error);
@@ -103,6 +105,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       return NextResponse.json({ data: null, error: "Test case not found" }, { status: 404 });
     }
 
+    memoryCache.clear();
     return NextResponse.json({ data: { id: deletedCase[0].id }, error: null });
   } catch (error: any) {
     console.error("DELETE test case failed:", error);
