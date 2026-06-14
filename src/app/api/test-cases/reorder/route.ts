@@ -32,6 +32,6 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ data: { message: "Test cases reordered successfully" }, error: null });
   } catch (error: any) {
     console.error("Reorder test cases failed:", error);
-    return NextResponse.json({ data: null, error: error.message || "Failed to reorder test cases" }, { status: 500 });
+    return NextResponse.json({ data: null, error: "Failed to reorder test cases" }, { status: 500 });
   }
 }

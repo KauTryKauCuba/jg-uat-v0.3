@@ -128,7 +128,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ data: result, error: null });
   } catch (error: any) {
     console.error("GET test case runs failed:", error);
-    return NextResponse.json({ data: null, error: error.message || "Failed to fetch runs" }, { status: 500 });
+    return NextResponse.json({ data: null, error: "Failed to fetch runs" }, { status: 500 });
   }
 }
 
@@ -236,6 +236,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ data: { runId: newRun[0].id }, error: null }, { status: 201 });
   } catch (error: any) {
     console.error("POST start test run failed:", error);
-    return NextResponse.json({ data: null, error: error.message || "Failed to start test run" }, { status: 500 });
+    return NextResponse.json({ data: null, error: "Failed to start test run" }, { status: 500 });
   }
 }

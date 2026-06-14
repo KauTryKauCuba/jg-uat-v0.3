@@ -19,7 +19,7 @@ export async function GET() {
 
     return NextResponse.json({ data: sets });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Failed to fetch resource sets" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch resource sets" }, { status: 500 });
   }
 }
 
@@ -48,6 +48,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ data: newSet });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Failed to create resource set" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to create resource set" }, { status: 500 });
   }
 }

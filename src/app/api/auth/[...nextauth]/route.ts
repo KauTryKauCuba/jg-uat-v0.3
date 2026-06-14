@@ -34,30 +34,8 @@ export const authOptions: NextAuthOptions = {
           console.warn("Database lookup failed during authentication:", error);
         }
 
-        // 2. Fallback check for static credentials if database search yielded nothing
         if (!user) {
-          if (credentials.email === "admin@jobgiga.com" && credentials.password === "admin123") {
-            // We hash admin123 on the fly for verification safety
-            const adminHash = await bcrypt.hash("admin123", 10);
-            user = {
-              id: "admin-static-id",
-              name: "Admin User",
-              email: "admin@jobgiga.com",
-              password: adminHash,
-              role: "ADMIN" as const,
-            };
-          } else if (credentials.email === "tester@jobgiga.com" && credentials.password === "tester123") {
-            const testerHash = await bcrypt.hash("tester123", 10);
-            user = {
-              id: "tester-static-id",
-              name: "Tester User",
-              email: "tester@jobgiga.com",
-              password: testerHash,
-              role: "TESTER" as const,
-            };
-          } else {
-            throw new Error("Invalid credentials");
-          }
+          throw new Error("Invalid credentials");
         }
 
         const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
@@ -87,7 +65,7 @@ export const authOptions: NextAuthOptions = {
       }
       
       // Fetch fresh database details for tester status updates in real-time
-      if (token.id && token.role === "TESTER" && token.id !== "tester-static-id") {
+      if (token.id && token.role === "TESTER") {
         try {
           const found = await db
             .select({

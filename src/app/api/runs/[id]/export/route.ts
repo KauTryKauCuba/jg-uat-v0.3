@@ -101,6 +101,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     });
   } catch (error: any) {
     console.error("GET export run failed:", error);
-    return NextResponse.json({ data: null, error: error.message || "Failed to export CSV" }, { status: 500 });
+    return NextResponse.json({ data: null, error: "Failed to export CSV" }, { status: 500 });
   }
 }

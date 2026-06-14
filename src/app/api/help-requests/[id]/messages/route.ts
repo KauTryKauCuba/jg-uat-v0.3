@@ -51,7 +51,7 @@ export async function GET(
     return NextResponse.json({ data: messagesList, error: null });
   } catch (error: any) {
     console.error("GET messages failed:", error);
-    return NextResponse.json({ data: null, error: error.message || "Failed to fetch messages" }, { status: 500 });
+    return NextResponse.json({ data: null, error: "Failed to fetch messages" }, { status: 500 });
   }
 }
 
@@ -105,6 +105,6 @@ export async function POST(
     return NextResponse.json({ data: newMessage, error: null }, { status: 201 });
   } catch (error: any) {
     console.error("POST message failed:", error);
-    return NextResponse.json({ data: null, error: error.message || "Failed to send message" }, { status: 500 });
+    return NextResponse.json({ data: null, error: "Failed to send message" }, { status: 500 });
   }
 }

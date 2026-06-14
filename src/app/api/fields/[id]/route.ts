@@ -39,7 +39,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ data: updatedField[0], error: null });
   } catch (error: any) {
     console.error("PUT field by ID failed:", error);
-    return NextResponse.json({ data: null, error: error.message || "Failed to update field" }, { status: 500 });
+    return NextResponse.json({ data: null, error: "Failed to update field" }, { status: 500 });
   }
 }
 
@@ -64,6 +64,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     return NextResponse.json({ data: { id: deletedField[0].id }, error: null });
   } catch (error: any) {
     console.error("DELETE field failed:", error);
-    return NextResponse.json({ data: null, error: error.message || "Failed to delete field" }, { status: 500 });
+    return NextResponse.json({ data: null, error: "Failed to delete field" }, { status: 500 });
   }
 }

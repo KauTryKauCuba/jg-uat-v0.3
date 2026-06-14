@@ -43,7 +43,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (error.code === "23505") {
       return NextResponse.json({ data: null, error: "Category name already exists" }, { status: 400 });
     }
-    return NextResponse.json({ data: null, error: error.message || "Failed to update category" }, { status: 500 });
+    return NextResponse.json({ data: null, error: "Failed to update category" }, { status: 500 });
   }
 }
 
@@ -68,6 +68,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     return NextResponse.json({ data: { message: "Category deleted successfully" }, error: null });
   } catch (error: any) {
     console.error("DELETE category failed:", error);
-    return NextResponse.json({ data: null, error: error.message || "Failed to delete category" }, { status: 500 });
+    return NextResponse.json({ data: null, error: "Failed to delete category" }, { status: 500 });
   }
 }

@@ -102,6 +102,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     });
   } catch (error: any) {
     console.error("POST submit run failed:", error);
-    return NextResponse.json({ data: null, error: error.message || "Failed to submit test run" }, { status: 500 });
+    return NextResponse.json({ data: null, error: "Failed to submit test run" }, { status: 500 });
   }
 }

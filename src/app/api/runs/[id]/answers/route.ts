@@ -85,6 +85,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ data: { answerId }, error: null });
   } catch (error: any) {
     console.error("POST answers failed:", error);
-    return NextResponse.json({ data: null, error: error.message || "Failed to save answer" }, { status: 500 });
+    return NextResponse.json({ data: null, error: "Failed to save answer" }, { status: 500 });
   }
 }

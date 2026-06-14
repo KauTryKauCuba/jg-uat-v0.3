@@ -110,6 +110,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ data, error: null });
   } catch (error: any) {
     console.error("GET run detail failed:", error);
-    return NextResponse.json({ data: null, error: error.message || "Failed to fetch run details" }, { status: 500 });
+    return NextResponse.json({ data: null, error: "Failed to fetch run details" }, { status: 500 });
   }
 }

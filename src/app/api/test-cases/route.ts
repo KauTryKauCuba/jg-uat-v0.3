@@ -192,7 +192,7 @@ export async function GET() {
     return NextResponse.json({ data: mappedList, error: null });
   } catch (error: any) {
     console.error("GET test cases failed:", error);
-    return NextResponse.json({ data: null, error: error.message || "Failed to fetch test cases" }, { status: 500 });
+    return NextResponse.json({ data: null, error: "Failed to fetch test cases" }, { status: 500 });
   }
 }
 
@@ -230,6 +230,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ data: newTestCase[0], error: null }, { status: 201 });
   } catch (error: any) {
     console.error("POST test case failed:", error);
-    return NextResponse.json({ data: null, error: error.message || "Failed to create test case" }, { status: 500 });
+    return NextResponse.json({ data: null, error: "Failed to create test case" }, { status: 500 });
   }
 }

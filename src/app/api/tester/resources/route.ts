@@ -29,6 +29,6 @@ export async function GET() {
       selectCount: user?.resourceSelectCount ?? 0
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "Failed to fetch resource sets" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch resource sets" }, { status: 500 });
   }
 }

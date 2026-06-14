@@ -28,6 +28,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ data: { sessionId: session.id }, error: null });
   } catch (error: any) {
     console.error("Failed to create mobile upload session:", error);
-    return NextResponse.json({ error: error.message || "Failed to create session" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to create session" }, { status: 500 });
   }
 }

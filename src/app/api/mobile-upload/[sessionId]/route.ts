@@ -42,7 +42,7 @@ export async function GET(
     );
   } catch (error: any) {
     console.error(`[GET POLL ERROR] Session ${sessionId} failed:`, error);
-    return NextResponse.json({ error: error.message || "Failed to fetch session" }, { status: 500 });
+    return NextResponse.json({ error: "Failed to fetch session" }, { status: 500 });
   }
 }
 
@@ -162,6 +162,6 @@ export async function POST(
     }
   } catch (error: any) {
     console.error(`[POST ERROR] Failed processing request for sessionId: ${sessionId}:`, error);
-    return NextResponse.json({ error: error.message || "Request failed" }, { status: 500 });
+    return NextResponse.json({ error: "Request failed" }, { status: 500 });
   }
 }

@@ -20,7 +20,7 @@ export async function GET() {
     return NextResponse.json({ data: list, error: null });
   } catch (error: any) {
     console.error("GET categories failed:", error);
-    return NextResponse.json({ data: null, error: error.message || "Failed to fetch categories" }, { status: 500 });
+    return NextResponse.json({ data: null, error: "Failed to fetch categories" }, { status: 500 });
   }
 }
 
@@ -63,6 +63,6 @@ export async function POST(req: NextRequest) {
     if (error.code === "23505") {
       return NextResponse.json({ data: null, error: "Category name already exists" }, { status: 400 });
     }
-    return NextResponse.json({ data: null, error: error.message || "Failed to create category" }, { status: 500 });
+    return NextResponse.json({ data: null, error: "Failed to create category" }, { status: 500 });
   }
 }

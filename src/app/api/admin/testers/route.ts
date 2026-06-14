@@ -28,6 +28,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ testers });
   } catch (error: any) {
     console.error("Failed to fetch testers:", error);
-    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

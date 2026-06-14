@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
+import { getToken } from "next-auth/jwt";
 
 export async function POST(req: NextRequest) {
   try {
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    if (!token) {
+      return NextResponse.json({ data: null, error: "Unauthorized" }, { status: 401 });
+    }
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
 
@@ -47,6 +52,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ data: { url: fileUrl }, error: null });
   } catch (error: any) {
     console.error("PDF upload failed:", error);
-    return NextResponse.json({ data: null, error: error.message || "Failed to upload file" }, { status: 500 });
+    return NextResponse.json({ data: null, error: "Failed to upload file" }, { status: 500 });
   }
 }

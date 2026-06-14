@@ -126,6 +126,6 @@ export async function GET(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("GET admin stats failed:", error);
-    return NextResponse.json({ data: null, error: error.message || "Failed to fetch stats" }, { status: 500 });
+    return NextResponse.json({ data: null, error: "Failed to fetch stats" }, { status: 500 });
   }
 }

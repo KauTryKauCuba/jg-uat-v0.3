@@ -33,6 +33,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ data: { message: "Fields reordered successfully" }, error: null });
   } catch (error: any) {
     console.error("Reorder fields failed:", error);
-    return NextResponse.json({ data: null, error: error.message || "Failed to reorder fields" }, { status: 500 });
+    return NextResponse.json({ data: null, error: "Failed to reorder fields" }, { status: 500 });
   }
 }

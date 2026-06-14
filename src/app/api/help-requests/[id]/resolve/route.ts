@@ -45,6 +45,6 @@ export async function POST(
     return NextResponse.json({ data: updated, error: null });
   } catch (error: any) {
     console.error("POST resolve failed:", error);
-    return NextResponse.json({ data: null, error: error.message || "Failed to resolve help request" }, { status: 500 });
+    return NextResponse.json({ data: null, error: "Failed to resolve help request" }, { status: 500 });
   }
 }

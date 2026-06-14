@@ -39,7 +39,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ data, error: null });
   } catch (error: any) {
     console.error("GET test case by ID failed:", error);
-    return NextResponse.json({ data: null, error: error.message || "Failed to fetch test case" }, { status: 500 });
+    return NextResponse.json({ data: null, error: "Failed to fetch test case" }, { status: 500 });
   }
 }
 
@@ -83,7 +83,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ data: updatedCase[0], error: null });
   } catch (error: any) {
     console.error("PUT test case failed:", error);
-    return NextResponse.json({ data: null, error: error.message || "Failed to update test case" }, { status: 500 });
+    return NextResponse.json({ data: null, error: "Failed to update test case" }, { status: 500 });
   }
 }
 
@@ -109,6 +109,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     return NextResponse.json({ data: { id: deletedCase[0].id }, error: null });
   } catch (error: any) {
     console.error("DELETE test case failed:", error);
-    return NextResponse.json({ data: null, error: error.message || "Failed to delete test case" }, { status: 500 });
+    return NextResponse.json({ data: null, error: "Failed to delete test case" }, { status: 500 });
   }
 }

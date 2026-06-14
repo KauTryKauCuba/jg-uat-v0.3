@@ -23,7 +23,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ data: fieldsList, error: null });
   } catch (error: any) {
     console.error("GET test fields failed:", error);
-    return NextResponse.json({ data: null, error: error.message || "Failed to fetch test fields" }, { status: 500 });
+    return NextResponse.json({ data: null, error: "Failed to fetch test fields" }, { status: 500 });
   }
 }
 
@@ -93,6 +93,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ data: newField[0], error: null }, { status: 201 });
   } catch (error: any) {
     console.error("POST test field failed:", error);
-    return NextResponse.json({ data: null, error: error.message || "Failed to create test field" }, { status: 500 });
+    return NextResponse.json({ data: null, error: "Failed to create test field" }, { status: 500 });
   }
 }

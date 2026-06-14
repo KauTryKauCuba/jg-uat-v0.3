@@ -70,7 +70,7 @@ export async function GET() {
     }
   } catch (error: any) {
     console.error("GET help requests failed:", error);
-    return NextResponse.json({ data: null, error: error.message || "Failed to fetch help requests" }, { status: 500 });
+    return NextResponse.json({ data: null, error: "Failed to fetch help requests" }, { status: 500 });
   }
 }
 
@@ -131,6 +131,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ data: newRequest, error: null }, { status: 201 });
   } catch (error: any) {
     console.error("POST help request failed:", error);
-    return NextResponse.json({ data: null, error: error.message || "Failed to create help request" }, { status: 500 });
+    return NextResponse.json({ data: null, error: "Failed to create help request" }, { status: 500 });
   }
 }
