@@ -5,7 +5,7 @@ import { getToken } from "next-auth/jwt";
 export default async function proxy(req: NextRequest) {
   const token = await getToken({ 
     req, 
-    secret: process.env.NEXTAUTH_SECRET || "default_secret_for_uat_phase1_super_secret" 
+    secret: process.env.NEXTAUTH_SECRET 
   });
   const { pathname } = req.nextUrl;
 
@@ -16,7 +16,11 @@ export default async function proxy(req: NextRequest) {
       const callbackUrl = req.nextUrl.searchParams.get("callbackUrl");
       if (callbackUrl) {
         try {
-          return NextResponse.redirect(new URL(callbackUrl, req.url));
+          const parsedUrl = new URL(callbackUrl, req.url);
+          // Only redirect if host matches to prevent open redirect vulnerability
+          if (parsedUrl.origin === req.nextUrl.origin) {
+            return NextResponse.redirect(parsedUrl);
+          }
         } catch {
           // Fallback if callbackUrl is invalid
         }
