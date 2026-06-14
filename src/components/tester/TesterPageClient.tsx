@@ -65,15 +65,19 @@ function CaseCard({
   c,
   handleAction,
   loadingId,
+  isFirst,
 }: {
   c: CaseItem
   handleAction: (caseId: string, runId: string | null) => void
   loadingId: string | null
+  isFirst?: boolean
 }) {
   const [isExpired, setIsExpired] = React.useState(false)
 
   return (
-    <div className={`bg-zinc-900/40 border p-6 rounded-2xl flex flex-col justify-between shadow-lg shadow-black/20 backdrop-blur-md transition-all ${
+    <div
+      id={isFirst ? "uat-first-case-card" : undefined}
+      className={`bg-zinc-900/40 border p-6 rounded-2xl flex flex-col justify-between shadow-lg shadow-black/20 backdrop-blur-md transition-all ${
       c.locked
         ? "border-white/5 opacity-50 select-none"
         : isExpired
@@ -194,6 +198,148 @@ export function TesterPageClient({
   const [startTime, setStartTime] = React.useState("")
   const [selectingGroup, setSelectingGroup] = React.useState<string | null>(null)
   const scrollContainerRef = React.useRef<HTMLDivElement>(null)
+
+  // Tooltip Tour Guide Configuration
+  const TOUR_STEPS = React.useMemo(() => [
+    {
+      targetId: "uat-welcome-card",
+      title: "Welcome to UAT Workspace!",
+      content: `Welcome, ${userName}! This dashboard contains everything you need to execute UAT scenarios. Let's take a quick 1-minute tour to get you started.`,
+    },
+    {
+      targetId: "uat-testing-resources",
+      title: "Testing Resources",
+      content: "These are mock persona files linked as a set (photo, resume, and IC card) that you can select and download. Use these exact details when executing your test scenarios to keep test data clean.",
+    },
+    {
+      targetId: "uat-flow-progress",
+      title: "UAT Flow Progress Tracker",
+      content: "This progress bar and step timeline show your UAT status. It keeps track of how many test cases you have completed out of the total assigned.",
+    },
+    {
+      targetId: "uat-first-case-card",
+      title: "Start Testing",
+      content: "Here is your first UAT test scenario. Click 'Start Test' (or 'Continue' / 'View Result') to execute this case. You must complete the cases sequentially to unlock and move to the next ones.",
+    }
+  ], [userName])
+
+  const [tourStep, setTourStep] = React.useState<number | null>(null)
+  const [tooltipPos, setTooltipPos] = React.useState<{ top: number; left: number; position: 'above' | 'below' | 'center' }>({ top: 0, left: 0, position: 'below' })
+
+  const updateTooltipPosition = React.useCallback((stepIndex: number) => {
+    const step = TOUR_STEPS[stepIndex]
+    if (!step) return
+    const el = document.getElementById(step.targetId)
+    if (!el) {
+      setTooltipPos({
+        top: 200,
+        left: 20,
+        position: 'center'
+      })
+      return
+    }
+
+    el.scrollIntoView({ behavior: "smooth", block: "center" })
+
+    setTimeout(() => {
+      const rect = el.getBoundingClientRect()
+      const parent = el.closest('main')
+      const parentRect = parent ? parent.getBoundingClientRect() : { top: 0, left: 0, width: 0, height: 0 }
+      
+      let top = rect.bottom - parentRect.top + 16
+      let left = rect.left - parentRect.left + (rect.width - 340) / 2
+      let pos: 'above' | 'below' | 'center' = 'below'
+
+      // Keep within bounds
+      if (left < 16) left = 16
+      if (parent && left + 340 > parentRect.width) {
+        left = parentRect.width - 356
+      }
+
+      // If it goes too low, position it above the element
+      if (rect.bottom + 200 > window.innerHeight) {
+        top = rect.top - parentRect.top - 180
+        pos = 'above'
+      }
+
+      setTooltipPos({ top, left, position: pos })
+    }, 500)
+  }, [TOUR_STEPS])
+
+  React.useEffect(() => {
+    if (tourStep === null) {
+      TOUR_STEPS.forEach((step) => {
+        const el = document.getElementById(step.targetId)
+        if (el) {
+          el.classList.remove("tour-active-highlight")
+        }
+      })
+      return
+    }
+
+    TOUR_STEPS.forEach((step, idx) => {
+      const el = document.getElementById(step.targetId)
+      if (el) {
+        if (idx === tourStep) {
+          el.classList.add("tour-active-highlight")
+        } else {
+          el.classList.remove("tour-active-highlight")
+        }
+      }
+    })
+
+    updateTooltipPosition(tourStep)
+  }, [tourStep, updateTooltipPosition, TOUR_STEPS])
+
+  // Handle auto-start on first load for JOBSEEKER
+  // Handle auto-start on first load / after signin if user hasn't done anything yet
+  React.useEffect(() => {
+    if (testerGroup === "JOBSEEKER") {
+      const hasDoneAnything = initialCases.some((c) => c.testerStatus !== "not_started")
+      const completed = localStorage.getItem("jg-uat-tour-completed")
+      const sessionSeen = sessionStorage.getItem("jg-uat-tour-session-seen")
+
+      if (!completed || (!hasDoneAnything && !sessionSeen)) {
+        const timer = setTimeout(() => {
+          setTourStep(0)
+        }, 1200)
+        return () => clearTimeout(timer)
+      }
+    }
+  }, [testerGroup, initialCases])
+
+  // Handle manual trigger event
+  React.useEffect(() => {
+    const handleTriggerTour = () => {
+      setTourStep(0)
+    }
+    window.addEventListener("trigger-tour", handleTriggerTour)
+    return () => {
+      window.removeEventListener("trigger-tour", handleTriggerTour)
+    }
+  }, [])
+
+  const handleNextStep = () => {
+    if (tourStep === null) return
+    if (tourStep < TOUR_STEPS.length - 1) {
+      setTourStep(tourStep + 1)
+    } else {
+      handleCompleteTour()
+    }
+  }
+
+  const handlePrevStep = () => {
+    if (tourStep === null) return
+    if (tourStep > 0) {
+      setTourStep(tourStep - 1)
+    }
+  }
+
+  const handleCompleteTour = () => {
+    setTourStep(null)
+    localStorage.setItem("jg-uat-tour-completed", "true")
+    sessionStorage.setItem("jg-uat-tour-session-seen", "true")
+  }
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -530,7 +676,7 @@ export function TesterPageClient({
       {!isEmpty && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Welcome Card with UAT progress tracker in bottom row */}
-          <div className="lg:col-span-2 bg-zinc-900/40 border border-white/5 rounded-3xl p-8 backdrop-blur-md shadow-xl flex flex-col justify-between gap-6 relative overflow-hidden">
+          <div id="uat-welcome-card" className="lg:col-span-2 bg-zinc-900/40 border border-white/5 rounded-3xl p-8 backdrop-blur-md shadow-xl flex flex-col justify-between gap-6 relative overflow-hidden">
             <style>{`
               @keyframes flow-gradient {
                 0% { background-position: 0% 50%; }
@@ -548,6 +694,29 @@ export function TesterPageClient({
               }
               .animate-pulse-ring {
                 animation: pulse-ring 2s infinite ease-in-out;
+              }
+              .tour-active-highlight {
+                position: relative !important;
+                z-index: 50 !important;
+                pointer-events: none !important;
+                box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.8) !important;
+                transition: all 0.3s ease !important;
+              }
+              .tour-active-highlight::before {
+                content: "" !important;
+                position: absolute !important;
+                inset: 0px !important;
+                padding: 2px !important;
+                border-radius: inherit !important;
+                background: linear-gradient(135deg, #06b6d4, #10b981) !important;
+                -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0) !important;
+                -webkit-mask-composite: xor !important;
+                mask-composite: exclude !important;
+                pointer-events: none !important;
+                z-index: 100 !important;
+              }
+              #uat-welcome-card:has(.tour-active-highlight) {
+                z-index: 49 !important;
               }
             `}</style>
 
@@ -569,7 +738,7 @@ export function TesterPageClient({
             <div className="border-t border-white/5 w-full my-1" />
 
             {/* Bottom Row - Progress Track */}
-            <div className="w-full">
+            <div id="uat-flow-progress" className="w-full bg-white/[0.02] border border-white/5 p-5 rounded-2xl">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2.5">
                   <span className="text-xs font-bold text-brand-cyan uppercase tracking-wider">UAT Flow Progress</span>
@@ -691,7 +860,7 @@ export function TesterPageClient({
           </div>
 
           {/* Download Resources Card */}
-          <div className="bg-zinc-900/40 border border-white/5 rounded-3xl p-6 backdrop-blur-md shadow-xl flex flex-col justify-start space-y-4">
+          <div id="uat-testing-resources" className="bg-zinc-900/40 border border-white/5 rounded-3xl p-6 backdrop-blur-md shadow-xl flex flex-col justify-start space-y-4">
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-bold uppercase tracking-wider text-brand-cyan">Testing Resources</h2>
@@ -900,6 +1069,7 @@ export function TesterPageClient({
                           c={c}
                           handleAction={handleAction}
                           loadingId={loadingId}
+                          isFirst={c.id === initialCases[0]?.id}
                         />
                       ))}
                     </div>
@@ -944,6 +1114,7 @@ export function TesterPageClient({
                           c={c}
                           handleAction={handleAction}
                           loadingId={loadingId}
+                          isFirst={c.id === initialCases[0]?.id}
                         />
                       ))}
                     </div>
@@ -953,6 +1124,61 @@ export function TesterPageClient({
             })()}
           </div>
         </div>
+      )}
+      {tourStep !== null && TOUR_STEPS[tourStep] && (
+        <>
+          {/* Overlay mask */}
+          <div 
+            className="fixed -inset-20 bg-black/60 z-40 transition-opacity duration-300 cursor-pointer"
+            onClick={handleCompleteTour}
+          />
+          {/* Popover */}
+          <div
+            style={{
+              position: 'absolute',
+              top: tooltipPos.top,
+              left: tooltipPos.left,
+            }}
+            className="w-[340px] max-w-[calc(100vw-32px)] bg-zinc-950/95 border border-brand-teal/40 p-5 rounded-2xl shadow-2xl z-50 text-white backdrop-blur-md transition-all duration-300 animate-fade-in space-y-4"
+          >
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold text-brand-cyan uppercase tracking-wider">
+                Step {tourStep + 1} of {TOUR_STEPS.length}
+              </span>
+              <h4 className="font-bold text-sm text-white">{TOUR_STEPS[tourStep].title}</h4>
+            </div>
+            <p className="text-xs text-gray-300 leading-relaxed">
+              {TOUR_STEPS[tourStep].content}
+            </p>
+            <div className="flex items-center justify-between pt-2">
+              <button
+                type="button"
+                onClick={handleCompleteTour}
+                className="text-gray-500 hover:text-gray-300 text-xs font-semibold cursor-pointer"
+              >
+                Skip Tour
+              </button>
+              <div className="flex items-center">
+                {tourStep > 0 && (
+                  <button
+                    type="button"
+                    onClick={handlePrevStep}
+                    className="mr-2 px-3 py-1.5 rounded-lg border border-white/10 hover:bg-white/5 text-gray-300 text-xs font-bold transition-all cursor-pointer"
+                  >
+                    Back
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  className="px-3 py-1.5 rounded-lg bg-brand-cyan hover:bg-brand-cyan/95 text-white text-xs font-bold shadow-md shadow-brand-cyan/10 transition-all cursor-pointer"
+                >
+                  {tourStep === TOUR_STEPS.length - 1 ? "Finish" : "Next"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </main>
   )

@@ -3,6 +3,8 @@
 import * as React from "react"
 import Link from "next/link"
 import { signOut } from "next-auth/react"
+import { usePathname } from "next/navigation"
+import { Compass } from "lucide-react"
 
 import { HelpWidget } from "@/components/tester/HelpWidget"
 import { LavaLampBackground } from "@/components/ui/lava-lamp-background"
@@ -32,6 +34,12 @@ interface TesterLayoutProps {
 
 export function TesterLayout({ userName, children }: TesterLayoutProps) {
   const [title, setTitle] = React.useState("Tester Dashboard")
+  const pathname = usePathname()
+  const showTourBtn = pathname === "/tester"
+
+  const handleTriggerTour = () => {
+    window.dispatchEvent(new CustomEvent("trigger-tour"))
+  }
 
   return (
     <PageTitleContext.Provider value={{ title, setTitle }}>
@@ -67,7 +75,11 @@ export function TesterLayout({ userName, children }: TesterLayoutProps) {
               </span>
             </div>
             <button
-              onClick={() => signOut({ callbackUrl: "/" })}
+              onClick={() => {
+                localStorage.removeItem("jg-uat-tour-completed")
+                sessionStorage.removeItem("jg-uat-tour-session-seen")
+                signOut({ callbackUrl: "/" })
+              }}
               className="text-xs font-semibold px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-gray-200 hover:text-white transition-all cursor-pointer shrink-0 hover:scale-[1.02] active:scale-[0.98]"
             >
               Sign Out
@@ -79,6 +91,17 @@ export function TesterLayout({ userName, children }: TesterLayoutProps) {
         <div className="pt-24 flex-1 flex flex-col relative z-10">
           {children}
         </div>
+
+        {showTourBtn && (
+          <button
+            type="button"
+            onClick={handleTriggerTour}
+            className="fixed bottom-6 right-24 z-50 p-4 rounded-full bg-brand-teal hover:bg-brand-teal/95 text-white shadow-xl shadow-brand-teal/20 flex items-center justify-center cursor-pointer transition-all hover:scale-105"
+            title="Start Guide Tour"
+          >
+            <Compass className="w-6 h-6 animate-pulse" />
+          </button>
+        )}
 
         <HelpWidget />
       </div>
