@@ -85,6 +85,13 @@
       "when": 1781370795925,
       "tag": "0011_public_jimmy_woo",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1781456929620,
+      "tag": "0012_awesome_la_nuit",
+      "breakpoints": true
     }
   ]
 }

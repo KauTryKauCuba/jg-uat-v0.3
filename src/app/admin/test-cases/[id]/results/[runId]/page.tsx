@@ -95,7 +95,7 @@ export default function AdminRunDetailPage() {
     let blocked = 0
     let na = 0
     let unanswered = 0
-    let total = fields.length
+    const total = fields.length
 
     fields.forEach((field) => {
       const ans = answersMap[field.id]

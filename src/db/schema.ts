@@ -40,6 +40,7 @@ export const testCases = pgTable("test_cases", {
   categoryId: uuid("category_id").references(() => testCaseCategories.id, { onDelete: "cascade" }),
   timer: integer("timer"),
   order: integer("order").default(0).notNull(),
+  hidden: boolean("hidden").default(false).notNull(),
   createdById: uuid("created_by_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

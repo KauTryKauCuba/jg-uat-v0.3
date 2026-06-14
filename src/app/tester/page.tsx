@@ -58,7 +58,12 @@ export default async function TesterPage() {
         testAnswers,
         eq(testAnswers.testRunId, testRuns.id)
       )
-      .where(eq(testCaseCategories.targetGroup, testerGroup))
+      .where(
+        and(
+          eq(testCaseCategories.targetGroup, testerGroup),
+          eq(testCases.hidden, false)
+        )
+      )
       .groupBy(
         testCases.id,
         testCases.title,

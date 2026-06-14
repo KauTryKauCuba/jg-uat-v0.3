@@ -49,7 +49,10 @@ export async function GET() {
           )
         )
         .where(
-          eq(testCaseCategories.targetGroup, session.user.testerGroup || "")
+          and(
+            eq(testCaseCategories.targetGroup, session.user.testerGroup || ""),
+            eq(testCases.hidden, false)
+          )
         )
         .groupBy(
           testCases.id,
@@ -99,6 +102,7 @@ export async function GET() {
         categoryName: testCaseCategories.name,
         categoryTargetGroup: testCaseCategories.targetGroup,
         timer: testCases.timer,
+        hidden: testCases.hidden,
         createdById: testCases.createdById,
         createdAt: testCases.createdAt,
         updatedAt: testCases.updatedAt,
@@ -120,6 +124,7 @@ export async function GET() {
         testCaseCategories.name,
         testCaseCategories.targetGroup,
         testCases.timer,
+        testCases.hidden,
         testCases.createdById,
         testCases.createdAt,
         testCases.updatedAt
@@ -204,7 +209,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { title, description, pdfUrl, categoryId, timer } = body;
+    const { title, description, pdfUrl, categoryId, timer, hidden } = body;
 
     if (!title) {
       return NextResponse.json({ data: null, error: "Title is required" }, { status: 400 });
@@ -222,6 +227,7 @@ export async function POST(req: NextRequest) {
         pdfUrl,
         categoryId,
         timer,
+        hidden: hidden || false,
         createdById: session.user.id,
       })
       .returning();

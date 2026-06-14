@@ -50,9 +50,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ data: null, error: "Unauthorized" }, { status: 401 });
     }
 
-        const { id } = await params;
+    const { id } = await params;
     const body = await req.json();
-    const { title, description, pdfUrl, categoryId, timer } = body;
+    const { title, description, pdfUrl, categoryId, timer, hidden } = body;
 
     if (!title) {
       return NextResponse.json({ data: null, error: "Title is required" }, { status: 400 });
@@ -70,6 +70,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         pdfUrl,
         categoryId,
         timer,
+        hidden: hidden !== undefined ? hidden : false,
         updatedAt: new Date(),
       })
       .where(eq(testCases.id, id))
@@ -84,6 +85,38 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   } catch (error: any) {
     console.error("PUT test case failed:", error);
     return NextResponse.json({ data: null, error: "Failed to update test case" }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user || session.user.role !== "ADMIN") {
+      return NextResponse.json({ data: null, error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = await params;
+    const body = await req.json();
+    const { hidden } = body;
+
+    const updatedCase = await db
+      .update(testCases)
+      .set({
+        hidden: !!hidden,
+        updatedAt: new Date(),
+      })
+      .where(eq(testCases.id, id))
+      .returning();
+
+    if (updatedCase.length === 0) {
+      return NextResponse.json({ data: null, error: "Test case not found" }, { status: 404 });
+    }
+
+    memoryCache.clear();
+    return NextResponse.json({ data: updatedCase[0], error: null });
+  } catch (error: any) {
+    console.error("PATCH test case failed:", error);
+    return NextResponse.json({ data: null, error: "Failed to update test case status" }, { status: 500 });
   }
 }
 

@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { Plus, Edit2, BarChart2, Trash2, Folder, GripVertical, Search, ChevronDown, ChevronRight } from "lucide-react"
+import { Plus, Edit2, BarChart2, Trash2, Folder, GripVertical, Search, ChevronDown, ChevronRight, Eye, EyeOff } from "lucide-react"
 import { ConfirmModal } from "@/components/ui/confirm-modal"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
@@ -16,6 +16,7 @@ interface TestCase {
   runsCount: number
   passRate: number
   timer: number | null
+  hidden: boolean
   createdAt: string
 }
 
@@ -133,6 +134,26 @@ export default function TestCasesPage() {
       }
     } catch (err: any) {
       alert("Failed to delete test case")
+    }
+  }
+
+  const handleToggleVisibility = async (caseId: string, currentHidden: boolean) => {
+    try {
+      const res = await fetch(`/api/test-cases/${caseId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hidden: !currentHidden }),
+      })
+      const json = await res.json()
+      if (json.error) {
+        alert(json.error)
+      } else {
+        setCases((prev) =>
+          prev.map((c) => (c.id === caseId ? { ...c, hidden: !currentHidden } : c))
+        )
+      }
+    } catch {
+      alert("Failed to update test case visibility")
     }
   }
 
@@ -353,7 +374,9 @@ export default function TestCasesPage() {
                               <td className="py-4 px-6 w-12 text-center">
                                 <GripVertical className="w-4 h-4 text-gray-500 cursor-move inline-block" />
                               </td>
-                              <td className="py-4 px-6 font-semibold max-w-sm truncate">{c.title}</td>
+                              <td className={`py-4 px-6 font-semibold max-w-sm truncate ${c.hidden ? "text-gray-500" : "text-white"}`}>
+                                {c.title} {c.hidden && <span className="text-[10px] font-normal text-gray-500 ml-1.5 font-mono bg-white/5 px-1.5 py-0.5 rounded border border-white/5">Hidden</span>}
+                              </td>
                               <td className="py-4 px-6 w-40 text-gray-400">{c.runsCount} runs</td>
                               <td className="py-4 px-6 w-36">
                                 <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-bold font-mono ${
@@ -373,6 +396,18 @@ export default function TestCasesPage() {
                               </td>
                               <td className="py-4 px-6 text-right">
                                 <div className="flex justify-end space-x-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleVisibility(c.id, c.hidden)}
+                                    className={`p-2 rounded-lg border border-white/5 transition-colors cursor-pointer ${
+                                      c.hidden
+                                        ? "text-gray-500 hover:text-white hover:bg-white/5"
+                                        : "text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
+                                    }`}
+                                    title={c.hidden ? "Show to Tester" : "Hide from Tester"}
+                                  >
+                                    {c.hidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                  </button>
                                   <Link
                                     href={`/admin/test-cases/${c.id}/edit`}
                                     className="p-2 rounded-lg border border-white/5 hover:bg-white/5 text-gray-300 transition-colors"
@@ -453,7 +488,9 @@ export default function TestCasesPage() {
                         <td className="py-4 px-6 w-12 text-center">
                           <GripVertical className="w-4 h-4 text-gray-500 cursor-move inline-block" />
                         </td>
-                        <td className="py-4 px-6 font-semibold max-w-sm truncate">{c.title}</td>
+                        <td className={`py-4 px-6 font-semibold max-w-sm truncate ${c.hidden ? "text-gray-500" : "text-white"}`}>
+                          {c.title} {c.hidden && <span className="text-[10px] font-normal text-gray-500 ml-1.5 font-mono bg-white/5 px-1.5 py-0.5 rounded border border-white/5">Hidden</span>}
+                        </td>
                         <td className="py-4 px-6 w-40 text-gray-400">{c.runsCount} runs</td>
                         <td className="py-4 px-6 w-36">
                           <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-bold font-mono ${
@@ -473,6 +510,18 @@ export default function TestCasesPage() {
                         </td>
                         <td className="py-4 px-6 text-right">
                           <div className="flex justify-end space-x-2">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleVisibility(c.id, c.hidden)}
+                              className={`p-2 rounded-lg border border-white/5 transition-colors cursor-pointer ${
+                                c.hidden
+                                  ? "text-gray-500 hover:text-white hover:bg-white/5"
+                                  : "text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
+                              }`}
+                              title={c.hidden ? "Show to Tester" : "Hide from Tester"}
+                            >
+                              {c.hidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
                             <Link
                               href={`/admin/test-cases/${c.id}/edit`}
                               className="p-2 rounded-lg border border-white/5 hover:bg-white/5 text-gray-300 transition-colors"

@@ -33,6 +33,21 @@ interface RunItem {
 type SortField = "testerName" | "status" | "submittedAt"
 type SortOrder = "asc" | "desc"
 
+interface SortIconProps {
+  field: SortField
+  sortField: SortField
+  sortOrder: SortOrder
+}
+
+const SortIcon = ({ field, sortField, sortOrder }: SortIconProps) => {
+  if (sortField !== field) return null
+  return sortOrder === "asc" ? (
+    <ChevronUp className="w-3.5 h-3.5 ml-1 inline-block" />
+  ) : (
+    <ChevronDown className="w-3.5 h-3.5 ml-1 inline-block" />
+  )
+}
+
 export default function TestResultsPage() {
   const router = useRouter()
   const params = useParams() as { id: string }
@@ -163,15 +178,6 @@ export default function TestResultsPage() {
 
   const passRate = totalDenom > 0 ? Math.round((totalPassed / totalDenom) * 100) : 0
 
-  const SortIcon = ({ field }: { field: SortField }) => {
-    if (sortField !== field) return null
-    return sortOrder === "asc" ? (
-      <ChevronUp className="w-3.5 h-3.5 ml-1 inline-block" />
-    ) : (
-      <ChevronDown className="w-3.5 h-3.5 ml-1 inline-block" />
-    )
-  }
-
   return (
     <main className="p-8 space-y-8 flex-1">
       {/* Back Link */}
@@ -281,14 +287,14 @@ export default function TestResultsPage() {
                       onClick={() => handleSort("testerName")}
                     >
                       <span>Tester</span>
-                      <SortIcon field="testerName" />
+                      <SortIcon field="testerName" sortField={sortField} sortOrder={sortOrder} />
                     </th>
                     <th
                       className="py-4 px-6 cursor-pointer hover:text-white transition-colors"
                       onClick={() => handleSort("status")}
                     >
                       <span>Status</span>
-                      <SortIcon field="status" />
+                      <SortIcon field="status" sortField={sortField} sortOrder={sortOrder} />
                     </th>
                     <th className="py-4 px-6">Pass/Fail Summary</th>
                     <th
@@ -296,7 +302,7 @@ export default function TestResultsPage() {
                       onClick={() => handleSort("submittedAt")}
                     >
                       <span>Submitted Date</span>
-                      <SortIcon field="submittedAt" />
+                      <SortIcon field="submittedAt" sortField={sortField} sortOrder={sortOrder} />
                     </th>
                     <th className="py-4 px-6 text-right">Details</th>
                   </tr>

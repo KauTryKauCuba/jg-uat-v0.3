@@ -15,6 +15,7 @@ interface TestCaseFormProps {
     pdfUrl: string | null
     categoryId?: string | null
     timer?: number | null
+    hidden?: boolean
     fields: TestFieldWithOptions[]
   }
 }
@@ -38,6 +39,7 @@ export function TestCaseForm({ initialData }: TestCaseFormProps) {
   const [categories, setCategories] = React.useState<{ id: string; name: string; targetGroup: string }[]>([])
   const [categoryId, setCategoryId] = React.useState(initialData?.categoryId || queryCategoryId || "")
   const [timer, setTimer] = React.useState<number>(initialData?.timer || 0)
+  const [hidden, setHidden] = React.useState(initialData?.hidden || false)
   const [loadingCategories, setLoadingCategories] = React.useState(true)
 
   React.useEffect(() => {
@@ -47,8 +49,8 @@ export function TestCaseForm({ initialData }: TestCaseFormProps) {
   }, [queryCategoryId, categoryId, initialData])
   
   const [fields, setFields] = React.useState<TempField[]>(
-    initialData?.fields.map((f) => ({
-      id: f.id || Math.random().toString(),
+    initialData?.fields.map((f, idx) => ({
+      id: f.id || `field-${idx}`,
       fieldName: f.fieldName,
       fieldType: f.fieldType,
       choices: f.choices || [],
@@ -245,6 +247,7 @@ export function TestCaseForm({ initialData }: TestCaseFormProps) {
       pdfUrl,
       categoryId,
       timer: timer === 0 ? null : timer,
+      hidden,
       fields: [
         {
           fieldName: "Result",
@@ -351,6 +354,19 @@ export function TestCaseForm({ initialData }: TestCaseFormProps) {
                 <option value={20}>20 Minutes</option>
                 <option value={30}>30 Minutes</option>
               </select>
+            </div>
+
+            <div className="flex items-center space-x-2 py-2">
+              <input
+                id="hidden"
+                type="checkbox"
+                checked={hidden}
+                onChange={(e) => setHidden(e.target.checked)}
+                className="w-4 h-4 rounded border-white/10 bg-white/5 text-brand-cyan focus:ring-brand-cyan cursor-pointer"
+              />
+              <label htmlFor="hidden" className="text-xs text-gray-300 font-semibold cursor-pointer select-none">
+                Hide this test case from testers
+              </label>
             </div>
 
             <div className="space-y-4">

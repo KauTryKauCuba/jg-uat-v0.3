@@ -46,7 +46,7 @@ export function AuthForm() {
         const callbackUrl = params.get("callbackUrl")
         window.location.href = callbackUrl || "/"
       }
-    } catch (err: any) {
+    } catch {
       setError("An unexpected error occurred. Please try again.")
     } finally {
       setLoading(false)
