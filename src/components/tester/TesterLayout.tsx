@@ -75,11 +75,7 @@ export function TesterLayout({ userName, children }: TesterLayoutProps) {
               </span>
             </div>
             <button
-              onClick={() => {
-                localStorage.removeItem("jg-uat-tour-completed")
-                sessionStorage.removeItem("jg-uat-tour-session-seen")
-                signOut({ callbackUrl: "/" })
-              }}
+              onClick={() => signOut({ callbackUrl: "/" })}
               className="text-xs font-semibold px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-gray-200 hover:text-white transition-all cursor-pointer shrink-0 hover:scale-[1.02] active:scale-[0.98]"
             >
               Sign Out

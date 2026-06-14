@@ -20,6 +20,15 @@ interface CaseItem {
   runResult?: string | null
 }
 
+interface ResourceSet {
+  id: string
+  name: string
+  photoUrl: string
+  resumeUrl: string
+  icUrl: string
+  testerId: string | null
+}
+
 function LiveTimer({ runCreatedAt, timerLimitMinutes, onExpire }: { runCreatedAt: string; timerLimitMinutes: number; onExpire?: () => void }) {
   const [timeLeft, setTimeLeft] = React.useState<number | null>(null)
 
@@ -195,6 +204,10 @@ export function TesterPageClient({
   )
 
   const [loadingId, setLoadingId] = React.useState<string | null>(null)
+  const [resourceSets, setResourceSets] = React.useState<ResourceSet[]>([])
+  const [selectedSet, setSelectedSet] = React.useState<ResourceSet | null>(null)
+  const [loadingResources, setLoadingResources] = React.useState(true)
+  const [selectCount, setSelectCount] = React.useState<number>(0)
   const [startTime, setStartTime] = React.useState("")
   const [selectingGroup, setSelectingGroup] = React.useState<string | null>(null)
   const scrollContainerRef = React.useRef<HTMLDivElement>(null)
@@ -291,22 +304,23 @@ export function TesterPageClient({
     updateTooltipPosition(tourStep)
   }, [tourStep, updateTooltipPosition, TOUR_STEPS])
 
-  // Handle auto-start on first load for JOBSEEKER
   // Handle auto-start on first load / after signin if user hasn't done anything yet
   React.useEffect(() => {
-    if (testerGroup === "JOBSEEKER") {
+    if (testerGroup === "JOBSEEKER" && !loadingResources) {
       const hasDoneAnything = initialCases.some((c) => c.testerStatus !== "not_started")
+      const hasSelectedResource = resourceSets.some((s) => s.testerId === testerId)
       const completed = localStorage.getItem("jg-uat-tour-completed")
-      const sessionSeen = sessionStorage.getItem("jg-uat-tour-session-seen")
+      const shown = localStorage.getItem("jg-uat-tour-shown")
 
-      if (!completed || (!hasDoneAnything && !sessionSeen)) {
+      if (!completed && !shown && !hasDoneAnything && !hasSelectedResource) {
         const timer = setTimeout(() => {
           setTourStep(0)
+          localStorage.setItem("jg-uat-tour-shown", "true")
         }, 1200)
         return () => clearTimeout(timer)
       }
     }
-  }, [testerGroup, initialCases])
+  }, [testerGroup, initialCases, loadingResources, resourceSets, testerId])
 
   // Handle manual trigger event
   React.useEffect(() => {
@@ -338,6 +352,7 @@ export function TesterPageClient({
   const handleCompleteTour = () => {
     setTourStep(null)
     localStorage.setItem("jg-uat-tour-completed", "true")
+    localStorage.setItem("jg-uat-tour-shown", "true")
     sessionStorage.setItem("jg-uat-tour-session-seen", "true")
   }
 
@@ -431,20 +446,7 @@ export function TesterPageClient({
     }
   }
 
-  // UAT Resource Sets states
-  interface ResourceSet {
-    id: string
-    name: string
-    photoUrl: string
-    resumeUrl: string
-    icUrl: string
-    testerId: string | null
-  }
 
-  const [resourceSets, setResourceSets] = React.useState<ResourceSet[]>([])
-  const [selectedSet, setSelectedSet] = React.useState<ResourceSet | null>(null)
-  const [loadingResources, setLoadingResources] = React.useState(true)
-  const [selectCount, setSelectCount] = React.useState<number>(0)
 
   React.useEffect(() => {
     setStartTime(new Date().toLocaleString())
