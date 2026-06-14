@@ -264,9 +264,9 @@ export function TestRunClient({ run }: TestRunClientProps) {
   }
 
   return (
-    <div className="h-[calc(100vh-56px)] flex flex-col md:flex-row overflow-hidden w-full relative">
+    <div className="h-[calc(100vh-96px)] flex flex-col md:flex-row overflow-hidden w-full relative">
       {/* Top PDF panel on mobile, left on desktop */}
-      <div className="relative w-full md:w-3/4 h-[70%] md:h-full border-b md:border-b-0 md:border-r border-white/5 flex flex-col">
+      <div className="relative w-full md:w-3/4 h-[60%] md:h-full border-b md:border-b-0 md:border-r border-white/5 flex flex-col">
         {run.testCase.pdfUrl ? (
           <PDFViewer fileUrl={run.testCase.pdfUrl} />
         ) : (
@@ -277,7 +277,7 @@ export function TestRunClient({ run }: TestRunClientProps) {
       </div>
 
       {/* Bottom control panel on mobile, right on desktop */}
-      <div className={`w-full md:w-1/4 h-[30%] md:h-full flex flex-col bg-black/60 border-t md:border-t-0 md:border-l backdrop-blur-md text-white overflow-hidden shadow-2xl relative z-10 transition-colors duration-300 ${
+      <div className={`w-full md:w-1/4 h-[40%] md:h-full flex flex-col bg-black/60 border-t md:border-t-0 md:border-l backdrop-blur-md text-white overflow-hidden shadow-2xl relative z-10 transition-colors duration-300 ${
         timeLeft !== null && timeLeft <= 0 ? "border-rose-500 shadow-rose-950/20" : "border-white/5"
       }`}>
         {/* Autosave & Countdown status indicator */}
