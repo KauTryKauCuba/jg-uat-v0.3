@@ -8,6 +8,69 @@ interface MobileUploadClientProps {
   initialStatus: string
 }
 
+const compressImage = (file: File, maxW = 1600, maxH = 1600, quality = 0.8): Promise<File> => {
+  return new Promise((resolve) => {
+    // Only compress images
+    if (!file.type.startsWith("image/")) {
+      resolve(file)
+      return
+    }
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onload = (event) => {
+      const img = new Image()
+      img.src = event.target?.result as string
+      img.onload = () => {
+        const canvas = document.createElement("canvas")
+        let width = img.width
+        let height = img.height
+
+        // Calculate new dimensions to fit within bounds
+        if (width > height) {
+          if (width > maxW) {
+            height = Math.round((height * maxW) / width)
+            width = maxW
+          }
+        } else {
+          if (height > maxH) {
+            width = Math.round((width * maxH) / height)
+            height = maxH
+          }
+        }
+
+        canvas.width = width
+        canvas.height = height
+
+        const ctx = canvas.getContext("2d")
+        if (!ctx) {
+          resolve(file)
+          return
+        }
+
+        ctx.drawImage(img, 0, 0, width, height)
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              resolve(file)
+              return
+            }
+            const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+              type: "image/jpeg",
+              lastModified: Date.now(),
+            })
+            resolve(compressedFile)
+          },
+          "image/jpeg",
+          quality
+        )
+      }
+      img.onerror = () => resolve(file)
+    }
+    reader.onerror = () => resolve(file)
+  })
+}
+
 export default function MobileUploadClient({ sessionId, initialStatus }: MobileUploadClientProps) {
   const [status, setStatus] = React.useState(initialStatus)
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null)
@@ -15,19 +78,33 @@ export default function MobileUploadClient({ sessionId, initialStatus }: MobileU
   const [uploading, setUploading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    setSelectedFile(file)
+    setUploading(true)
     setError(null)
 
-    // Generate preview
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      setPreviewUrl(reader.result as string)
+    try {
+      const compressed = await compressImage(file)
+      setSelectedFile(compressed)
+
+      // Generate preview
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result as string)
+      }
+      reader.readAsDataURL(compressed)
+    } catch {
+      setSelectedFile(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    } finally {
+      setUploading(false)
     }
-    reader.readAsDataURL(file)
   }
 
   const handleUpload = async () => {

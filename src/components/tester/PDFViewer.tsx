@@ -17,11 +17,13 @@ export function PDFViewer({ fileUrl }: PDFViewerProps) {
   const [scale, setScale] = React.useState(1.0)
   const [error, setError] = React.useState<string | null>(null)
   const containerRef = React.useRef<HTMLDivElement>(null)
+  const [visiblePageSet, setVisiblePageSet] = React.useState<Record<number, boolean>>({ 1: true })
 
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages)
     setPageNumber(1)
     setError(null)
+    setVisiblePageSet({ 1: true })
   }
 
   function onDocumentLoadError(err: Error) {
@@ -59,7 +61,7 @@ export function PDFViewer({ fileUrl }: PDFViewerProps) {
     }
   }
 
-  // Update active page number on scroll
+  // Update active page number on scroll and lazy-load pages when they approach the viewport
   React.useEffect(() => {
     if (!numPages || !containerRef.current) return
 
@@ -70,14 +72,28 @@ export function PDFViewer({ fileUrl }: PDFViewerProps) {
           if (entry.isIntersecting) {
             const pageAttr = entry.target.getAttribute("data-page-number")
             if (pageAttr) {
-              setPageNumber(parseInt(pageAttr, 10))
+              const pageNum = parseInt(pageAttr, 10)
+              setPageNumber(pageNum)
+              
+              setVisiblePageSet((prev) => {
+                const next = { ...prev }
+                let updated = false
+                // Load current, previous, and next page to ensure smooth scrolling
+                for (const p of [pageNum - 1, pageNum, pageNum + 1]) {
+                  if (p > 0 && p <= numPages && !next[p]) {
+                    next[p] = true
+                    updated = true
+                  }
+                }
+                return updated ? next : prev
+              })
             }
           }
         })
       },
       {
         root: container,
-        threshold: 0.3,
+        threshold: 0.1, // trigger early when page enters top/bottom edges
       }
     )
 
@@ -114,16 +130,28 @@ export function PDFViewer({ fileUrl }: PDFViewerProps) {
                   <div
                     key={pageNum}
                     data-page-number={pageNum}
-                    className="bg-zinc-900 border border-white/10 shadow-2xl shadow-black/50 rounded-lg overflow-hidden"
+                    className="bg-zinc-900 border border-white/10 shadow-2xl shadow-black/50 rounded-lg overflow-hidden flex items-center justify-center text-gray-500 font-medium"
+                    style={{
+                      width: `${700 * scale}px`,
+                      height: `${700 * 1.414 * scale}px`,
+                      maxWidth: "100%",
+                    }}
                   >
-                    <Page
-                      pageNumber={pageNum}
-                      scale={scale}
-                      renderAnnotationLayer={false}
-                      renderTextLayer={false}
-                      width={700}
-                      className="max-w-full [&>canvas]:!max-w-full [&>canvas]:!h-auto"
-                    />
+                    {visiblePageSet[pageNum] ? (
+                      <Page
+                        pageNumber={pageNum}
+                        scale={scale}
+                        renderAnnotationLayer={false}
+                        renderTextLayer={false}
+                        width={700}
+                        className="max-w-full [&>canvas]:!max-w-full [&>canvas]:!h-auto"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center space-y-2 text-xs">
+                        <Loader2 className="w-5 h-5 text-brand-teal animate-spin" />
+                        <span>Loading Page {pageNum}...</span>
+                      </div>
+                    )}
                   </div>
                 )
               })}
