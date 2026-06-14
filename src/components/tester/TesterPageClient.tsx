@@ -691,7 +691,7 @@ export function TesterPageClient({
           </div>
 
           {/* Download Resources Card */}
-          <div className="bg-zinc-900/40 border border-white/5 rounded-3xl p-6 backdrop-blur-md shadow-xl flex flex-col justify-between space-y-4">
+          <div className="bg-zinc-900/40 border border-white/5 rounded-3xl p-6 backdrop-blur-md shadow-xl flex flex-col justify-start space-y-4">
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-bold uppercase tracking-wider text-brand-cyan">Testing Resources</h2>
@@ -747,7 +747,7 @@ export function TesterPageClient({
             ) : (
               <div className="space-y-4">
                 {/* Selectors */}
-                <div className="flex items-center space-x-2 overflow-x-auto pb-1 scrollbar-thin scrollbar-thumb-white/5">
+                <div className="flex items-center space-x-3 overflow-x-auto py-2 px-2.5 scrollbar-thin scrollbar-thumb-white/5">
                   {resourceSets.map((set) => {
                     const isSelected = selectedSet?.id === set.id
                     const isClaimedByOthers = !!set.testerId && set.testerId !== testerId
@@ -759,7 +759,7 @@ export function TesterPageClient({
                         type="button"
                         disabled={isDisabled}
                         onClick={() => handleSelectSet(set)}
-                        className={`relative w-12 h-12 rounded-full overflow-hidden border-2 shrink-0 transition-all cursor-pointer ${
+                        className={`relative w-[72px] h-[72px] rounded-full overflow-hidden border-2 shrink-0 transition-all cursor-pointer ${
                           isSelected
                             ? "border-brand-teal ring-2 ring-brand-teal/30 scale-105"
                             : isClaimedByOthers
