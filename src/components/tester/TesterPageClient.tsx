@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { Folder, Loader2, Clock, Lock, ShieldAlert, User, Briefcase, ChevronRight, ChevronDown } from "lucide-react"
+import { Folder, Loader2, Clock, Lock, ShieldAlert, User, Briefcase, ChevronRight, ChevronDown, Check } from "lucide-react"
 import { StatusBadge } from "@/components/ui/status-badge"
 import { usePageTitle } from "@/components/tester/TesterLayout"
 
@@ -193,7 +193,45 @@ export function TesterPageClient({
   const [loadingId, setLoadingId] = React.useState<string | null>(null)
   const [startTime, setStartTime] = React.useState("")
   const [selectingGroup, setSelectingGroup] = React.useState<string | null>(null)
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null)
 
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      if (scrollContainerRef.current) {
+        const activeEl = scrollContainerRef.current.querySelector('[data-active="true"]');
+        if (activeEl) {
+          activeEl.scrollIntoView({
+            behavior: "smooth",
+            block: "nearest",
+            inline: "center",
+          });
+        }
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, []);
+  const [isMouseDown, setIsMouseDown] = React.useState(false)
+  const [startX, setStartX] = React.useState(0)
+  const [scrollLeftState, setScrollLeftState] = React.useState(0)
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!scrollContainerRef.current) return
+    setIsMouseDown(true)
+    setStartX(e.pageX - scrollContainerRef.current.offsetLeft)
+    setScrollLeftState(scrollContainerRef.current.scrollLeft)
+  }
+
+  const handleMouseLeaveOrUp = () => {
+    setIsMouseDown(false)
+  }
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isMouseDown || !scrollContainerRef.current) return
+    e.preventDefault()
+    const x = e.pageX - scrollContainerRef.current.offsetLeft
+    const walk = (x - startX) * 1.5 // Scroll speed multiplier
+    scrollContainerRef.current.scrollLeft = scrollLeftState - walk
+  }
   // Collapsed categories state
   const [collapsedCategories, setCollapsedCategories] = React.useState<Record<string, boolean>>({})
 
@@ -491,17 +529,164 @@ export function TesterPageClient({
     <main className="max-w-7xl mx-auto px-6 py-8 w-full flex-1 flex flex-col space-y-10 relative z-10 text-white">
       {!isEmpty && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Welcome Card */}
-          <div className="lg:col-span-2 bg-zinc-900/40 border border-white/5 rounded-3xl p-8 backdrop-blur-md shadow-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="space-y-1">
-              <h1 className="text-3xl font-extrabold tracking-tight">Welcome, {userName}!</h1>
-              <p className="text-sm text-gray-400">
-                Thank you for joining. Testing UAT flow as: <span className="font-semibold text-brand-cyan">{testerGroup === "EMPLOYER" ? "Employer" : "Jobseeker"}</span>
-              </p>
+          {/* Welcome Card with UAT progress tracker in bottom row */}
+          <div className="lg:col-span-2 bg-zinc-900/40 border border-white/5 rounded-3xl p-8 backdrop-blur-md shadow-xl flex flex-col justify-between gap-6 relative overflow-hidden">
+            <style>{`
+              @keyframes flow-gradient {
+                0% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
+                100% { background-position: 0% 50%; }
+              }
+              .animate-flow-gradient {
+                background-size: 200% 200%;
+                animation: flow-gradient 4s ease infinite;
+              }
+              @keyframes pulse-ring {
+                0% { transform: scale(0.95); opacity: 0.5; }
+                50% { transform: scale(1.15); opacity: 0.8; }
+                100% { transform: scale(0.95); opacity: 0.5; }
+              }
+              .animate-pulse-ring {
+                animation: pulse-ring 2s infinite ease-in-out;
+              }
+            `}</style>
+
+            {/* Top row */}
+            <div className="flex flex-col sm:flex-row justify-between items-start gap-4 w-full">
+              <div className="space-y-1">
+                <h1 className="text-3xl font-extrabold tracking-tight">Welcome, {userName}!</h1>
+                <p className="text-sm text-gray-400">
+                  Thank you for joining. Testing UAT flow as: <span className="font-semibold text-brand-cyan">{testerGroup === "EMPLOYER" ? "Employer" : "Jobseeker"}</span>
+                </p>
+              </div>
+              <div className="text-xs text-gray-500 font-mono bg-white/5 px-4 py-2.5 rounded-xl border border-white/5 flex flex-col sm:items-end w-full sm:w-auto shrink-0">
+                <span className="font-bold text-brand-teal uppercase tracking-wider block mb-0.5 text-xs">Session Started</span>
+                <span>{startTime}</span>
+              </div>
             </div>
-            <div className="text-xs text-gray-500 font-mono bg-white/5 px-4 py-2.5 rounded-xl border border-white/5 flex flex-col sm:items-end w-full sm:w-auto">
-              <span className="font-bold text-brand-teal uppercase tracking-wider block mb-0.5 text-xs">Session Started</span>
-              <span>{startTime}</span>
+
+            {/* Separator */}
+            <div className="border-t border-white/5 w-full my-1" />
+
+            {/* Bottom Row - Progress Track */}
+            <div className="w-full">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-xs font-bold text-brand-cyan uppercase tracking-wider">UAT Flow Progress</span>
+                  {(() => {
+                    const totalDuration = initialCases.reduce((sum, c) => sum + (c.timer || 0), 0)
+                    return totalDuration > 0 ? (
+                      <span className="text-[10px] font-bold text-gray-400 bg-white/5 px-2 py-0.5 rounded-lg border border-white/5 font-mono">
+                        {totalDuration} MINS
+                      </span>
+                    ) : null
+                  })()}
+                </div>
+                <span className="text-[11px] font-bold text-gray-400 bg-white/5 px-2.5 py-1 rounded-lg border border-white/5 font-mono">
+                  {Math.round((initialCases.filter((c) => c.testerStatus === "submitted").length / (initialCases.length || 1)) * 100)}% Complete ({initialCases.filter((c) => c.testerStatus === "submitted").length}/{initialCases.length})
+                </span>
+              </div>
+
+              {/* Steps bar */}
+              <div
+                ref={scrollContainerRef}
+                onMouseDown={handleMouseDown}
+                onMouseUp={handleMouseLeaveOrUp}
+                onMouseLeave={handleMouseLeaveOrUp}
+                onMouseMove={handleMouseMove}
+                className={`relative py-4 overflow-x-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10 mt-2 select-none ${
+                  isMouseDown ? "cursor-grabbing" : "cursor-grab"
+                }`}
+              >
+                {/* Steps Row */}
+                <div className="relative flex justify-between items-start gap-12 min-w-max pl-[10px] pr-6 pb-2">
+                  {/* Connecting track line */}
+                  {(() => {
+                    const lastActiveIdx = initialCases.map((c) => c.testerStatus !== "not_started").lastIndexOf(true);
+                    const progressWidth = lastActiveIdx >= 0 ? (lastActiveIdx / (initialCases.length - 1 || 1)) * 100 : 0;
+                    return (
+                      <div className="absolute top-[16px] left-[28px] right-[42px] h-1 bg-white/5 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-brand-cyan to-emerald-500 animate-flow-gradient transition-all duration-700 ease-out"
+                          style={{ width: `${progressWidth}%` }}
+                        />
+                      </div>
+                    );
+                  })()}
+                  {(() => {
+                    const activeIdx = initialCases.findIndex((c) => c.testerStatus !== "submitted");
+                    const scrollTargetIdx = activeIdx !== -1 ? activeIdx : initialCases.length - 1;
+
+                    return initialCases.map((c, idx) => {
+                      const stepNum = idx + 1
+                      const isCompleted = c.testerStatus === "submitted"
+                      const isFailed = isCompleted && !!c.runResult && c.runResult.toLowerCase().includes("fail")
+                      const isBlocked = isCompleted && !!c.runResult && c.runResult.toLowerCase().includes("block")
+                      const isNA = isCompleted && !!c.runResult && (c.runResult.toLowerCase().includes("n/a") || c.runResult.toLowerCase().includes("na") || c.runResult.toLowerCase().includes("not execute") || c.runResult.toLowerCase().includes("could not"))
+                      const isInProgress = c.testerStatus === "in_progress"
+                      const isCurrentLocked = c.locked
+                      const isActiveScrollTarget = idx === scrollTargetIdx
+                      const isNextCaseToStart = idx === scrollTargetIdx && c.testerStatus === "not_started"
+
+                      return (
+                        <div key={c.id} data-active={isActiveScrollTarget} className="flex flex-col items-center relative z-10 shrink-0">
+                          {/* Step Circle Node */}
+                          <button
+                            type="button"
+                            onClick={() => handleAction(c.id, c.runId)}
+                            disabled={isCurrentLocked}
+                            className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold relative transition-all duration-300 ${
+                              isFailed
+                                ? "bg-gradient-to-br from-red-500 to-rose-600 text-white shadow-lg shadow-rose-500/20 scale-105 cursor-pointer"
+                                : isBlocked
+                                ? "bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-orange-500/20 scale-105 cursor-pointer"
+                                : isNA
+                                ? "bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg shadow-indigo-500/20 scale-105 cursor-pointer"
+                                : isCompleted
+                                ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20 scale-105 cursor-pointer"
+                                : isInProgress
+                                ? "bg-zinc-900 border-2 border-brand-cyan text-brand-cyan scale-110 cursor-pointer"
+                                : isNextCaseToStart
+                                ? "bg-zinc-900 border-2 border-brand-cyan/60 text-brand-cyan/80 scale-105 cursor-pointer"
+                                : "bg-zinc-900/90 border border-white/10 text-gray-500 cursor-default"
+                            }`}
+                          >
+                            {/* Pulse Ring for active node or next case to start */}
+                            {(isInProgress || isNextCaseToStart) && (
+                              <span className="absolute -inset-1.5 rounded-full border border-brand-cyan/40 animate-pulse-ring -z-10" />
+                            )}
+
+                            {isCompleted ? (
+                              <Check className="w-4 h-4 stroke-[3]" />
+                            ) : (
+                              <span>{stepNum}</span>
+                            )}
+                          </button>
+
+                          {/* Step text below */}
+                          <span className={`text-[10px] font-semibold mt-2 max-w-[70px] text-center truncate ${
+                            isFailed
+                              ? "text-rose-400 font-bold"
+                              : isBlocked
+                              ? "text-amber-400 font-bold"
+                              : isNA
+                              ? "text-blue-400 font-bold"
+                              : isCompleted
+                              ? "text-emerald-400 font-bold"
+                              : isInProgress
+                              ? "text-brand-cyan font-bold"
+                              : isNextCaseToStart
+                              ? "text-brand-cyan/80 font-bold"
+                              : "text-gray-500"
+                          }`}>
+                            Case {stepNum}
+                          </span>
+                        </div>
+                      )
+                    });
+                  })()}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -772,3 +957,4 @@ export function TesterPageClient({
     </main>
   )
 }
+
