@@ -12,9 +12,8 @@ export async function POST(req: NextRequest) {
     }
 
     // PDF only validation
-    const fileType = file.type;
     const fileName = file.name.toLowerCase();
-    if (fileType !== "application/pdf" && !fileName.endsWith(".pdf")) {
+    if (!fileName.endsWith(".pdf")) {
       return NextResponse.json({ data: null, error: "Only PDF files are allowed" }, { status: 400 });
     }
 
@@ -25,6 +24,12 @@ export async function POST(req: NextRequest) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
+
+    // Magic number validation for PDF: %PDF- (0x25 50 44 46 2D)
+    const isPdf = buffer.length >= 5 && buffer.toString("ascii", 0, 5) === "%PDF-";
+    if (!isPdf) {
+      return NextResponse.json({ data: null, error: "Invalid PDF file content" }, { status: 400 });
+    }
     const uploadDir = join(process.cwd(), "uploads", "pdfs");
     
     // Ensure dir exists

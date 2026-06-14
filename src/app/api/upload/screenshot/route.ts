@@ -11,10 +11,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ data: null, error: "No file uploaded" }, { status: 400 });
     }
 
-    // Image validation (png, jpeg, webp)
-    const fileType = file.type;
-    const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
-    if (!allowedTypes.includes(fileType)) {
+    // Validate file extension
+    const fileName = file.name.toLowerCase();
+    const allowedExtensions = [".png", ".jpeg", ".jpg", ".webp"];
+    const hasAllowedExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
+    if (!hasAllowedExtension) {
       return NextResponse.json({ data: null, error: "Only PNG, JPEG, and WEBP image files are allowed" }, { status: 400 });
     }
 
@@ -25,6 +26,18 @@ export async function POST(req: NextRequest) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
+
+    // Magic number validation
+    // PNG: 89 50 4E 47 0D 0A 1A 0A
+    // JPEG: FF D8 FF
+    // WEBP: RIFF at 0, WEBP at 8
+    const isPng = buffer.length >= 8 && buffer.readUInt32BE(0) === 0x89504E47 && buffer.readUInt32BE(4) === 0x0D0A1A0A;
+    const isJpeg = buffer.length >= 3 && buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF;
+    const isWebp = buffer.length >= 12 && buffer.toString("ascii", 0, 4) === "RIFF" && buffer.toString("ascii", 8, 12) === "WEBP";
+
+    if (!isPng && !isJpeg && !isWebp) {
+      return NextResponse.json({ data: null, error: "Invalid image file content" }, { status: 400 });
+    }
     const uploadDir = join(process.cwd(), "uploads", "screenshots");
     
     // Ensure dir exists

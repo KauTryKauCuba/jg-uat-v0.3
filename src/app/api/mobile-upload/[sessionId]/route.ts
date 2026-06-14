@@ -74,6 +74,19 @@ export async function POST(
     if (contentType.includes("multipart/form-data")) {
       console.log(`[UPLOAD REQUEST] Received photo upload request from phone for sessionId: ${sessionId}`);
 
+      // 1. Session state validation
+      if (session.status !== "PENDING") {
+        console.log(`[UPLOAD ERROR] Session ${sessionId} is not PENDING. Status: ${session.status}`);
+        return NextResponse.json({ error: "Session is no longer active" }, { status: 400 });
+      }
+
+      // 2. Expiration validation (15 minutes)
+      const expirationTime = 15 * 60 * 1000;
+      if (Date.now() - new Date(session.createdAt).getTime() > expirationTime) {
+        console.log(`[UPLOAD ERROR] Session ${sessionId} expired`);
+        return NextResponse.json({ error: "Session has expired" }, { status: 400 });
+      }
+
       const formData = await req.formData();
       const file = formData.get("file") as File | null;
 
@@ -82,15 +95,26 @@ export async function POST(
         return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
       }
 
-      // Image validation (png, jpeg, webp)
-      const fileType = file.type;
-      const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
-      if (!allowedTypes.includes(fileType)) {
-        console.log(`[UPLOAD ERROR] File type ${fileType} not allowed for sessionId: ${sessionId}`);
+      // 3. File extension validation
+      const fileName = file.name.toLowerCase();
+      const allowedExtensions = [".png", ".jpeg", ".jpg", ".webp"];
+      const hasAllowedExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
+      if (!hasAllowedExtension) {
+        console.log(`[UPLOAD ERROR] File name ${file.name} does not have allowed extension for sessionId: ${sessionId}`);
         return NextResponse.json({ error: "Only PNG, JPEG, and WEBP image files are allowed" }, { status: 400 });
       }
 
       const buffer = Buffer.from(await file.arrayBuffer());
+
+      // 4. Magic number validation
+      const isPng = buffer.length >= 8 && buffer.readUInt32BE(0) === 0x89504E47 && buffer.readUInt32BE(4) === 0x0D0A1A0A;
+      const isJpeg = buffer.length >= 3 && buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF;
+      const isWebp = buffer.length >= 12 && buffer.toString("ascii", 0, 4) === "RIFF" && buffer.toString("ascii", 8, 12) === "WEBP";
+
+      if (!isPng && !isJpeg && !isWebp) {
+        console.log(`[UPLOAD ERROR] Invalid image file content for sessionId: ${sessionId}`);
+        return NextResponse.json({ error: "Invalid image file content" }, { status: 400 });
+      }
       const uploadDir = join(process.cwd(), "uploads", "screenshots");
       await mkdir(uploadDir, { recursive: true });
 

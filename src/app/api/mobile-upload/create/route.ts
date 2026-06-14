@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { mobileUploads } from "@/db/schema";
+import { getToken } from "next-auth/jwt";
 
 export async function POST(req: NextRequest) {
   try {
+    const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { testRunId, testFieldId } = await req.json();
 
     if (!testRunId || !testFieldId) {
