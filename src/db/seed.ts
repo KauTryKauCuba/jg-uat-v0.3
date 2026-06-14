@@ -6,17 +6,9 @@ import bcrypt from "bcrypt";
 async function main() {
   console.log("Seeding database with bcrypt hashed users...");
   
-  const seedAdminPassword = process.env.SEED_ADMIN_PASSWORD;
-  const seedTesterPassword = process.env.SEED_TESTER_PASSWORD;
-
-  if (!seedAdminPassword || !seedTesterPassword) {
-    console.warn("Skipping database seed: SEED_ADMIN_PASSWORD or SEED_TESTER_PASSWORD not set in environment.");
-    process.exit(0);
-  }
-
   const saltRounds = 12;
-  const adminPassword = await bcrypt.hash(seedAdminPassword, saltRounds);
-  const testerPassword = await bcrypt.hash(seedTesterPassword, saltRounds);
+  const adminPassword = await bcrypt.hash("admin123", saltRounds);
+  const testerPassword = await bcrypt.hash("tester123", saltRounds);
 
   // Insert admin
   await db.insert(users).values({

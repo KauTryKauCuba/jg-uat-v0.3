@@ -9,16 +9,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { name, email, password } = body;
 
-    if (typeof name !== "string" || name.trim().length === 0) {
-      return NextResponse.json({ data: null, error: "Name must be a non-empty string" }, { status: 400 });
-    }
-
-    if (typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return NextResponse.json({ data: null, error: "Invalid email format" }, { status: 400 });
-    }
-
-    if (typeof password !== "string" || password.length < 8) {
-      return NextResponse.json({ data: null, error: "Password must be at least 8 characters long" }, { status: 400 });
+    if (!name || !email || !password) {
+      return NextResponse.json({ data: null, error: "Missing required fields" }, { status: 400 });
     }
 
     // Check if email already exists

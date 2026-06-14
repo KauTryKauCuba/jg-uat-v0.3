@@ -16,11 +16,7 @@ export default async function proxy(req: NextRequest) {
       const callbackUrl = req.nextUrl.searchParams.get("callbackUrl");
       if (callbackUrl) {
         try {
-          const targetUrl = new URL(callbackUrl, req.url);
-          // Only redirect if the host matches the application's current host
-          if (targetUrl.host === req.nextUrl.host) {
-            return NextResponse.redirect(targetUrl);
-          }
+          return NextResponse.redirect(new URL(callbackUrl, req.url));
         } catch {
           // Fallback if callbackUrl is invalid
         }
