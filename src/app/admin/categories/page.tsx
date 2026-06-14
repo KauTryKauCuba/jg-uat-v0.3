@@ -239,8 +239,8 @@ export default function CategoriesPage() {
             )}
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1">
-              <label className="text-xs text-gray-400 font-semibold">Category Name *</label>
+            <div className="space-y-4">
+              <label className="block text-xs text-gray-400 font-semibold">Category Name *</label>
               <input
                 type="text"
                 required
@@ -251,8 +251,8 @@ export default function CategoriesPage() {
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs text-gray-400 font-semibold">Description</label>
+            <div className="space-y-4">
+              <label className="block text-xs text-gray-400 font-semibold">Description</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -262,8 +262,8 @@ export default function CategoriesPage() {
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs text-gray-400 font-semibold">Target Group</label>
+            <div className="space-y-4">
+              <label className="block text-xs text-gray-400 font-semibold">Target Group</label>
               <select
                 value={targetGroup}
                 onChange={(e) => setTargetGroup(e.target.value as "JOBSEEKER" | "EMPLOYER")}

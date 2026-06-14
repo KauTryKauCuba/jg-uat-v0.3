@@ -56,7 +56,7 @@ export function AuthForm() {
   return (
     <div className="mx-auto mt-8 w-full max-w-md rounded-2xl border border-black/10 dark:border-white/10 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-xl p-6 shadow-2xl transition-all duration-300">
       {/* Tabs */}
-      <div className="flex border-b border-black/5 dark:border-white/5 pb-4 mb-6 relative">
+      <div className="flex pb-4 mb-6 relative">
         <button
           type="button"
           onClick={() => setActiveTab("login")}
@@ -86,8 +86,8 @@ export function AuthForm() {
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
         {activeTab === "register" && (
-          <div className="space-y-1 text-left">
-            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400" htmlFor="name">
+          <div className="space-y-4 text-left">
+            <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400" htmlFor="name">
               Full Name
             </label>
             <input
@@ -102,8 +102,8 @@ export function AuthForm() {
           </div>
         )}
 
-        <div className="space-y-1 text-left">
-          <label className="text-xs font-semibold text-gray-500 dark:text-gray-400" htmlFor="email">
+        <div className="space-y-4 text-left">
+          <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400" htmlFor="email">
             Email Address
           </label>
           <input
@@ -117,8 +117,8 @@ export function AuthForm() {
           />
         </div>
 
-        <div className="space-y-1 text-left">
-          <label className="text-xs font-semibold text-gray-500 dark:text-gray-400" htmlFor="password">
+        <div className="space-y-4 text-left">
+          <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400" htmlFor="password">
             Password
           </label>
           <input

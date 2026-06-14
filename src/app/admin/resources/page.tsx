@@ -181,8 +181,8 @@ export default function ResourcesPage() {
             <span>{editingId ? "Edit Resource Set" : "New Resource Set"}</span>
           </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1">
-              <label className="text-xs text-gray-400 font-semibold">Set Name *</label>
+            <div className="space-y-4">
+              <label className="block text-xs text-gray-400 font-semibold">Set Name *</label>
               <input
                 type="text"
                 required
@@ -194,8 +194,8 @@ export default function ResourcesPage() {
             </div>
 
             {/* Photo Upload */}
-            <div className="space-y-1">
-              <label className="text-xs text-gray-400 font-semibold block mb-1">Portrait Photo *</label>
+            <div className="space-y-4">
+              <label className="text-xs text-gray-400 font-semibold block">Portrait Photo *</label>
               {photoUrl ? (
                 <div className="relative rounded-xl overflow-hidden border border-white/10 bg-black/30 p-2 flex items-center justify-between">
                   <div className="flex items-center space-x-2 truncate">
@@ -232,8 +232,8 @@ export default function ResourcesPage() {
             </div>
 
             {/* Resume Upload */}
-            <div className="space-y-1">
-              <label className="text-xs text-gray-400 font-semibold block mb-1">Resume PDF *</label>
+            <div className="space-y-4">
+              <label className="text-xs text-gray-400 font-semibold block">Resume PDF *</label>
               {resumeUrl ? (
                 <div className="relative rounded-xl overflow-hidden border border-white/10 bg-black/30 p-2 flex items-center justify-between">
                   <div className="flex items-center space-x-2 truncate">
@@ -270,8 +270,8 @@ export default function ResourcesPage() {
             </div>
 
             {/* IC Card Upload */}
-            <div className="space-y-1">
-              <label className="text-xs text-gray-400 font-semibold block mb-1">IC Card Image *</label>
+            <div className="space-y-4">
+              <label className="text-xs text-gray-400 font-semibold block">IC Card Image *</label>
               {icUrl ? (
                 <div className="relative rounded-xl overflow-hidden border border-white/10 bg-black/30 p-2 flex items-center justify-between">
                   <div className="flex items-center space-x-2 truncate">

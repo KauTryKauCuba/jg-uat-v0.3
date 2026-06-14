@@ -34,8 +34,8 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
     }
 
     return (
-      <div className="space-y-2">
-        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{field.fieldName}</label>
+      <div className="space-y-4">
+        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">{field.fieldName}</label>
         <div className="grid grid-cols-2 gap-4">
           <button
             type="button"
@@ -76,8 +76,8 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
     }
 
     return (
-      <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{field.fieldName}</label>
+      <div className="space-y-4">
+        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">{field.fieldName}</label>
         <div className="relative">
           <textarea
             disabled={disabled}
@@ -103,8 +103,8 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
     }
 
     return (
-      <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{field.fieldName}</label>
+      <div className="space-y-4">
+        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">{field.fieldName}</label>
         <input
           type="number"
           disabled={disabled}
@@ -154,8 +154,8 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
     }
 
     return (
-      <div className="space-y-2">
-        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{field.fieldName}</label>
+      <div className="space-y-4">
+        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">{field.fieldName}</label>
         
         {currentScreenshotUrl ? (
           <div className="relative rounded-xl overflow-hidden border border-white/10 bg-black/30 p-2 group">
@@ -371,8 +371,8 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
     const defectStyles = getDefectStyles(selectedChoice)
 
     return (
-      <div className="space-y-3">
-        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{field.fieldName}</label>
+      <div className="space-y-4">
+        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">{field.fieldName}</label>
         <div className="space-y-2">
           {choices.map((choice, i) => {
             const isSelected = selectedChoice === choice
@@ -398,8 +398,8 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
         {needsDefectInputs && (
           <div className={`space-y-4 p-4 rounded-xl border ${defectStyles.container} animate-fade-in`}>
             {/* Defect Details Textarea */}
-            <div className="space-y-1.5">
-              <label className={`text-xs font-bold ${defectStyles.label} uppercase tracking-wider`}>Defect Details *</label>
+            <div className="space-y-4">
+              <label className={`block text-xs font-bold ${defectStyles.label} uppercase tracking-wider`}>Defect Details *</label>
               <textarea
                 disabled={disabled}
                 value={defectDetails}
@@ -411,8 +411,8 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
             </div>
 
             {/* Screenshot Upload */}
-            <div className="space-y-1.5">
-              <label className={`text-xs font-bold ${defectStyles.label} uppercase tracking-wider`}>Screenshot Attachment *</label>
+            <div className="space-y-4">
+              <label className={`block text-xs font-bold ${defectStyles.label} uppercase tracking-wider`}>Screenshot Attachment *</label>
               {currentScreenshotUrl ? (
                 <div className="relative rounded-xl overflow-hidden border border-white/10 bg-black/30 p-2 group">
                   <img
@@ -510,8 +510,8 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
     }
 
     return (
-      <div className="space-y-2">
-        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{field.fieldName}</label>
+      <div className="space-y-4">
+        <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">{field.fieldName}</label>
         <div className="space-y-2.5 bg-white/5 border border-white/10 p-4 rounded-xl">
           {steps.map((step, idx) => {
             const isChecked = !!checkedArray[idx]

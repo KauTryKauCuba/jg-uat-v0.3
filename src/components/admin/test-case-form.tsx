@@ -297,8 +297,8 @@ export function TestCaseForm({ initialData }: TestCaseFormProps) {
         <div className="border border-white/5 bg-zinc-900/40 backdrop-blur-md p-6 rounded-2xl space-y-4">
           <h2 className="text-lg font-bold">General Information</h2>
           <div className="space-y-4">
-            <div className="space-y-1">
-              <label className="text-xs text-gray-400 font-semibold">Category *</label>
+            <div className="space-y-4">
+              <label className="block text-xs text-gray-400 font-semibold">Category *</label>
               {loadingCategories ? (
                 <div className="text-xs text-gray-500 py-2">Loading categories...</div>
               ) : categories.length === 0 ? (
@@ -325,8 +325,8 @@ export function TestCaseForm({ initialData }: TestCaseFormProps) {
               )}
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs text-gray-400 font-semibold">UAT Title *</label>
+            <div className="space-y-4">
+              <label className="block text-xs text-gray-400 font-semibold">UAT Title *</label>
               <input
                 type="text"
                 required
@@ -337,8 +337,8 @@ export function TestCaseForm({ initialData }: TestCaseFormProps) {
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs text-gray-400 font-semibold">Timer Limit</label>
+            <div className="space-y-4">
+              <label className="block text-xs text-gray-400 font-semibold">Timer Limit</label>
               <select
                 value={timer}
                 onChange={(e) => setTimer(Number(e.target.value))}
@@ -353,8 +353,8 @@ export function TestCaseForm({ initialData }: TestCaseFormProps) {
               </select>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs text-gray-400 font-semibold">Description</label>
+            <div className="space-y-4">
+              <label className="block text-xs text-gray-400 font-semibold">Description</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
