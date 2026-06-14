@@ -559,6 +559,9 @@ export function TesterPageClient({
       if (json.error) {
         alert(json.error)
       } else {
+        localStorage.removeItem("jg-uat-tour-completed")
+        localStorage.removeItem("jg-uat-tour-shown")
+        sessionStorage.removeItem("jg-uat-tour-session-seen")
         // Force refresh session credentials and update layout views
         window.location.reload()
       }

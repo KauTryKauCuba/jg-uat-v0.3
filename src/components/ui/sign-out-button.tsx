@@ -7,7 +7,14 @@ import { cn } from "@/lib/utils"
 export function SignOutButton({ isCollapsed }: { isCollapsed?: boolean }) {
   return (
     <button
-      onClick={() => signOut({ callbackUrl: "/" })}
+      onClick={() => {
+        localStorage.removeItem("jg-uat-tour-completed")
+        localStorage.removeItem("jg-uat-tour-shown")
+        sessionStorage.removeItem("jg-uat-tour-completed")
+        sessionStorage.removeItem("jg-uat-tour-shown")
+        sessionStorage.removeItem("jg-uat-tour-session-seen")
+        signOut({ callbackUrl: "/" })
+      }}
       className={cn(
         "text-xs font-semibold rounded-xl border border-white/10 hover:bg-white/5 transition-all cursor-pointer flex items-center justify-center w-full text-gray-300 hover:text-white",
         isCollapsed ? "py-2.5" : "px-4 py-2 space-x-2"
