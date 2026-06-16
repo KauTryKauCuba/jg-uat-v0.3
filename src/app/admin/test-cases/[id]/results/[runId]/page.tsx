@@ -51,6 +51,13 @@ interface RunData {
       screenshotUrl?: string | null
     }
   >
+  auditLogs?: Array<{
+    id: string
+    action: string
+    previousStatus: string
+    newStatus: string
+    createdAt: string
+  }>
 }
 
 export default function AdminRunDetailPage() {
@@ -250,6 +257,30 @@ export default function AdminRunDetailPage() {
               </div>
             </div>
           </div>
+
+          {/* Audit trail details for admin */}
+          {run.auditLogs && run.auditLogs.length > 0 && (
+            <div className="border border-white/5 bg-white/[0.02] p-4 rounded-xl space-y-3">
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Run History (Audit Trail)</p>
+              <div className="space-y-2 max-h-40 overflow-y-auto pr-1 scrollbar-thin">
+                {run.auditLogs.map((log) => (
+                  <div key={log.id} className="text-[9px] bg-black/30 border border-white/5 p-2 rounded-lg space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span className={`font-bold uppercase tracking-tight ${log.action === "SUBMIT" ? "text-emerald-400" : "text-amber-400"}`}>
+                        {log.action === "SUBMIT" ? "Submitted" : "Re-opened"}
+                      </span>
+                      <span className="text-gray-500 font-mono text-[8px]">
+                        {new Date(log.createdAt).toLocaleDateString()} {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    <p className="text-gray-400 leading-normal">
+                      Status transition: <span className="font-mono">{log.previousStatus}</span> &rarr; <span className="font-mono">{log.newStatus}</span>
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <hr className="border-white/5" />
 

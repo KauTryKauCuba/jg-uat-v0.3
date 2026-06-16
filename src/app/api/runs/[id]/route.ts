@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { db } from "@/lib/db";
-import { testRuns, testCases, testFields, testAnswers, users } from "@/db/schema";
+import { testRuns, testCases, testFields, testAnswers, users, testRunAuditLogs } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -90,6 +90,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       };
     });
 
+    // Fetch UAT audit logs
+    const auditLogs = await db
+      .select({
+        id: testRunAuditLogs.id,
+        action: testRunAuditLogs.action,
+        previousStatus: testRunAuditLogs.previousStatus,
+        newStatus: testRunAuditLogs.newStatus,
+        createdAt: testRunAuditLogs.createdAt,
+      })
+      .from(testRunAuditLogs)
+      .where(eq(testRunAuditLogs.testRunId, run.id))
+      .orderBy(sql`${testRunAuditLogs.createdAt} DESC`);
+
     const data = {
       id: run.id,
       status: run.status,
@@ -105,6 +118,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         fields: fieldsList,
       },
       answers: answersMap,
+      auditLogs,
     };
 
     return NextResponse.json({ data, error: null });
