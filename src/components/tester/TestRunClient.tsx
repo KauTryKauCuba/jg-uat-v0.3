@@ -410,15 +410,15 @@ export function TestRunClient({ run }: TestRunClientProps) {
               {/* Audit trail details */}
               {run.auditLogs && run.auditLogs.length > 0 && (
                 <div className="mt-3 pt-3 border-t border-white/5 space-y-2 text-left">
-                  <p className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Run History (Audit Trail)</p>
+                  <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Run History (Audit Trail)</p>
                   <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1 scrollbar-thin">
                     {run.auditLogs.map((log) => (
-                      <div key={log.id} className="text-[9px] bg-white/[0.02] border border-white/5 p-2 rounded-lg space-y-1">
+                      <div key={log.id} className="text-xs bg-white/[0.02] border border-white/5 p-2.5 rounded-lg space-y-1">
                         <div className="flex justify-between items-center">
-                          <span className={`font-bold uppercase tracking-tight ${log.action === "SUBMIT" ? "text-emerald-400" : "text-amber-400"}`}>
+                          <span className={`font-bold uppercase tracking-tight text-[10px] ${log.action === "SUBMIT" ? "text-emerald-400" : "text-amber-400"}`}>
                             {log.action === "SUBMIT" ? "Submitted" : "Re-opened"}
                           </span>
-                          <span className="text-gray-500 font-mono text-[8px]">
+                          <span className="text-gray-550 font-mono text-[10px]">
                             {new Date(log.createdAt).toLocaleDateString()} {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>

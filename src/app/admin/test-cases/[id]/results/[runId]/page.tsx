@@ -264,12 +264,12 @@ export default function AdminRunDetailPage() {
               <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Run History (Audit Trail)</p>
               <div className="space-y-2 max-h-40 overflow-y-auto pr-1 scrollbar-thin">
                 {run.auditLogs.map((log) => (
-                  <div key={log.id} className="text-[9px] bg-black/30 border border-white/5 p-2 rounded-lg space-y-1">
+                  <div key={log.id} className="text-xs bg-black/30 border border-white/5 p-2.5 rounded-lg space-y-1">
                     <div className="flex justify-between items-center">
-                      <span className={`font-bold uppercase tracking-tight ${log.action === "SUBMIT" ? "text-emerald-400" : "text-amber-400"}`}>
+                      <span className={`font-bold uppercase tracking-tight text-[10px] ${log.action === "SUBMIT" ? "text-emerald-400" : "text-amber-400"}`}>
                         {log.action === "SUBMIT" ? "Submitted" : "Re-opened"}
                       </span>
-                      <span className="text-gray-500 font-mono text-[8px]">
+                      <span className="text-gray-550 font-mono text-[10px]">
                         {new Date(log.createdAt).toLocaleDateString()} {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
