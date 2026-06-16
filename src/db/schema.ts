@@ -66,6 +66,7 @@ export const testRuns = pgTable("test_runs", {
   testerId: uuid("tester_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   status: runStatusEnum("status").default("PENDING").notNull(),
   submittedAt: timestamp("submitted_at"),
+  elapsedSeconds: integer("elapsed_seconds").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -219,6 +220,28 @@ export const uatTargetGroups = pgTable("uat_target_groups", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+export const testRunAuditLogs = pgTable("test_run_audit_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  testRunId: uuid("test_run_id").notNull().references(() => testRuns.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  action: text("action").notNull(), // "SUBMIT" | "REOPEN"
+  previousStatus: text("previous_status").notNull(),
+  newStatus: text("new_status").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const testRunAuditLogsRelations = relations(testRunAuditLogs, ({ one }) => ({
+  testRun: one(testRuns, {
+    fields: [testRunAuditLogs.testRunId],
+    references: [testRuns.id],
+  }),
+  user: one(users, {
+    fields: [testRunAuditLogs.userId],
+    references: [users.id],
+  }),
+}));
+
 
 
 
