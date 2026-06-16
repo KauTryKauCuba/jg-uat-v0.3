@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { db } from "@/lib/db";
 import { uatTargetGroups } from "@/db/schema";
-import { asc } from "drizzle-orm";
+import { asc, sql } from "drizzle-orm";
 
 export async function GET() {
   try {
@@ -15,7 +15,7 @@ export async function GET() {
     const groups = await db
       .select()
       .from(uatTargetGroups)
-      .orderBy(asc(uatTargetGroups.name));
+      .orderBy(asc(uatTargetGroups.order));
 
     return NextResponse.json({ data: groups });
   } catch (error: any) {
@@ -38,11 +38,18 @@ export async function POST(req: Request) {
 
     const upperName = name.toUpperCase().trim();
 
+    // Determine the next order index
+    const countResult = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(uatTargetGroups);
+    const nextOrder = countResult[0]?.count || 0;
+
     const [newGroup] = await db
       .insert(uatTargetGroups)
       .values({
         name: upperName,
         displayName: displayName.trim(),
+        order: nextOrder,
       })
       .returning();
 

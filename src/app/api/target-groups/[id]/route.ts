@@ -16,21 +16,25 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const { name, displayName } = await req.json();
+    const { name, displayName, locked } = await req.json();
 
-    if (!name || !displayName) {
-      return NextResponse.json({ error: "Name and Display Name are required" }, { status: 400 });
+    const updateData: any = {
+      updatedAt: new Date(),
+    };
+
+    if (name) {
+      updateData.name = name.toUpperCase().trim();
     }
-
-    const upperName = name.toUpperCase().trim();
+    if (displayName) {
+      updateData.displayName = displayName.trim();
+    }
+    if (typeof locked === "boolean") {
+      updateData.locked = locked;
+    }
 
     const updated = await db
       .update(uatTargetGroups)
-      .set({
-        name: upperName,
-        displayName: displayName.trim(),
-        updatedAt: new Date(),
-      })
+      .set(updateData)
       .where(eq(uatTargetGroups.id, id))
       .returning();
 

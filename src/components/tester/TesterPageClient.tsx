@@ -201,6 +201,7 @@ interface TesterPageClientProps {
   userName: string
   testerGroup: string | null
   employerLocked: boolean
+  isGroupGloballyLocked: boolean
   testerId: string
 }
 
@@ -210,6 +211,7 @@ export function TesterPageClient({
   userName,
   testerGroup,
   employerLocked,
+  isGroupGloballyLocked,
   testerId,
 }: TesterPageClientProps) {
   const router = useRouter()
@@ -218,7 +220,7 @@ export function TesterPageClient({
   usePageTitle(
     !testerGroup
       ? "Choose UAT Profile"
-      : testerGroup === "EMPLOYER" && employerLocked
+      : isGroupGloballyLocked || (testerGroup === "EMPLOYER" && employerLocked)
       ? "Access Locked"
       : "Available Test Cases"
   )
@@ -231,7 +233,7 @@ export function TesterPageClient({
   const [selectCount, setSelectCount] = React.useState<number>(0)
   const [startTime, setStartTime] = React.useState("")
   const [selectingGroup, setSelectingGroup] = React.useState<string | null>(null)
-  const [targetGroups, setTargetGroups] = React.useState<{ id: string; name: string; displayName: string }[]>([])
+  const [targetGroups, setTargetGroups] = React.useState<{ id: string; name: string; displayName: string; locked?: boolean }[]>([])
   const [loadingGroups, setLoadingGroups] = React.useState(true)
   const scrollContainerRef = React.useRef<HTMLDivElement>(null)
 
@@ -652,6 +654,7 @@ export function TesterPageClient({
           {targetGroups.map((group) => {
             const isJobseeker = group.name === "JOBSEEKER" || group.name === "JOBSEEKER_WEB";
             const isEmployer = group.name === "EMPLOYER";
+            const isGroupLocked = !!group.locked;
             
             let icon = <User className="w-6 h-6" />;
             let bgIconClass = "bg-brand-teal/10 border-brand-teal/20 text-brand-teal";
@@ -678,24 +681,43 @@ export function TesterPageClient({
               btnClass = "bg-zinc-700 hover:bg-zinc-650";
             }
 
+            if (isGroupLocked) {
+              icon = <Lock className="w-6 h-6" />;
+              bgIconClass = "bg-red-500/10 border border-red-500/20 text-red-400";
+              hoverBorder = "hover:border-red-500/10";
+              btnClass = "bg-zinc-850 text-zinc-500 border border-zinc-800 cursor-not-allowed hover:bg-zinc-850";
+            }
+
             return (
               <div key={group.id} className={`border border-white/5 bg-zinc-900/40 ${hoverBorder} p-8 rounded-3xl flex flex-col justify-between transition-all duration-300 shadow-xl relative overflow-hidden group`}>
                 <div className="space-y-4">
                   <div className={`p-3 rounded-2xl w-fit ${bgIconClass}`}>
                     {icon}
                   </div>
-                  <h2 className="text-xl font-bold text-white">{group.displayName} Profile</h2>
+                  <div className="flex items-center space-x-2">
+                    <h2 className="text-xl font-bold text-white">{group.displayName} Profile</h2>
+                    {isGroupLocked && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/10 border border-red-500/20 text-red-400">
+                        Locked
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-gray-400 leading-relaxed font-normal">
                     {description}
                   </p>
                 </div>
                 <button
-                  onClick={() => handleSelectGroup(group.name)}
-                  disabled={selectingGroup !== null}
-                  className={`mt-8 w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-xs font-bold ${btnClass} text-white transition-all cursor-pointer disabled:opacity-50`}
+                  onClick={() => !isGroupLocked && handleSelectGroup(group.name)}
+                  disabled={selectingGroup !== null || isGroupLocked}
+                  className={`mt-8 w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-xs font-bold ${btnClass} text-white transition-all disabled:opacity-50`}
                 >
                   {selectingGroup === group.name ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : isGroupLocked ? (
+                    <>
+                      <Lock className="w-3.5 h-3.5" />
+                      <span>Locked by Admin</span>
+                    </>
                   ) : (
                     <>
                       <span>Select {group.displayName}</span>
@@ -711,8 +733,16 @@ export function TesterPageClient({
     )
   }
 
-  // Render Employer locked layout
-  if (testerGroup === "EMPLOYER" && employerLocked) {
+  // Render locked layout
+  if (isGroupGloballyLocked || (testerGroup === "EMPLOYER" && employerLocked)) {
+    const lockTitle = isGroupGloballyLocked 
+      ? `${testerGroup === "JOBSEEKER_WEB" ? "Jobseeker Web" : testerGroup === "EMPLOYER" ? "Employer" : testerGroup} Access Locked`
+      : "Employer Access Locked";
+      
+    const lockDesc = isGroupGloballyLocked
+      ? `Access to the ${testerGroup === "JOBSEEKER_WEB" ? "Jobseeker Web" : testerGroup === "EMPLOYER" ? "Employer" : testerGroup} testing profile is globally locked by the system administrator.`
+      : "Your Employer testing access is currently locked. Please contact the system administrator to unlock it.";
+
     return (
       <main className="max-w-lg mx-auto px-6 py-24 w-full flex-1 flex flex-col justify-center items-center text-white relative z-10">
         <div className="border border-white/5 bg-zinc-900/40 backdrop-blur-md p-10 rounded-3xl text-center space-y-6 shadow-2xl relative overflow-hidden">
@@ -722,9 +752,9 @@ export function TesterPageClient({
             <Lock className="w-10 h-10" />
           </div>
           
-          <h1 className="text-2xl font-extrabold tracking-tight">Employer Access Locked</h1>
+          <h1 className="text-2xl font-extrabold tracking-tight">{lockTitle}</h1>
           <p className="text-sm text-gray-400 leading-relaxed">
-            Your Employer testing access is currently locked. Please contact the system administrator to unlock it.
+            {lockDesc}
           </p>
           
           <div className="pt-4 border-t border-white/5 flex flex-col gap-2">

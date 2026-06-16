@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
-import { testCases, testRuns, testCaseCategories, testFields, testAnswers } from "@/db/schema"
+import { testCases, testRuns, testCaseCategories, testFields, testAnswers, uatTargetGroups } from "@/db/schema"
 import { eq, and, sql } from "drizzle-orm"
 import { TesterPageClient } from "@/components/tester/TesterPageClient"
 
@@ -18,8 +18,20 @@ export default async function TesterPage() {
   let categories: any[] = []
   let cases: any[] = []
 
+  let isGroupGloballyLocked = false
+  if (testerGroup) {
+    const groupRecord = await db
+      .select({ locked: uatTargetGroups.locked })
+      .from(uatTargetGroups)
+      .where(eq(uatTargetGroups.name, testerGroup))
+      .limit(1);
+    if (groupRecord.length > 0 && groupRecord[0].locked) {
+      isGroupGloballyLocked = true
+    }
+  }
+
   // Only query database if they have selected a group and are not locked
-  if (testerGroup && !(testerGroup === "EMPLOYER" && employerLocked)) {
+  if (testerGroup && !isGroupGloballyLocked && !(testerGroup === "EMPLOYER" && employerLocked)) {
     // Fetch all categories for this group ordered by order ASC
     categories = await db
       .select({
@@ -151,6 +163,7 @@ export default async function TesterPage() {
       userName={session?.user?.name || "Tester"}
       testerGroup={testerGroup}
       employerLocked={employerLocked}
+      isGroupGloballyLocked={isGroupGloballyLocked}
       testerId={session.user.id}
     />
   )

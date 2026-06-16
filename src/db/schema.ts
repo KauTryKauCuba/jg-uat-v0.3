@@ -214,6 +214,8 @@ export const uatTargetGroups = pgTable("uat_target_groups", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull().unique(),
   displayName: text("display_name").notNull(),
+  order: integer("order").default(0).notNull(),
+  locked: boolean("locked").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

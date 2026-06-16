@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
-import { Plus, Folder, GripVertical, Edit2, Trash2, X, Save, Loader2 } from "lucide-react"
+import { Plus, Folder, GripVertical, Edit2, Trash2, X, Save, Loader2, Lock, Unlock } from "lucide-react"
 import { ConfirmModal } from "@/components/ui/confirm-modal"
 
 interface Category {
@@ -15,7 +15,7 @@ interface Category {
 
 export default function CategoriesPage() {
   const [categories, setCategories] = React.useState<Category[]>([])
-  const [targetGroups, setTargetGroups] = React.useState<{ id: string; name: string; displayName: string }[]>([])
+  const [targetGroups, setTargetGroups] = React.useState<{ id: string; name: string; displayName: string; locked: boolean }[]>([])
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   
@@ -24,6 +24,7 @@ export default function CategoriesPage() {
 
   // Drag and drop states
   const [draggedIndex, setDraggedIndex] = React.useState<number | null>(null)
+  const [draggedGroupIndex, setDraggedGroupIndex] = React.useState<number | null>(null)
 
   // Form & Editing states
   const [name, setName] = React.useState("")
@@ -165,6 +166,63 @@ export default function CategoriesPage() {
       }
     } catch {
       alert("Failed to delete target group")
+    }
+  }
+
+  const handleGroupDragStart = (index: number) => {
+    setDraggedGroupIndex(index)
+  }
+
+  const handleGroupDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault()
+    if (draggedGroupIndex === null || draggedGroupIndex === index) return
+
+    const reorderedGroups = [...targetGroups]
+    const draggedItem = reorderedGroups[draggedGroupIndex]
+    reorderedGroups.splice(draggedGroupIndex, 1)
+    reorderedGroups.splice(index, 0, draggedItem)
+
+    setTargetGroups(reorderedGroups)
+    setDraggedGroupIndex(index)
+  }
+
+  const handleGroupDragEnd = async () => {
+    setDraggedGroupIndex(null)
+    try {
+      const groupIds = targetGroups.map((g) => g.id)
+      const res = await fetch("/api/target-groups/reorder", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ groupIds }),
+      })
+      const json = await res.json()
+      if (json.error) {
+        alert(json.error)
+        fetchTargetGroups()
+      }
+    } catch (err) {
+      alert("Failed to save target group order.")
+      fetchTargetGroups()
+    }
+  }
+
+  const handleToggleGroupLock = async (groupId: string, currentLocked: boolean) => {
+    try {
+      const res = await fetch(`/api/target-groups/${groupId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ locked: !currentLocked }),
+      })
+      const json = await res.json()
+      if (json.error) {
+        alert(json.error)
+      } else {
+        setTargetGroups(prev =>
+          prev.map(g => (g.id === groupId ? { ...g, locked: !currentLocked } : g))
+        )
+      }
+    } catch {
+      alert("Failed to toggle target group lock status")
     }
   }
 
@@ -509,13 +567,35 @@ export default function CategoriesPage() {
 
             {/* List existing groups */}
             <div className="border border-white/5 rounded-xl bg-black/20 p-4 max-h-60 overflow-y-auto space-y-2">
-              {targetGroups.map((g) => (
-                <div key={g.id} className="flex items-center justify-between p-2.5 rounded-lg border border-white/5 bg-zinc-900/40 text-xs">
-                  <div>
-                    <span className="font-semibold text-white">{g.displayName}</span>
-                    <span className="text-[10px] font-mono text-gray-500 ml-2">({g.name})</span>
+              {targetGroups.map((g, index) => (
+                <div
+                  key={g.id}
+                  draggable
+                  onDragStart={() => handleGroupDragStart(index)}
+                  onDragOver={(e) => handleGroupDragOver(e, index)}
+                  onDragEnd={handleGroupDragEnd}
+                  className={`flex items-center justify-between p-2.5 rounded-lg border border-white/5 bg-zinc-900/40 text-xs cursor-grab active:cursor-grabbing select-none transition-colors ${
+                    draggedGroupIndex === index ? "opacity-40 bg-zinc-800" : ""
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <GripVertical className="w-3.5 h-3.5 text-gray-500 cursor-move" />
+                    <div>
+                      <span className="font-semibold text-white">{g.displayName}</span>
+                      <span className="text-[10px] font-mono text-gray-500 ml-2">({g.name})</span>
+                    </div>
                   </div>
-                  <div className="flex space-x-1">
+                  <div className="flex space-x-1 items-center">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleGroupLock(g.id, !!g.locked)}
+                      className={`p-1 rounded border border-transparent transition-colors cursor-pointer ${
+                        g.locked ? "text-red-500 hover:bg-red-500/10" : "text-gray-400 hover:text-white hover:bg-white/5"
+                      }`}
+                      title={g.locked ? "Unlock Group" : "Lock Group"}
+                    >
+                      {g.locked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+                    </button>
                     <button
                       type="button"
                       onClick={() => {
