@@ -4,7 +4,7 @@ import { eq, desc } from "drizzle-orm";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { redirect } from "next/navigation";
-import { AIChatPageClient } from "@/components/admin/AIChatPageClient";
+import { AIChatPageClient } from "../../../components/admin/AIChatPageClient";
 
 export default async function AIUatGigaPage() {
   const session = await getServerSession(authOptions);
