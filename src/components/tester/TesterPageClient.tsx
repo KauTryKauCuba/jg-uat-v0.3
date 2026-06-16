@@ -230,6 +230,34 @@ export function TesterPageClient({
   const [showCompletionModal, setShowCompletionModal] = React.useState(false)
   const [hasDismissedCompletion, setHasDismissedCompletion] = React.useState(false)
 
+  // Compute stats for completion dashboard
+  const totalCompleted = initialCases.filter(c => c.testerStatus === "submitted").length
+  const totalDurationSec = initialCases.reduce((sum, c) => {
+    if (c.testerStatus === "submitted" && c.runCreatedAt && c.runSubmittedAt) {
+      const durationMs = new Date(c.runSubmittedAt).getTime() - new Date(c.runCreatedAt).getTime()
+      return sum + Math.max(0, Math.floor(durationMs / 1000))
+    }
+    return sum
+  }, 0)
+  const totalM = Math.floor(totalDurationSec / 60)
+  const totalS = totalDurationSec % 60
+  const totalTimeSpentStr = totalM > 0 ? `${totalM}m ${totalS}s` : `${totalS}s`
+
+  let passedCount = 0
+  let failedCount = 0
+  let blockedCount = 0
+  let naCount = 0
+
+  initialCases.forEach(c => {
+    if (c.testerStatus === "submitted" && c.runResult) {
+      const res = c.runResult.toLowerCase()
+      if (res === "passed" || res === "pass") passedCount++
+      else if (res === "failed" || res === "fail") failedCount++
+      else if (res === "blocked" || res === "block") blockedCount++
+      else naCount++
+    }
+  })
+
   React.useEffect(() => {
     if (isAllCompleted && !hasDismissedCompletion) {
       setShowCompletionModal(true)
@@ -1152,7 +1180,7 @@ export function TesterPageClient({
       {isAllCompleted && hasDismissedCompletion && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
           {/* UAT Feedback Card */}
-          <div className="bg-zinc-900/40 border border-brand-cyan/20 rounded-3xl p-6 backdrop-blur-md shadow-xl flex flex-col justify-between space-y-4">
+          <div className="bg-zinc-900/40 border border-white/5 hover:border-brand-cyan/30 rounded-3xl p-6 backdrop-blur-md shadow-xl flex flex-col justify-between space-y-4 transition-all duration-300">
             <div className="space-y-2">
               <div className="flex items-center space-x-2.5">
                 <span className="text-xl">💬</span>
@@ -1164,14 +1192,14 @@ export function TesterPageClient({
             </div>
             <button
               type="button"
-              className="w-full py-3 rounded-xl bg-brand-cyan hover:opacity-90 text-white font-bold text-xs shadow-md shadow-brand-cyan/10 transition-all cursor-pointer"
+              className="w-full py-3 rounded-xl bg-brand-cyan hover:bg-brand-cyan/95 text-white font-bold text-xs shadow-md shadow-brand-cyan/10 transition-all cursor-pointer"
             >
               Open Feedback Panel
             </button>
           </div>
 
           {/* UAT Sign Off Card */}
-          <div className="bg-zinc-900/40 border border-brand-teal/20 rounded-3xl p-6 backdrop-blur-md shadow-xl flex flex-col justify-between space-y-4">
+          <div className="bg-zinc-900/40 border border-white/5 hover:border-brand-teal/30 rounded-3xl p-6 backdrop-blur-md shadow-xl flex flex-col justify-between space-y-4 transition-all duration-300">
             <div className="space-y-2">
               <div className="flex items-center space-x-2.5">
                 <span className="text-xl">✍️</span>
@@ -1183,7 +1211,7 @@ export function TesterPageClient({
             </div>
             <button
               type="button"
-              className="w-full py-3 rounded-xl bg-brand-teal hover:opacity-90 text-white font-bold text-xs shadow-md shadow-brand-teal/10 transition-all cursor-pointer"
+              className="w-full py-3 rounded-xl bg-brand-teal hover:bg-brand-teal/95 text-white font-bold text-xs shadow-md shadow-brand-teal/10 transition-all cursor-pointer"
             >
               Sign Off Scenario
             </button>
@@ -1372,30 +1400,74 @@ export function TesterPageClient({
       )}
       {/* UAT Completion Dashboard Modal */}
       {showCompletionModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-zinc-950/95 border border-brand-teal/20 rounded-3xl p-8 max-w-md w-full text-center space-y-6 relative shadow-2xl shadow-brand-teal/5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
+            onClick={() => {
+              setShowCompletionModal(false)
+              setHasDismissedCompletion(true)
+            }} 
+          />
+          
+          {/* Modal Content */}
+          <div className="relative z-10 w-full max-w-md rounded-2xl border border-white/10 bg-zinc-950 p-6 shadow-2xl animate-in fade-in zoom-in duration-200 text-center space-y-6">
             
             {/* Celebration Visuals */}
-            <div className="mx-auto w-16 h-16 rounded-full bg-brand-teal/15 text-brand-cyan border border-brand-teal/20 flex items-center justify-center text-3xl animate-bounce">
-              🎉
+            <div className="relative mx-auto w-24 h-24 rounded-full flex items-center justify-center">
+              {/* Outer glowing ring */}
+              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-brand-teal to-brand-cyan opacity-20 blur-md animate-pulse" />
+              {/* Rotating dashed border ring */}
+              <div className="absolute inset-0 rounded-full border border-dashed border-brand-cyan/40 animate-[spin_20s_linear_infinite]" />
+              {/* Core badge */}
+              <div className="relative w-20 h-20 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center text-4xl shadow-xl shadow-brand-teal/10">
+                🎉
+              </div>
             </div>
 
             <div className="space-y-2">
-              <h2 className="text-xl font-extrabold tracking-tight text-white">UAT Completed!</h2>
+              <h2 className="text-xl font-extrabold tracking-tight text-white">UAT Scenarios Completed! 🎉</h2>
+              <p className="text-sm font-semibold text-brand-cyan">Congratulations, {userName}!</p>
               <p className="text-xs text-gray-400 leading-relaxed">
-                Congratulations! You have completed all assigned UAT test scenarios for this cycle.
+                Thank you for your thorough testing and valuable contribution to this release cycle.
               </p>
             </div>
 
-            {/* Performance Stats */}
-            <div className="grid grid-cols-2 gap-4 border border-white/5 bg-white/[0.02] p-4 rounded-2xl text-left text-xs">
-              <div>
-                <span className="text-gray-500 font-semibold uppercase block">Total Scenarios</span>
-                <span className="text-sm font-extrabold text-white mt-0.5 block">{initialCases.length}</span>
+            {/* Tester Stats Card */}
+            <div className="border border-white/10 bg-white/[0.02] p-5 rounded-2xl text-left space-y-4 shadow-inner">
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Execution Summary</h4>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="text-gray-500 font-semibold block text-[10px] uppercase">Completed Cases</span>
+                  <span className="text-sm font-extrabold text-white mt-0.5 block">{totalCompleted} / {initialCases.length}</span>
+                </div>
+                <div>
+                  <span className="text-gray-500 font-semibold block text-[10px] uppercase">Total Time Spent</span>
+                  <span className="text-sm font-extrabold text-white mt-0.5 block">{totalTimeSpentStr}</span>
+                </div>
               </div>
-              <div>
-                <span className="text-gray-500 font-semibold uppercase block">UAT Status</span>
-                <span className="text-sm font-extrabold text-emerald-400 mt-0.5 block">Finished ✓</span>
+
+              <div className="pt-3 border-t border-white/5">
+                <span className="text-gray-500 font-semibold block text-[10px] uppercase mb-2">Scenario Breakdown</span>
+                <div className="grid grid-cols-4 gap-2 text-center text-[10px] font-bold">
+                  <div className="bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 rounded-lg p-2">
+                    <span className="block text-[8px] uppercase text-emerald-500/80 mb-0.5">Pass</span>
+                    <span className="text-xs font-extrabold">{passedCount}</span>
+                  </div>
+                  <div className="bg-rose-500/10 border border-rose-500/25 text-rose-400 rounded-lg p-2">
+                    <span className="block text-[8px] uppercase text-rose-500/80 mb-0.5">Fail</span>
+                    <span className="text-xs font-extrabold">{failedCount}</span>
+                  </div>
+                  <div className="bg-amber-500/10 border border-amber-500/25 text-amber-400 rounded-lg p-2">
+                    <span className="block text-[8px] uppercase text-amber-500/80 mb-0.5">Block</span>
+                    <span className="text-xs font-extrabold">{blockedCount}</span>
+                  </div>
+                  <div className="bg-blue-500/10 border border-blue-500/25 text-blue-400 rounded-lg p-2">
+                    <span className="block text-[8px] uppercase text-blue-500/80 mb-0.5">N/A</span>
+                    <span className="text-xs font-extrabold">{naCount}</span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1405,7 +1477,7 @@ export function TesterPageClient({
                 setShowCompletionModal(false)
                 setHasDismissedCompletion(true)
               }}
-              className="w-full py-3 rounded-xl bg-brand-teal hover:bg-brand-teal/95 text-white font-bold text-xs shadow-lg shadow-brand-teal/15 transition-all cursor-pointer"
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-teal to-brand-cyan hover:opacity-90 text-white font-bold text-xs shadow-md shadow-brand-teal/10 transition-all cursor-pointer"
             >
               Go to Dashboard
             </button>
