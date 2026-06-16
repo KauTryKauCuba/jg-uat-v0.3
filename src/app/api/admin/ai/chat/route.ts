@@ -51,6 +51,8 @@ export async function POST(req: NextRequest) {
             choices: testFields.choices,
             steps: testFields.steps,
             value: testAnswers.value,
+            screenshotUrl: testAnswers.screenshotUrl,
+            pdfUrl: testAnswers.pdfUrl,
           })
           .from(testAnswers)
           .leftJoin(testFields, eq(testFields.id, testAnswers.testFieldId))
@@ -64,7 +66,13 @@ export async function POST(req: NextRequest) {
               parsedVal = JSON.stringify(parsed);
             }
           } catch {}
-          return `- Field "${a.fieldName}" (${a.fieldType}): Answer = "${parsedVal}"`;
+          
+          let attachments = [];
+          if (a.screenshotUrl) attachments.push(`Screenshot = "${a.screenshotUrl}"`);
+          if (a.pdfUrl) attachments.push(`PDF = "${a.pdfUrl}"`);
+          const attachmentsStr = attachments.length > 0 ? ` (Attachments: ${attachments.join(", ")})` : "";
+
+          return `- Field "${a.fieldName}" (${a.fieldType}): Answer = "${parsedVal}"${attachmentsStr}`;
         }).join("\n");
 
         systemPrompt += `\n\n[CONTEXT: UAT TEST RUN DETAILS]
