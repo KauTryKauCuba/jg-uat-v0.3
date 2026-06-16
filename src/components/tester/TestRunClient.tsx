@@ -45,6 +45,13 @@ interface RunData {
       screenshotUrl?: string | null
     }
   >
+  auditLogs?: Array<{
+    id: string
+    action: string
+    previousStatus: string
+    newStatus: string
+    createdAt: string
+  }>
 }
 
 interface TestRunClientProps {
@@ -399,6 +406,31 @@ export function TestRunClient({ run }: TestRunClientProps) {
               >
                 {reopening ? "Re-opening..." : "Edit / Re-open Test Run"}
               </button>
+              
+              {/* Audit trail details */}
+              {run.auditLogs && run.auditLogs.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-white/5 space-y-2 text-left">
+                  <p className="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Run History (Audit Trail)</p>
+                  <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1 scrollbar-thin">
+                    {run.auditLogs.map((log) => (
+                      <div key={log.id} className="text-[9px] bg-white/[0.02] border border-white/5 p-2 rounded-lg space-y-1">
+                        <div className="flex justify-between items-center">
+                          <span className={`font-bold uppercase tracking-tight ${log.action === "SUBMIT" ? "text-emerald-400" : "text-amber-400"}`}>
+                            {log.action === "SUBMIT" ? "Submitted" : "Re-opened"}
+                          </span>
+                          <span className="text-gray-500 font-mono text-[8px]">
+                            {new Date(log.createdAt).toLocaleDateString()} {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        <p className="text-gray-400 leading-normal">
+                          Status transition: <span className="font-mono">{log.previousStatus}</span> &rarr; <span className="font-mono">{log.newStatus}</span>
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <Link
                 href="/tester"
                 className="flex items-center justify-center space-x-1.5 text-xs font-bold text-brand-cyan hover:underline text-center w-full py-1 cursor-pointer"

@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
-import { testRuns, testCases, testFields, testAnswers } from "@/db/schema"
+import { testRuns, testCases, testFields, testAnswers, testRunAuditLogs } from "@/db/schema"
 import { eq, sql } from "drizzle-orm"
 import { TestRunClient } from "@/components/tester/TestRunClient"
 
@@ -80,6 +80,19 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
     }
   })
 
+  // Fetch UAT audit logs
+  const auditLogsList = await db
+    .select({
+      id: testRunAuditLogs.id,
+      action: testRunAuditLogs.action,
+      previousStatus: testRunAuditLogs.previousStatus,
+      newStatus: testRunAuditLogs.newStatus,
+      createdAt: testRunAuditLogs.createdAt,
+    })
+    .from(testRunAuditLogs)
+    .where(eq(testRunAuditLogs.testRunId, run.id))
+    .orderBy(sql`${testRunAuditLogs.createdAt} DESC`);
+
   const runData = {
     id: run.id,
     status: run.status,
@@ -92,6 +105,10 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
       fields,
     },
     answers: answersMap,
+    auditLogs: auditLogsList.map(log => ({
+      ...log,
+      createdAt: log.createdAt.toISOString()
+    }))
   }
 
   return <TestRunClient run={runData} />
