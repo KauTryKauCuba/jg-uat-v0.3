@@ -44,7 +44,7 @@ export default function CategoriesPage() {
   // Delete modal state
   const [deletingId, setDeletingId] = React.useState<string | null>(null)
 
-  // Automatically update form targetGroup when tab changes (unless editing)
+  // Sync targetGroup state when editing category or changing activeTab
   React.useEffect(() => {
     if (!editingCategory) {
       setTargetGroup(activeTab)
@@ -53,12 +53,9 @@ export default function CategoriesPage() {
 
   const fetchCategories = async () => {
     try {
-      setLoading(true)
       const res = await fetch("/api/categories")
       const json = await res.json()
-      if (json.error) {
-        setError(json.error)
-      } else {
+      if (json.data) {
         setCategories(json.data)
       }
     } catch (err: any) {
@@ -68,16 +65,18 @@ export default function CategoriesPage() {
     }
   }
 
-  const fetchTargetGroups = async () => {
+  const fetchTargetGroups = async (currentActiveTab?: string) => {
+    const tabToUse = currentActiveTab !== undefined ? currentActiveTab : activeTab
     try {
       const res = await fetch("/api/target-groups")
       const json = await res.json()
       if (json.data) {
         setTargetGroups(json.data)
         if (json.data.length > 0) {
-          const exists = json.data.some((g: any) => g.name === activeTab)
+          const exists = json.data.some((g: any) => g.name === tabToUse)
           if (!exists) {
             setActiveTab(json.data[0].name)
+            localStorage.setItem("admin-active-group-tab", json.data[0].name)
           }
         }
       }
@@ -87,8 +86,12 @@ export default function CategoriesPage() {
   }
 
   React.useEffect(() => {
+    const savedTab = localStorage.getItem("admin-active-group-tab") || "JOBSEEKER_WEB"
+    if (savedTab !== "JOBSEEKER_WEB") {
+      setActiveTab(savedTab)
+    }
     fetchCategories()
-    fetchTargetGroups()
+    fetchTargetGroups(savedTab)
   }, [])
 
   const handleEditClick = (c: Category) => {
@@ -163,6 +166,7 @@ export default function CategoriesPage() {
           const remaining = targetGroups.filter(g => g.id !== groupId)
           if (remaining.length > 0) {
             setActiveTab(remaining[0].name)
+            localStorage.setItem("admin-active-group-tab", remaining[0].name)
           }
         }
       }
@@ -373,7 +377,10 @@ export default function CategoriesPage() {
           {targetGroups.map((g) => (
             <button
               key={g.id}
-              onClick={() => setActiveTab(g.name)}
+              onClick={() => {
+                setActiveTab(g.name)
+                localStorage.setItem("admin-active-group-tab", g.name)
+              }}
               className={`pb-3 text-sm font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === g.name
                   ? "border-brand-cyan text-brand-cyan"

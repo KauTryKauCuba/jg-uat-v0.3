@@ -117,16 +117,18 @@ export default function TestCasesPage() {
     }
   }
 
-  const fetchTargetGroups = async () => {
+  const fetchTargetGroups = async (currentActiveTab?: string) => {
+    const tabToUse = currentActiveTab !== undefined ? currentActiveTab : activeTab
     try {
       const res = await fetch("/api/target-groups")
       const json = await res.json()
       if (json.data) {
         setTargetGroups(json.data)
         if (json.data.length > 0) {
-          const exists = json.data.some((g: any) => g.name === activeTab)
+          const exists = json.data.some((g: any) => g.name === tabToUse)
           if (!exists) {
             setActiveTab(json.data[0].name)
+            localStorage.setItem("admin-active-group-tab", json.data[0].name)
           }
         }
       }
@@ -136,8 +138,12 @@ export default function TestCasesPage() {
   }
 
   React.useEffect(() => {
+    const savedTab = localStorage.getItem("admin-active-group-tab") || "JOBSEEKER_WEB"
+    if (savedTab !== "JOBSEEKER_WEB") {
+      setActiveTab(savedTab)
+    }
     fetchData()
-    fetchTargetGroups()
+    fetchTargetGroups(savedTab)
   }, [])
 
   const handleDelete = async () => {
@@ -256,7 +262,10 @@ export default function TestCasesPage() {
           {targetGroups.map((g) => (
             <button
               key={g.id}
-              onClick={() => setActiveTab(g.name)}
+              onClick={() => {
+                setActiveTab(g.name)
+                localStorage.setItem("admin-active-group-tab", g.name)
+              }}
               className={`pb-3 text-sm font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === g.name
                   ? "border-brand-cyan text-brand-cyan"
