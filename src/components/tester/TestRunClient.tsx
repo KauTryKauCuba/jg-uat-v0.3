@@ -58,6 +58,7 @@ export function TestRunClient({ run }: TestRunClientProps) {
   const [isSubmitted, setIsSubmitted] = React.useState(run.status !== "PENDING")
   const [isSubmitModalOpen, setIsSubmitModalOpen] = React.useState(false)
   const [submitting, setSubmitting] = React.useState(false)
+  const [reopening, setReopening] = React.useState(false)
   const [submitError, setSubmitError] = React.useState<string | null>(null)
 
   // Countdown timer state
@@ -194,6 +195,27 @@ export function TestRunClient({ run }: TestRunClientProps) {
       setSubmitError("Failed to submit UAT test run.")
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleReopen = async () => {
+    setReopening(true)
+    setSubmitError(null)
+    try {
+      const res = await fetch(`/api/runs/${run.id}/reopen`, {
+        method: "POST",
+      })
+      const json = await res.json()
+      if (json.error) {
+        setSubmitError(json.error)
+      } else {
+        setIsSubmitted(false)
+        router.refresh()
+      }
+    } catch {
+      setSubmitError("Failed to reopen test run.")
+    } finally {
+      setReopening(false)
     }
   }
 
@@ -365,6 +387,14 @@ export function TestRunClient({ run }: TestRunClientProps) {
                 <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                 <span>Test Submitted</span>
               </div>
+              <button
+                type="button"
+                onClick={handleReopen}
+                disabled={reopening}
+                className="w-full py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-white font-semibold text-xs transition-all cursor-pointer"
+              >
+                {reopening ? "Re-opening..." : "Edit / Re-open Test Run"}
+              </button>
               <Link
                 href="/tester"
                 className="flex items-center justify-center space-x-1.5 text-xs font-bold text-brand-cyan hover:underline text-center w-full py-1 cursor-pointer"
