@@ -14,6 +14,7 @@ interface CaseItem {
   fieldsCount: number
   runId: string | null
   runCreatedAt: string | null
+  runSubmittedAt?: string | null
   testerStatus: string
   timer: number | null
   locked: boolean
@@ -120,7 +121,26 @@ function CaseCard({
           ) : (
             <div />
           )}
-          {!c.locked && c.testerStatus === "in_progress" && c.runCreatedAt && c.timer ? (
+          {c.testerStatus === "submitted" ? (
+            c.runCreatedAt && c.runSubmittedAt ? (() => {
+              const durationMs = new Date(c.runSubmittedAt).getTime() - new Date(c.runCreatedAt).getTime();
+              const durationSec = Math.max(0, Math.floor(durationMs / 1000));
+              const m = Math.floor(durationSec / 60);
+              const s = durationSec % 60;
+              const timeTakenStr = m > 0 ? `${m}m ${s}s` : `${s}s`;
+              return (
+                <span className="flex items-center space-x-1.5 text-gray-400 text-xs font-mono font-bold" title="Time taken to complete">
+                  <Clock className="w-3.5 h-3.5 text-gray-500" />
+                  <span>{timeTakenStr}</span>
+                </span>
+              );
+            })() : c.timer ? (
+              <span className="flex items-center space-x-1.5 text-gray-500">
+                <Clock className="w-3.5 h-3.5" />
+                <span>{c.timer} min</span>
+              </span>
+            ) : null
+          ) : (!c.locked && c.testerStatus === "in_progress" && c.runCreatedAt && c.timer) ? (
             <LiveTimer
               runCreatedAt={c.runCreatedAt}
               timerLimitMinutes={c.timer}

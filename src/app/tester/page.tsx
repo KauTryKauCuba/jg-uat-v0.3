@@ -42,6 +42,7 @@ export default async function TesterPage() {
         runStatus: testRuns.status,
         runId: testRuns.id,
         runCreatedAt: testRuns.createdAt,
+        runSubmittedAt: testRuns.submittedAt,
         runResultValue: testAnswers.value,
       })
       .from(testCases)
@@ -73,6 +74,7 @@ export default async function TesterPage() {
         testRuns.id,
         testRuns.status,
         testRuns.createdAt,
+        testRuns.submittedAt,
         testAnswers.value
       )
       .orderBy(sql`${testCases.order} ASC, ${testCases.createdAt} DESC`);
@@ -113,6 +115,7 @@ export default async function TesterPage() {
         fieldsCount: c.fieldsCount,
         runId: c.runId || null,
         runCreatedAt: c.runCreatedAt ? c.runCreatedAt.toISOString() : null,
+        runSubmittedAt: c.runSubmittedAt ? c.runSubmittedAt.toISOString() : null,
         testerStatus,
         runResult,
       }
