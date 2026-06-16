@@ -28,6 +28,8 @@ interface RunData {
   status: string
   submittedAt: string | null
   createdAt: string
+  updatedAt: string
+  elapsedSeconds: number
   testCase: {
     id: string
     title: string
@@ -88,24 +90,26 @@ export function TestRunClient({ run }: TestRunClientProps) {
     }
   }, [run.id, router])
 
-  // Timer effect
   React.useEffect(() => {
     if (isSubmitted || !run.testCase.timer) return
 
-    const limitMs = run.testCase.timer * 60 * 1000
-    const startMs = new Date(run.createdAt).getTime()
-    const endMs = startMs + limitMs
+    const totalDurationSeconds = run.testCase.timer * 60
+    const startSessionMs = new Date(run.updatedAt).getTime()
 
     // eslint-disable-next-line prefer-const
     let interval: NodeJS.Timeout
 
     const updateTimer = () => {
       const now = Date.now()
-      const diffSec = Math.max(0, Math.floor((endMs - now) / 1000))
+      const sessionElapsedSeconds = Math.max(0, Math.floor((now - startSessionMs) / 1000))
+      const totalElapsedSeconds = run.elapsedSeconds + sessionElapsedSeconds
+      const diffSec = Math.max(0, totalDurationSeconds - totalElapsedSeconds)
+      
       setTimeLeft(diffSec)
 
       if (diffSec <= 0) {
         if (interval) clearInterval(interval)
+        triggerAutoSubmit()
       }
     }
 
@@ -115,7 +119,7 @@ export function TestRunClient({ run }: TestRunClientProps) {
     return () => {
       if (interval) clearInterval(interval)
     }
-  }, [isSubmitted, run.testCase.timer, run.createdAt, triggerAutoSubmit])
+  }, [isSubmitted, run.testCase.timer, run.updatedAt, run.elapsedSeconds, triggerAutoSubmit])
 
   // Clean up timeouts on unmount
   React.useEffect(() => {

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { db } from "@/lib/db";
-import { testRuns } from "@/db/schema";
+import { testRuns, testRunAuditLogs } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -32,18 +32,29 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ data: null, error: "Forbidden" }, { status: 403 });
     }
 
+    const now = new Date();
+
     // Update status back to PENDING and clear submittedAt
     const updated = await db
       .update(testRuns)
       .set({
         status: "PENDING",
         submittedAt: null,
-        updatedAt: new Date(),
+        updatedAt: now,
       })
       .where(eq(testRuns.id, runId))
       .returning();
 
     const updatedRun = updated[0];
+
+    // Log reopen audit trail
+    await db.insert(testRunAuditLogs).values({
+      testRunId: runId,
+      userId: session.user.id,
+      action: "REOPEN",
+      previousStatus: run.status,
+      newStatus: "PENDING",
+    });
 
     return NextResponse.json({
       data: {

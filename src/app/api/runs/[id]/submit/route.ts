@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { db } from "@/lib/db";
-import { testRuns, testAnswers } from "@/db/schema";
+import { testRuns, testAnswers, testRunAuditLogs } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -77,20 +77,34 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       }
     }
 
+    const now = new Date();
+    const sessionElapsedSeconds = Math.max(0, Math.floor((now.getTime() - run.updatedAt.getTime()) / 1000));
+    const newElapsedSeconds = run.elapsedSeconds + sessionElapsedSeconds;
+
     const finalStatus = hasNonPassing ? "FAILED" : "PASSED";
 
-    // Update status and set submittedAt to current date
+    // Update status, set submittedAt to current date, and add elapsed seconds
     const updated = await db
       .update(testRuns)
       .set({
         status: finalStatus,
-        submittedAt: new Date(),
-        updatedAt: new Date(),
+        submittedAt: now,
+        elapsedSeconds: newElapsedSeconds,
+        updatedAt: now,
       })
       .where(eq(testRuns.id, runId))
       .returning();
 
     const updatedRun = updated[0];
+
+    // Log submit audit trail
+    await db.insert(testRunAuditLogs).values({
+      testRunId: runId,
+      userId: session.user.id,
+      action: "SUBMIT",
+      previousStatus: run.status,
+      newStatus: finalStatus,
+    });
 
     return NextResponse.json({
       data: {

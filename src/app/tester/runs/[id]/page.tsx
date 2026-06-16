@@ -85,6 +85,8 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
     status: run.status,
     submittedAt: run.submittedAt ? run.submittedAt.toISOString() : null,
     createdAt: run.createdAt.toISOString(),
+    updatedAt: run.updatedAt.toISOString(),
+    elapsedSeconds: run.elapsedSeconds,
     testCase: {
       ...testCase,
       fields,
