@@ -129,9 +129,9 @@ function CaseCard({
               const s = durationSec % 60;
               const timeTakenStr = m > 0 ? `${m}m ${s}s` : `${s}s`;
               return (
-                <span className="flex items-center space-x-1.5 text-gray-400 text-xs font-mono font-bold" title="Time taken to complete">
+                <span className="flex items-center space-x-1.5 text-gray-400 text-xs font-mono font-bold" title="Time taken / Time limit">
                   <Clock className="w-3.5 h-3.5 text-gray-500" />
-                  <span>{timeTakenStr}</span>
+                  <span>{timeTakenStr}{c.timer ? ` / ${c.timer}m` : ""}</span>
                 </span>
               );
             })() : c.timer ? (
