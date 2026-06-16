@@ -26,7 +26,7 @@ export const testCaseCategories = pgTable("test_case_categories", {
   name: text("name").notNull().unique(),
   description: text("description"),
   order: integer("order").default(0).notNull(),
-  targetGroup: text("target_group").default("JOBSEEKER").notNull(), // "JOBSEEKER" | "EMPLOYER"
+  targetGroup: text("target_group").default("JOBSEEKER_WEB").notNull(), // "JOBSEEKER_WEB" | "EMPLOYER"
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -206,6 +206,14 @@ export const uatBriefingDeck = pgTable("uat_briefing_deck", {
   id: uuid("id").primaryKey().defaultRandom(),
   url: text("url").notNull(),
   fileName: text("file_name").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const uatTargetGroups = pgTable("uat_target_groups", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull().unique(),
+  displayName: text("display_name").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

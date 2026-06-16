@@ -9,7 +9,7 @@ interface Tester {
   id: string
   name: string | null
   email: string
-  testerGroup: "JOBSEEKER" | "EMPLOYER" | null
+  testerGroup: string | null
   employerLocked: boolean
   createdAt: string
 }
@@ -44,7 +44,7 @@ export default function AdminTestersPage() {
 
   const handleAction = async (testerId: string, action: "toggle-lock" | "reset-choice") => {
     if (action === "reset-choice") {
-      const confirmReset = window.confirm("Are you sure you want to reset this tester's group choice? They will be prompted to select Jobseeker or Employer again upon their next login.")
+      const confirmReset = window.confirm("Are you sure you want to reset this tester's group choice? They will be prompted to select their UAT group again upon their next login.")
       if (!confirmReset) return
     }
 
@@ -152,13 +152,17 @@ export default function AdminTestersPage() {
                       </td>
                       <td className="py-4 px-4 text-gray-300">{tester.email}</td>
                       <td className="py-4 px-4">
-                        {tester.testerGroup === "JOBSEEKER" ? (
+                        {tester.testerGroup === "JOBSEEKER" || tester.testerGroup === "JOBSEEKER_WEB" ? (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 border border-emerald-500/25 text-emerald-400">
-                            Jobseeker
+                            {tester.testerGroup === "JOBSEEKER_WEB" ? "Jobseeker Web" : "Jobseeker"}
                           </span>
                         ) : tester.testerGroup === "EMPLOYER" ? (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 border border-blue-500/25 text-blue-400">
                             Employer
+                          </span>
+                        ) : tester.testerGroup ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-500/10 border border-purple-500/25 text-purple-400">
+                            {tester.testerGroup}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-zinc-500/10 border border-zinc-500/25 text-zinc-400">

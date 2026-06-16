@@ -23,17 +23,18 @@ interface TestCase {
 interface Category {
   id: string
   name: string
-  targetGroup: "JOBSEEKER" | "EMPLOYER"
+  targetGroup: string
 }
 
 export default function TestCasesPage() {
   const [categories, setCategories] = React.useState<Category[]>([])
+  const [targetGroups, setTargetGroups] = React.useState<{ id: string; name: string; displayName: string }[]>([])
   const [cases, setCases] = React.useState<TestCase[]>([])
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   
-  // Tab Selection: JOBSEEKER or EMPLOYER
-  const [activeTab, setActiveTab] = React.useState<"JOBSEEKER" | "EMPLOYER">("JOBSEEKER")
+  // Tab Selection
+  const [activeTab, setActiveTab] = React.useState<string>("JOBSEEKER_WEB")
   
   // Title Search state
   const [searchQuery, setSearchQuery] = React.useState("")
@@ -116,8 +117,27 @@ export default function TestCasesPage() {
     }
   }
 
+  const fetchTargetGroups = async () => {
+    try {
+      const res = await fetch("/api/target-groups")
+      const json = await res.json()
+      if (json.data) {
+        setTargetGroups(json.data)
+        if (json.data.length > 0) {
+          const exists = json.data.some((g: any) => g.name === activeTab)
+          if (!exists) {
+            setActiveTab(json.data[0].name)
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load target groups", err)
+    }
+  }
+
   React.useEffect(() => {
     fetchData()
+    fetchTargetGroups()
   }, [])
 
   const handleDelete = async () => {
@@ -211,7 +231,7 @@ export default function TestCasesPage() {
     })
   }
 
-  const uncategorizedCases = getFilteredCasesForCategory(null).filter(() => activeTab === "JOBSEEKER")
+  const uncategorizedCases = getFilteredCasesForCategory(null).filter(() => activeTab === (targetGroups[0]?.name || "JOBSEEKER_WEB"))
   const uncategorizedDuration = uncategorizedCases.reduce((sum, c) => sum + (c.timer || 0), 0)
 
   return (
@@ -219,7 +239,7 @@ export default function TestCasesPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Test Cases</h1>
-          <p className="text-gray-400 mt-2">Manage dynamic test fields and check run results grouped by category. Drag items to reorder.</p>
+          <p className="text-gray-400 mt-2">Manage dynamic test fields and check UAT run results grouped by category. Drag items to reorder.</p>
         </div>
         <Link
           href="/admin/test-cases/new"
@@ -232,27 +252,20 @@ export default function TestCasesPage() {
 
       {/* Search bar & Tabs */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-1">
-        <div className="flex space-x-4">
-          <button
-            onClick={() => setActiveTab("JOBSEEKER")}
-            className={`pb-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-              activeTab === "JOBSEEKER"
-                ? "border-brand-cyan text-brand-cyan"
-                : "border-transparent text-gray-400 hover:text-white"
-            }`}
-          >
-            Jobseeker Test Cases
-          </button>
-          <button
-            onClick={() => setActiveTab("EMPLOYER")}
-            className={`pb-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-              activeTab === "EMPLOYER"
-                ? "border-brand-cyan text-brand-cyan"
-                : "border-transparent text-gray-400 hover:text-white"
-            }`}
-          >
-            Employer Test Cases
-          </button>
+        <div className="flex space-x-4 overflow-x-auto scrollbar-none">
+          {targetGroups.map((g) => (
+            <button
+              key={g.id}
+              onClick={() => setActiveTab(g.name)}
+              className={`pb-3 text-sm font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === g.name
+                  ? "border-brand-cyan text-brand-cyan"
+                  : "border-transparent text-gray-400 hover:text-white"
+              }`}
+            >
+              {g.displayName} Test Cases
+            </button>
+          ))}
         </div>
 
         {/* Client side search input & collapse controls */}
@@ -299,7 +312,7 @@ export default function TestCasesPage() {
         </div>
       ) : filteredCategories.length === 0 && uncategorizedCases.length === 0 ? (
         <div className="text-center py-24 border border-dashed border-white/10 rounded-3xl space-y-3">
-          <p className="text-gray-400 font-semibold">No test cases found for {activeTab === "JOBSEEKER" ? "Jobseekers" : "Employers"}</p>
+          <p className="text-gray-400 font-semibold">No test cases found for {activeTab === "JOBSEEKER" || activeTab === "JOBSEEKER_WEB" ? "Jobseekers" : activeTab === "EMPLOYER" ? "Employers" : activeTab}</p>
           <p className="text-xs text-gray-600 max-w-xs mx-auto">Try checking your search query or add a new scenario description.</p>
         </div>
       ) : (

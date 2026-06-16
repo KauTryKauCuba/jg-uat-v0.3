@@ -20,7 +20,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return NextResponse.json({ data: null, error: "Category name is required" }, { status: 400 });
     }
 
-    const validGroup = targetGroup === "EMPLOYER" ? "EMPLOYER" : "JOBSEEKER";
+    const validGroup = targetGroup ? String(targetGroup).toUpperCase().trim() : "JOBSEEKER_WEB";
 
     const updated = await db
       .update(testCaseCategories)

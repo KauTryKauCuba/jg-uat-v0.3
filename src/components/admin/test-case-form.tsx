@@ -321,7 +321,7 @@ export function TestCaseForm({ initialData }: TestCaseFormProps) {
                   <option value="">-- Select Category --</option>
                   {categories.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.name} ({c.targetGroup === "EMPLOYER" ? "Employer" : "Jobseeker"})
+                      {c.name} ({c.targetGroup.charAt(0) + c.targetGroup.slice(1).toLowerCase()})
                     </option>
                   ))}
                 </select>

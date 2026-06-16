@@ -2,24 +2,25 @@
 
 import * as React from "react"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
-import { Plus, Folder, GripVertical, Edit2, Trash2, X, Save } from "lucide-react"
+import { Plus, Folder, GripVertical, Edit2, Trash2, X, Save, Loader2 } from "lucide-react"
 import { ConfirmModal } from "@/components/ui/confirm-modal"
 
 interface Category {
   id: string
   name: string
   description: string | null
-  targetGroup: "JOBSEEKER" | "EMPLOYER"
+  targetGroup: string
   createdAt: string
 }
 
 export default function CategoriesPage() {
   const [categories, setCategories] = React.useState<Category[]>([])
+  const [targetGroups, setTargetGroups] = React.useState<{ id: string; name: string; displayName: string }[]>([])
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   
-  // Tab Selection: JOBSEEKER or EMPLOYER
-  const [activeTab, setActiveTab] = React.useState<"JOBSEEKER" | "EMPLOYER">("JOBSEEKER")
+  // Tab Selection
+  const [activeTab, setActiveTab] = React.useState<string>("JOBSEEKER_WEB")
 
   // Drag and drop states
   const [draggedIndex, setDraggedIndex] = React.useState<number | null>(null)
@@ -27,9 +28,16 @@ export default function CategoriesPage() {
   // Form & Editing states
   const [name, setName] = React.useState("")
   const [description, setDescription] = React.useState("")
-  const [targetGroup, setTargetGroup] = React.useState<"JOBSEEKER" | "EMPLOYER">("JOBSEEKER")
+  const [targetGroup, setTargetGroup] = React.useState<string>("JOBSEEKER_WEB")
   const [submitting, setSubmitting] = React.useState(false)
   const [editingCategory, setEditingCategory] = React.useState<Category | null>(null)
+
+  // Target Groups Modal & Form States
+  const [isManageGroupsOpen, setIsManageGroupsOpen] = React.useState(false)
+  const [groupName, setGroupName] = React.useState("")
+  const [groupDisplayName, setGroupDisplayName] = React.useState("")
+  const [editingGroup, setEditingGroup] = React.useState<{ id: string; name: string; displayName: string } | null>(null)
+  const [savingGroup, setSavingGroup] = React.useState(false)
 
   // Delete modal state
   const [deletingId, setDeletingId] = React.useState<string | null>(null)
@@ -58,8 +66,27 @@ export default function CategoriesPage() {
     }
   }
 
+  const fetchTargetGroups = async () => {
+    try {
+      const res = await fetch("/api/target-groups")
+      const json = await res.json()
+      if (json.data) {
+        setTargetGroups(json.data)
+        if (json.data.length > 0) {
+          const exists = json.data.some((g: any) => g.name === activeTab)
+          if (!exists) {
+            setActiveTab(json.data[0].name)
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load target groups", err)
+    }
+  }
+
   React.useEffect(() => {
     fetchCategories()
+    fetchTargetGroups()
   }, [])
 
   const handleEditClick = (c: Category) => {
@@ -74,6 +101,71 @@ export default function CategoriesPage() {
     setName("")
     setDescription("")
     setTargetGroup(activeTab)
+  }
+
+  const handleSaveGroup = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!groupName || !groupDisplayName) return
+    setSavingGroup(true)
+    try {
+      if (editingGroup) {
+        const res = await fetch(`/api/target-groups/${editingGroup.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: groupName, displayName: groupDisplayName }),
+        })
+        const json = await res.json()
+        if (json.error) {
+          alert(json.error)
+        } else {
+          setTargetGroups(targetGroups.map(g => g.id === editingGroup.id ? json.data : g))
+          setEditingGroup(null)
+          setGroupName("")
+          setGroupDisplayName("")
+        }
+      } else {
+        const res = await fetch("/api/target-groups", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: groupName, displayName: groupDisplayName }),
+        })
+        const json = await res.json()
+        if (json.error) {
+          alert(json.error)
+        } else {
+          setTargetGroups([...targetGroups, json.data])
+          setGroupName("")
+          setGroupDisplayName("")
+        }
+      }
+    } catch {
+      alert("Failed to save target group")
+    } finally {
+      setSavingGroup(false)
+    }
+  }
+
+  const handleDeleteGroup = async (groupId: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete the "${name}" target group? This will not delete categories automatically, but any categories assigned to it will no longer display under this group.`)) return
+    try {
+      const res = await fetch(`/api/target-groups/${groupId}`, {
+        method: "DELETE",
+      })
+      const json = await res.json()
+      if (json.error) {
+        alert(json.error)
+      } else {
+        setTargetGroups(targetGroups.filter(g => g.id !== groupId))
+        if (activeTab === name) {
+          const remaining = targetGroups.filter(g => g.id !== groupId)
+          if (remaining.length > 0) {
+            setActiveTab(remaining[0].name)
+          }
+        }
+      }
+    } catch {
+      alert("Failed to delete target group")
+    }
   }
 
   const handleDelete = async () => {
@@ -192,33 +284,34 @@ export default function CategoriesPage() {
   }
 
   return (
-    <main className="p-8 space-y-6 flex-1">
+    <main className="p-8 space-y-6 flex-1 bg-zinc-950/20">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Test Case Categories</h1>
         <p className="text-gray-400 mt-2">Create and organize categories before building test cases. Drag items to reorder.</p>
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-white/5 space-x-4">
+      {/* Tabs Header with Manage Target Groups Trigger */}
+      <div className="flex border-b border-white/5 justify-between items-center w-full">
+        <div className="flex space-x-4 overflow-x-auto pb-0.5 scrollbar-none">
+          {targetGroups.map((g) => (
+            <button
+              key={g.id}
+              onClick={() => setActiveTab(g.name)}
+              className={`pb-3 text-sm font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                activeTab === g.name
+                  ? "border-brand-cyan text-brand-cyan"
+                  : "border-transparent text-gray-400 hover:text-white"
+              }`}
+            >
+              {g.displayName} Categories
+            </button>
+          ))}
+        </div>
         <button
-          onClick={() => setActiveTab("JOBSEEKER")}
-          className={`pb-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-            activeTab === "JOBSEEKER"
-              ? "border-brand-cyan text-brand-cyan"
-              : "border-transparent text-gray-400 hover:text-white"
-          }`}
+          onClick={() => setIsManageGroupsOpen(true)}
+          className="pb-3 text-xs font-bold text-brand-cyan hover:text-brand-cyan/85 transition-colors cursor-pointer select-none"
         >
-          Jobseeker Categories
-        </button>
-        <button
-          onClick={() => setActiveTab("EMPLOYER")}
-          className={`pb-3 text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-            activeTab === "EMPLOYER"
-              ? "border-brand-cyan text-brand-cyan"
-              : "border-transparent text-gray-400 hover:text-white"
-          }`}
-        >
-          Employer Categories
+          Manage UAT Groups
         </button>
       </div>
 
@@ -266,11 +359,14 @@ export default function CategoriesPage() {
               <label className="block text-xs text-gray-400 font-semibold">Target Group</label>
               <select
                 value={targetGroup}
-                onChange={(e) => setTargetGroup(e.target.value as "JOBSEEKER" | "EMPLOYER")}
+                onChange={(e) => setTargetGroup(e.target.value)}
                 className="w-full rounded-xl border border-white/10 bg-zinc-900 px-4 py-3 text-sm text-white focus:border-brand-cyan focus:outline-none focus:ring-1 focus:ring-brand-cyan transition-all"
               >
-                <option value="JOBSEEKER">Jobseeker</option>
-                <option value="EMPLOYER">Employer</option>
+                {targetGroups.map((g) => (
+                  <option key={g.id} value={g.name}>
+                    {g.displayName}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -310,7 +406,7 @@ export default function CategoriesPage() {
         {/* Categories List */}
         <div className="lg:col-span-2 border border-white/5 bg-zinc-900/40 backdrop-blur-md p-6 rounded-2xl space-y-4">
           <h2 className="text-xl font-bold">
-            {activeTab === "JOBSEEKER" ? "Jobseeker" : "Employer"} Categories List
+            {targetGroups.find((g) => g.name === activeTab)?.displayName || "Group"} Categories List
           </h2>
 
           {loading ? (
@@ -323,7 +419,7 @@ export default function CategoriesPage() {
             </div>
           ) : activeCategories.length === 0 ? (
             <p className="text-xs text-gray-500 py-16 text-center">
-              No categories created yet for {activeTab === "JOBSEEKER" ? "Jobseekers" : "Employers"}. Add one using the form on the left.
+              No categories created yet for {targetGroups.find((g) => g.name === activeTab)?.displayName || "this group"}. Add one using the form on the left.
             </p>
           ) : (
             <div className="overflow-x-auto">
@@ -354,7 +450,7 @@ export default function CategoriesPage() {
                       </td>
                       <td className="py-4 px-6 font-semibold">
                         <div className="flex items-center gap-2">
-                          <Folder className="w-4 h-4 text-brand-cyan shrink-0" />
+                           <Folder className="w-4 h-4 text-brand-cyan shrink-0" />
                           <span>{c.name}</span>
                         </div>
                       </td>
@@ -390,6 +486,115 @@ export default function CategoriesPage() {
           )}
         </div>
       </div>
+
+      {/* Target Groups Manager Modal */}
+      {isManageGroupsOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-xl border border-white/10 bg-zinc-950 rounded-2xl p-6 space-y-6 shadow-2xl relative">
+            <button
+              onClick={() => {
+                setIsManageGroupsOpen(false);
+                setEditingGroup(null);
+                setGroupName("");
+                setGroupDisplayName("");
+              }}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div>
+              <h3 className="text-xl font-bold text-white">Manage UAT Target Groups</h3>
+              <p className="text-xs text-gray-400 mt-1">Add, edit, or delete UAT target groups. Active groups dictate category/test filters.</p>
+            </div>
+
+            {/* List existing groups */}
+            <div className="border border-white/5 rounded-xl bg-black/20 p-4 max-h-60 overflow-y-auto space-y-2">
+              {targetGroups.map((g) => (
+                <div key={g.id} className="flex items-center justify-between p-2.5 rounded-lg border border-white/5 bg-zinc-900/40 text-xs">
+                  <div>
+                    <span className="font-semibold text-white">{g.displayName}</span>
+                    <span className="text-[10px] font-mono text-gray-500 ml-2">({g.name})</span>
+                  </div>
+                  <div className="flex space-x-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingGroup(g);
+                        setGroupName(g.name);
+                        setGroupDisplayName(g.displayName);
+                      }}
+                      className="p-1 text-brand-cyan hover:bg-brand-cyan/10 rounded border border-transparent transition-colors cursor-pointer"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteGroup(g.id, g.name)}
+                      className="p-1 text-red-500 hover:bg-red-500/10 rounded border border-transparent transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Add/Edit group form */}
+            <form onSubmit={handleSaveGroup} className="border-t border-white/5 pt-4 space-y-4">
+              <h4 className="text-sm font-semibold text-brand-cyan">
+                {editingGroup ? "Edit Target Group" : "Create New Target Group"}
+              </h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="block text-[10px] text-gray-400 font-bold uppercase">System Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={groupName}
+                    onChange={(e) => setGroupName(e.target.value.toUpperCase().replace(/\s+/g, "_"))}
+                    placeholder="e.g. AGENCY"
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-xs text-white placeholder-gray-600 focus:border-brand-cyan focus:outline-none focus:ring-1 focus:ring-brand-cyan transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-[10px] text-gray-400 font-bold uppercase">Display Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={groupDisplayName}
+                    onChange={(e) => setGroupDisplayName(e.target.value)}
+                    placeholder="e.g. Agency Profile"
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-xs text-white placeholder-gray-600 focus:border-brand-cyan focus:outline-none focus:ring-1 focus:ring-brand-cyan transition-all"
+                  />
+                </div>
+              </div>
+              <div className="flex space-x-2 pt-2 justify-end">
+                {editingGroup && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingGroup(null);
+                      setGroupName("");
+                      setGroupDisplayName("");
+                    }}
+                    className="px-4 py-2.5 rounded-xl text-xs font-semibold border border-white/10 bg-white/5 hover:bg-white/10 text-gray-300 transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  disabled={savingGroup || !groupName || !groupDisplayName}
+                  className="px-5 py-2.5 rounded-xl text-xs font-semibold text-white bg-brand-cyan hover:opacity-90 active:scale-[0.98] disabled:opacity-50 transition-all cursor-pointer shadow-md shadow-brand-cyan/10 flex items-center justify-center space-x-1.5"
+                >
+                  {savingGroup ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                  <span>{editingGroup ? "Save Changes" : "Create Group"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       <ConfirmModal

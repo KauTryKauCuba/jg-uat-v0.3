@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ data: null, error: "Category Name is required" }, { status: 400 });
     }
 
-    const validGroup = targetGroup === "EMPLOYER" ? "EMPLOYER" : "JOBSEEKER";
+    const validGroup = targetGroup ? String(targetGroup).toUpperCase().trim() : "JOBSEEKER_WEB";
 
     // Determine the next order index
     const countResult = await db

@@ -149,7 +149,7 @@ export default async function TesterPage() {
       initialCategories={categories}
       initialCases={cases}
       userName={session?.user?.name || "Tester"}
-      testerGroup={testerGroup as "JOBSEEKER" | "EMPLOYER" | null}
+      testerGroup={testerGroup}
       employerLocked={employerLocked}
       testerId={session.user.id}
     />

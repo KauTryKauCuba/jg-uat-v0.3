@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { db } from "@/lib/db";
-import { users } from "@/db/schema";
+import { users, uatTargetGroups } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function POST(req: NextRequest) {
@@ -15,8 +15,11 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { group } = body;
 
-    if (group !== "JOBSEEKER" && group !== "EMPLOYER") {
-      return NextResponse.json({ error: "Invalid group. Must be JOBSEEKER or EMPLOYER" }, { status: 400 });
+    const activeGroups = await db.select().from(uatTargetGroups);
+    const validGroupNames = activeGroups.map(g => g.name);
+
+    if (!validGroupNames.includes(group)) {
+      return NextResponse.json({ error: `Invalid group. Must be one of: ${validGroupNames.join(", ")}` }, { status: 400 });
     }
 
     // Check if the user already has a group set

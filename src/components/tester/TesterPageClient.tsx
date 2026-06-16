@@ -199,7 +199,7 @@ interface TesterPageClientProps {
   initialCategories: CategoryItem[]
   initialCases: CaseItem[]
   userName: string
-  testerGroup: "JOBSEEKER" | "EMPLOYER" | null
+  testerGroup: string | null
   employerLocked: boolean
   testerId: string
 }
@@ -231,6 +231,8 @@ export function TesterPageClient({
   const [selectCount, setSelectCount] = React.useState<number>(0)
   const [startTime, setStartTime] = React.useState("")
   const [selectingGroup, setSelectingGroup] = React.useState<string | null>(null)
+  const [targetGroups, setTargetGroups] = React.useState<{ id: string; name: string; displayName: string }[]>([])
+  const [loadingGroups, setLoadingGroups] = React.useState(true)
   const scrollContainerRef = React.useRef<HTMLDivElement>(null)
 
   // Tooltip Tour Guide Configuration
@@ -327,7 +329,7 @@ export function TesterPageClient({
 
   // Handle auto-start on first load / after signin if user hasn't done anything yet
   React.useEffect(() => {
-    if (testerGroup === "JOBSEEKER" && !loadingResources) {
+    if ((testerGroup === "JOBSEEKER" || testerGroup === "JOBSEEKER_WEB") && !loadingResources) {
       const hasDoneAnything = initialCases.some((c) => c.testerStatus !== "not_started")
       const hasSelectedResource = resourceSets.some((s) => s.testerId === testerId)
       const completed = localStorage.getItem("jg-uat-tour-completed")
@@ -470,6 +472,23 @@ export function TesterPageClient({
 
 
   React.useEffect(() => {
+    const fetchTargetGroups = async () => {
+      try {
+        const res = await fetch("/api/target-groups")
+        const json = await res.json()
+        if (json.data) {
+          setTargetGroups(json.data)
+        }
+      } catch (err) {
+        console.error("Failed to fetch target groups:", err)
+      } finally {
+        setLoadingGroups(false)
+      }
+    }
+    fetchTargetGroups()
+  }, [])
+
+  React.useEffect(() => {
     setStartTime(new Date().toLocaleString())
   }, [])
 
@@ -581,7 +600,7 @@ export function TesterPageClient({
     }
   }
 
-  const handleSelectGroup = async (group: "JOBSEEKER" | "EMPLOYER") => {
+  const handleSelectGroup = async (group: string) => {
     setSelectingGroup(group)
     try {
       const res = await fetch("/api/tester/select-group", {
@@ -608,8 +627,17 @@ export function TesterPageClient({
 
   // Render first-time select role flow
   if (!testerGroup) {
+    if (loadingGroups) {
+      return (
+        <main className="max-w-3xl mx-auto px-6 py-16 w-full flex-1 flex flex-col justify-center items-center text-white relative z-10">
+          <Loader2 className="w-8 h-8 animate-spin text-brand-cyan" />
+          <p className="mt-4 text-gray-400 text-sm">Loading testing roles...</p>
+        </main>
+      )
+    }
+
     return (
-      <main className="max-w-3xl mx-auto px-6 py-16 w-full flex-1 flex flex-col justify-center items-center text-white relative z-10">
+      <main className="max-w-6xl mx-auto px-6 py-16 w-full flex-1 flex flex-col justify-center items-center text-white relative z-10">
         <div className="text-center space-y-4 max-w-lg mb-10">
           <div className="inline-flex p-3 rounded-full bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/25 mb-2">
             <User className="w-8 h-8" />
@@ -620,60 +648,64 @@ export function TesterPageClient({
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-          {/* Jobseeker Card */}
-          <div className="border border-white/5 bg-zinc-900/40 hover:border-brand-teal/30 p-8 rounded-3xl flex flex-col justify-between transition-all duration-300 shadow-xl relative overflow-hidden group">
-            <div className="space-y-4">
-              <div className="p-3 rounded-2xl bg-brand-teal/10 border border-brand-teal/20 text-brand-teal w-fit">
-                <User className="w-6 h-6" />
-              </div>
-              <h2 className="text-xl font-bold text-white">Jobseeker Profile</h2>
-              <p className="text-xs text-gray-400 leading-relaxed">
-                Test candidate dashboard flows, job search and filters, resume uploads, profile setup, and application tracking systems.
-              </p>
-            </div>
-            <button
-              onClick={() => handleSelectGroup("JOBSEEKER")}
-              disabled={selectingGroup !== null}
-              className="mt-8 w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-xs font-bold bg-brand-teal hover:bg-brand-teal/90 text-white transition-all cursor-pointer disabled:opacity-50"
-            >
-              {selectingGroup === "JOBSEEKER" ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <>
-                  <span>Select Jobseeker</span>
-                  <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                </>
-              )}
-            </button>
-          </div>
+        <div className={`grid grid-cols-1 ${targetGroups.length > 3 ? 'md:grid-cols-4' : targetGroups.length === 3 ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-6 w-full`}>
+          {targetGroups.map((group) => {
+            const isJobseeker = group.name === "JOBSEEKER" || group.name === "JOBSEEKER_WEB";
+            const isEmployer = group.name === "EMPLOYER";
+            
+            let icon = <User className="w-6 h-6" />;
+            let bgIconClass = "bg-brand-teal/10 border-brand-teal/20 text-brand-teal";
+            let hoverBorder = "hover:border-brand-teal/30";
+            let btnClass = "bg-brand-teal hover:bg-brand-teal/90";
+            let description = `Test category flows, scenarios, and custom workflow validations assigned to the ${group.displayName} target group.`;
 
-          {/* Employer Card */}
-          <div className="border border-white/5 bg-zinc-900/40 hover:border-brand-cyan/30 p-8 rounded-3xl flex flex-col justify-between transition-all duration-300 shadow-xl relative overflow-hidden group">
-            <div className="space-y-4">
-              <div className="p-3 rounded-2xl bg-brand-cyan/10 border border-brand-cyan/20 text-brand-cyan w-fit">
-                <Briefcase className="w-6 h-6" />
+            if (isJobseeker) {
+              icon = <User className="w-6 h-6" />;
+              bgIconClass = "bg-brand-teal/10 border-brand-teal/20 text-brand-teal";
+              hoverBorder = "hover:border-brand-teal/30";
+              btnClass = "bg-brand-teal hover:bg-brand-teal/90";
+              description = "Test candidate dashboard flows, job search and filters, resume uploads, profile setup, and application tracking systems.";
+            } else if (isEmployer) {
+              icon = <Briefcase className="w-6 h-6" />;
+              bgIconClass = "bg-brand-cyan/10 border-brand-cyan/20 text-brand-cyan";
+              hoverBorder = "hover:border-brand-cyan/30";
+              btnClass = "bg-brand-cyan hover:bg-brand-cyan/90";
+              description = "Test job postings creation, applicant screening dashboards, company profile customizations, and employer administration systems.";
+            } else {
+              icon = <Folder className="w-6 h-6" />;
+              bgIconClass = "bg-zinc-800 border-zinc-700 text-zinc-300";
+              hoverBorder = "hover:border-zinc-700/50";
+              btnClass = "bg-zinc-700 hover:bg-zinc-650";
+            }
+
+            return (
+              <div key={group.id} className={`border border-white/5 bg-zinc-900/40 ${hoverBorder} p-8 rounded-3xl flex flex-col justify-between transition-all duration-300 shadow-xl relative overflow-hidden group`}>
+                <div className="space-y-4">
+                  <div className={`p-3 rounded-2xl w-fit ${bgIconClass}`}>
+                    {icon}
+                  </div>
+                  <h2 className="text-xl font-bold text-white">{group.displayName} Profile</h2>
+                  <p className="text-xs text-gray-400 leading-relaxed font-normal">
+                    {description}
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleSelectGroup(group.name)}
+                  disabled={selectingGroup !== null}
+                  className={`mt-8 w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-xs font-bold ${btnClass} text-white transition-all cursor-pointer disabled:opacity-50`}
+                >
+                  {selectingGroup === group.name ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <span>Select {group.displayName}</span>
+                      <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    </>
+                  )}
+                </button>
               </div>
-              <h2 className="text-xl font-bold text-white">Employer Profile</h2>
-              <p className="text-xs text-gray-400 leading-relaxed">
-                Test job postings creation, applicant screening dashboards, company profile customizations, and employer administration systems.
-              </p>
-            </div>
-            <button
-              onClick={() => handleSelectGroup("EMPLOYER")}
-              disabled={selectingGroup !== null}
-              className="mt-8 w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-xs font-bold bg-brand-cyan hover:bg-brand-cyan/90 text-white transition-all cursor-pointer disabled:opacity-50"
-            >
-              {selectingGroup === "EMPLOYER" ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <>
-                  <span>Select Employer</span>
-                  <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-                </>
-              )}
-            </button>
-          </div>
+            );
+          })}
         </div>
       </main>
     )
@@ -764,7 +796,7 @@ export function TesterPageClient({
               <div className="space-y-1">
                 <h1 className="text-3xl font-extrabold tracking-tight">Welcome, {userName}!</h1>
                 <p className="text-sm text-gray-400">
-                  Thank you for joining. Testing UAT flow as: <span className="font-semibold text-brand-cyan">{testerGroup === "EMPLOYER" ? "Employer" : "Jobseeker"}</span>
+                  Thank you for joining. Testing UAT flow as: <span className="font-semibold text-brand-cyan">{testerGroup === "EMPLOYER" ? "Employer" : testerGroup === "JOBSEEKER_WEB" ? "Jobseeker Web" : testerGroup === "JOBSEEKER" ? "Jobseeker" : testerGroup}</span>
                 </p>
               </div>
               <div className="text-xs text-gray-500 font-mono bg-white/5 px-4 py-2.5 rounded-xl border border-white/5 flex flex-col sm:items-end w-full sm:w-auto shrink-0">
@@ -1078,7 +1110,7 @@ export function TesterPageClient({
       {isEmpty ? (
         <div className="m-auto text-center py-20 border border-dashed border-white/10 rounded-3xl space-y-3 bg-zinc-900/40 backdrop-blur-md p-8 max-w-md shadow-xl">
           <p className="text-gray-400 font-semibold">No test cases available yet.</p>
-          <p className="text-xs text-gray-500">Your administrator hasn&apos;t published any UAT test case scenarios for {testerGroup === "EMPLOYER" ? "Employers" : "Jobseekers"} yet.</p>
+          <p className="text-xs text-gray-500">Your administrator hasn&apos;t published any UAT test case scenarios for {testerGroup === "EMPLOYER" ? "Employers" : testerGroup === "JOBSEEKER_WEB" ? "Jobseekers (Web)" : testerGroup === "JOBSEEKER" ? "Jobseekers" : testerGroup} yet.</p>
         </div>
       ) : (
         <div className="space-y-10">

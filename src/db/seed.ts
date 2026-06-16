@@ -1,10 +1,16 @@
 import "dotenv/config";
 import { db } from "../lib/db";
-import { users } from "./schema";
+import { users, uatTargetGroups } from "./schema";
 import bcrypt from "bcrypt";
 
 async function main() {
   console.log("Seeding database with bcrypt hashed users...");
+  
+  console.log("Seeding UAT Target Groups...");
+  await db.insert(uatTargetGroups).values([
+    { name: "JOBSEEKER_WEB", displayName: "Jobseeker Web" },
+    { name: "EMPLOYER", displayName: "Employer" },
+  ]).onConflictDoNothing();
   
   const saltRounds = 10;
   const adminPassword = await bcrypt.hash("admin123", saltRounds);
