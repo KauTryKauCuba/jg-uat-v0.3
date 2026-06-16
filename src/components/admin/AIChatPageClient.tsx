@@ -136,7 +136,7 @@ export function AIChatPageClient({ runs }: AIChatPageClientProps) {
   ]
 
   return (
-    <main className="flex h-[calc(100vh-2rem)] flex-1 overflow-hidden p-6 gap-6 bg-[#0a0a0a]">
+    <main className="flex h-[calc(100vh-2rem)] flex-1 overflow-hidden p-6 gap-6">
       
       {/* Left panel: Context/Runs selector */}
       <div className="w-80 flex flex-col border border-white/5 bg-zinc-900/20 backdrop-blur-md rounded-3xl p-4 space-y-4 shrink-0 overflow-hidden">

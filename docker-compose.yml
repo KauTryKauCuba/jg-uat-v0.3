@@ -22,6 +22,7 @@ services:
       DATABASE_URL: postgresql://postgres:postgrespassword@postgres:5432/jg_uat
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
       NEXTAUTH_URL: https://jg-uat.jejaku.my
+      OLLAMA_URL: http://172.17.0.1:11434/api/chat
     depends_on:
       - postgres
     volumes:
