@@ -714,13 +714,6 @@ export function TesterPageClient({
               .animate-pulse-ring {
                 animation: pulse-ring 2s infinite ease-in-out;
               }
-              @keyframes fadeIn {
-                from { opacity: 0; transform: scale(0.95); }
-                to { opacity: 1; transform: scale(1); }
-              }
-              .animate-fade-in {
-                animation: fadeIn 0.25s ease-out forwards;
-              }
               .tour-active-highlight {
                 position: relative !important;
                 z-index: 50 !important;
@@ -1195,13 +1188,12 @@ export function TesterPageClient({
           />
           {/* Popover */}
           <div
-            key={tourStep}
             style={{
               position: 'absolute',
               top: tooltipPos.top,
               left: tooltipPos.left,
             }}
-            className="w-[340px] max-w-[calc(100vw-32px)] bg-zinc-950/95 border border-brand-teal/40 p-5 rounded-2xl shadow-2xl z-50 text-white backdrop-blur-md animate-fade-in space-y-4"
+            className="w-[340px] max-w-[calc(100vw-32px)] bg-zinc-950/95 border border-brand-teal/40 p-5 rounded-2xl shadow-2xl z-50 text-white backdrop-blur-md transition-all duration-300 animate-fade-in space-y-4"
           >
             <div className="space-y-1">
               <span className="text-[10px] font-bold text-brand-cyan uppercase tracking-wider">
