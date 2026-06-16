@@ -225,6 +225,17 @@ export function TesterPageClient({
       : "Available Test Cases"
   )
 
+  // Completion status and modal states
+  const isAllCompleted = initialCases.length > 0 && initialCases.every(c => c.testerStatus === "submitted")
+  const [showCompletionModal, setShowCompletionModal] = React.useState(false)
+  const [hasDismissedCompletion, setHasDismissedCompletion] = React.useState(false)
+
+  React.useEffect(() => {
+    if (isAllCompleted && !hasDismissedCompletion) {
+      setShowCompletionModal(true)
+    }
+  }, [isAllCompleted, hasDismissedCompletion])
+
   const [loadingId, setLoadingId] = React.useState<string | null>(null)
   const [resourceSets, setResourceSets] = React.useState<ResourceSet[]>([])
   const [selectedSet, setSelectedSet] = React.useState<ResourceSet | null>(null)
@@ -1137,6 +1148,49 @@ export function TesterPageClient({
         </div>
       )}
 
+      {/* 2 Additional Cards when UAT is Completed & Modal is Closed */}
+      {isAllCompleted && hasDismissedCompletion && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
+          {/* UAT Feedback Card */}
+          <div className="bg-zinc-900/40 border border-brand-cyan/20 rounded-3xl p-6 backdrop-blur-md shadow-xl flex flex-col justify-between space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2.5">
+                <span className="text-xl">💬</span>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-brand-cyan">UAT Feedback</h3>
+              </div>
+              <p className="text-xs text-gray-400 leading-relaxed">
+                Provide observations, report blocker bugs, or submit feedback to the system administrator about your testing scenarios.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="w-full py-3 rounded-xl bg-brand-cyan hover:opacity-90 text-white font-bold text-xs shadow-md shadow-brand-cyan/10 transition-all cursor-pointer"
+            >
+              Open Feedback Panel
+            </button>
+          </div>
+
+          {/* UAT Sign Off Card */}
+          <div className="bg-zinc-900/40 border border-brand-teal/20 rounded-3xl p-6 backdrop-blur-md shadow-xl flex flex-col justify-between space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2.5">
+                <span className="text-xl">✍️</span>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-brand-teal">UAT Sign Off</h3>
+              </div>
+              <p className="text-xs text-gray-400 leading-relaxed">
+                Formally confirm that you have successfully completed all scenario scripts and sign off on this release cycle.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="w-full py-3 rounded-xl bg-brand-teal hover:opacity-90 text-white font-bold text-xs shadow-md shadow-brand-teal/10 transition-all cursor-pointer"
+            >
+              Sign Off Scenario
+            </button>
+          </div>
+        </div>
+      )}
+
       {isEmpty ? (
         <div className="m-auto text-center py-20 border border-dashed border-white/10 rounded-3xl space-y-3 bg-zinc-900/40 backdrop-blur-md p-8 max-w-md shadow-xl">
           <p className="text-gray-400 font-semibold">No test cases available yet.</p>
@@ -1315,6 +1369,48 @@ export function TesterPageClient({
             </div>
           </div>
         </>
+      )}
+      {/* UAT Completion Dashboard Modal */}
+      {showCompletionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-zinc-950/95 border border-brand-teal/20 rounded-3xl p-8 max-w-md w-full text-center space-y-6 relative shadow-2xl shadow-brand-teal/5">
+            
+            {/* Celebration Visuals */}
+            <div className="mx-auto w-16 h-16 rounded-full bg-brand-teal/15 text-brand-cyan border border-brand-teal/20 flex items-center justify-center text-3xl animate-bounce">
+              🎉
+            </div>
+
+            <div className="space-y-2">
+              <h2 className="text-xl font-extrabold tracking-tight text-white">UAT Completed!</h2>
+              <p className="text-xs text-gray-400 leading-relaxed">
+                Congratulations! You have completed all assigned UAT test scenarios for this cycle.
+              </p>
+            </div>
+
+            {/* Performance Stats */}
+            <div className="grid grid-cols-2 gap-4 border border-white/5 bg-white/[0.02] p-4 rounded-2xl text-left text-xs">
+              <div>
+                <span className="text-gray-500 font-semibold uppercase block">Total Scenarios</span>
+                <span className="text-sm font-extrabold text-white mt-0.5 block">{initialCases.length}</span>
+              </div>
+              <div>
+                <span className="text-gray-500 font-semibold uppercase block">UAT Status</span>
+                <span className="text-sm font-extrabold text-emerald-400 mt-0.5 block">Finished ✓</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setShowCompletionModal(false)
+                setHasDismissedCompletion(true)
+              }}
+              className="w-full py-3 rounded-xl bg-brand-teal hover:bg-brand-teal/95 text-white font-bold text-xs shadow-lg shadow-brand-teal/15 transition-all cursor-pointer"
+            >
+              Go to Dashboard
+            </button>
+          </div>
+        </div>
       )}
     </main>
   )
