@@ -206,6 +206,7 @@ export function TesterPageClient({
   const [loadingId, setLoadingId] = React.useState<string | null>(null)
   const [resourceSets, setResourceSets] = React.useState<ResourceSet[]>([])
   const [selectedSet, setSelectedSet] = React.useState<ResourceSet | null>(null)
+  const [briefingDeck, setBriefingDeck] = React.useState<{ id: string; url: string; fileName: string } | null>(null)
   const [loadingResources, setLoadingResources] = React.useState(true)
   const [selectCount, setSelectCount] = React.useState<number>(0)
   const [startTime, setStartTime] = React.useState("")
@@ -476,9 +477,22 @@ export function TesterPageClient({
         setLoadingResources(false)
       }
     }
+
+    const fetchBriefing = async () => {
+      try {
+        const res = await fetch("/api/tester/briefing-deck")
+        const json = await res.json()
+        if (json.data) {
+          setBriefingDeck(json.data)
+        }
+      } catch (err) {
+        console.error("Failed to load UAT briefing deck:", err)
+      }
+    }
     
     if (testerGroup) {
       fetchResources()
+      fetchBriefing()
     }
   }, [testerGroup, testerId])
 
@@ -881,6 +895,41 @@ export function TesterPageClient({
                 Choose a photo set. The resume and IC card are linked as a set.
               </p>
             </div>
+
+            {/* Briefing Deck Section */}
+            {briefingDeck && (
+              <>
+                <div className="border border-white/5 bg-white/[0.02] p-3 rounded-xl flex items-center justify-between">
+                  <div className="flex items-center space-x-2.5 truncate">
+                    <span className="text-xl">📄</span>
+                    <div className="truncate">
+                      <p className="text-[11px] font-bold text-white truncate">{briefingDeck.fileName}</p>
+                      <p className="text-[9px] text-brand-teal font-extrabold uppercase tracking-wider">UAT Briefing Deck</p>
+                    </div>
+                  </div>
+                   <div className="flex items-center space-x-2 shrink-0">
+                    <a
+                      href={briefingDeck.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-white font-bold text-[10px] cursor-pointer whitespace-nowrap transition-all"
+                    >
+                      View
+                    </a>
+                    <a
+                      href={briefingDeck.url}
+                      download={briefingDeck.fileName}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-3 py-1.5 rounded-lg bg-brand-cyan hover:opacity-90 text-white font-bold text-[10px] cursor-pointer whitespace-nowrap shadow-md shadow-brand-cyan/10 transition-all"
+                    >
+                      Download
+                    </a>
+                  </div>
+                </div>
+                <hr className="border-white/5" />
+              </>
+            )}
 
             {/* Photo Selection Sets */}
             {loadingResources ? (

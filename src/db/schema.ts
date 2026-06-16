@@ -202,4 +202,13 @@ export const uatResourceSetsRelations = relations(uatResourceSets, ({ one }) => 
   }),
 }));
 
+export const uatBriefingDeck = pgTable("uat_briefing_deck", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  url: text("url").notNull(),
+  fileName: text("file_name").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+
 

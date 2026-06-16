@@ -16,6 +16,7 @@ interface ResourceSet {
 
 export default function ResourcesPage() {
   const [resourceSets, setResourceSets] = React.useState<ResourceSet[]>([])
+  const [briefingDeck, setBriefingDeck] = React.useState<{ id: string; url: string; fileName: string } | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
 
@@ -29,6 +30,8 @@ export default function ResourcesPage() {
   const [uploadingPhoto, setUploadingPhoto] = React.useState(false)
   const [uploadingResume, setUploadingResume] = React.useState(false)
   const [uploadingIc, setUploadingIc] = React.useState(false)
+  const [uploadingBriefing, setUploadingBriefing] = React.useState(false)
+  const [savingBriefing, setSavingBriefing] = React.useState(false)
 
   const [submitting, setSubmitting] = React.useState(false)
   const [deletingId, setDeletingId] = React.useState<string | null>(null)
@@ -51,9 +54,82 @@ export default function ResourcesPage() {
     }
   }
 
+  const fetchBriefingDeck = async () => {
+    try {
+      const res = await fetch("/api/admin/briefing-deck")
+      const json = await res.json()
+      if (json.data) {
+        setBriefingDeck(json.data)
+      } else {
+        setBriefingDeck(null)
+      }
+    } catch (err) {
+      console.error("Failed to load briefing deck", err)
+    }
+  }
+
   React.useEffect(() => {
     fetchSets()
+    fetchBriefingDeck()
   }, [])
+
+  const handleBriefingUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const formData = new FormData()
+    formData.append("file", file)
+
+    setUploadingBriefing(true)
+    try {
+      const res = await fetch("/api/upload/pdf", {
+        method: "POST",
+        body: formData,
+      })
+      const json = await res.json()
+      if (json.error) {
+        alert(json.error)
+      } else {
+        const url = json.data.url
+        const fileName = file.name
+        
+        setSavingBriefing(true)
+        const saveRes = await fetch("/api/admin/briefing-deck", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url, fileName }),
+        })
+        const saveJson = await saveRes.json()
+        if (saveJson.error) {
+          alert(saveJson.error)
+        } else {
+          setBriefingDeck(saveJson.data)
+        }
+      }
+    } catch (err) {
+      alert("Briefing deck upload failed. Please try again.")
+    } finally {
+      setUploadingBriefing(false)
+      setSavingBriefing(false)
+    }
+  }
+
+  const handleBriefingDelete = async () => {
+    if (!confirm("Are you sure you want to delete the briefing deck?")) return
+    try {
+      const res = await fetch("/api/admin/briefing-deck", {
+        method: "DELETE",
+      })
+      const json = await res.json()
+      if (json.error) {
+        alert(json.error)
+      } else {
+        setBriefingDeck(null)
+      }
+    } catch {
+      alert("Failed to delete briefing deck")
+    }
+  }
 
   const handleFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -165,8 +241,69 @@ export default function ResourcesPage() {
   return (
     <main className="p-8 space-y-6 flex-1">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">UAT Testing Resource Sets</h1>
-        <p className="text-gray-400 mt-2">Manage sets of mock credentials (Photo, Resume, and IC Card) that testers can download as a package.</p>
+        <h1 className="text-3xl font-bold tracking-tight">UAT Testing Resources</h1>
+        <p className="text-gray-400 mt-2">Manage global briefing materials and individual testing persona resource sets.</p>
+      </div>
+
+      {/* Briefing Deck Card */}
+      <div className="border border-white/5 bg-zinc-900/40 backdrop-blur-md p-6 rounded-2xl space-y-4">
+        <h2 className="text-lg font-bold flex items-center gap-2">
+          <FileText className="w-5 h-5 text-brand-teal" />
+          <span>Global Briefing Deck</span>
+        </h2>
+        <p className="text-xs text-gray-400">
+          Upload a master slide deck or instruction manual (PDF format). Testers will see this at the top of their resources box.
+        </p>
+
+        {briefingDeck ? (
+          <div className="flex items-center justify-between border border-white/10 bg-black/30 p-4 rounded-xl w-full">
+            <div className="flex items-center space-x-3 truncate">
+              <FileText className="w-10 h-10 text-brand-cyan shrink-0 p-2 bg-brand-cyan/15 rounded-lg border border-brand-teal/20" />
+              <div className="truncate">
+                <p className="text-sm font-semibold text-white truncate">{briefingDeck.fileName}</p>
+                <a
+                  href={briefingDeck.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[10px] text-brand-cyan hover:underline font-mono"
+                >
+                  View Deck PDF
+                </a>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleBriefingDelete}
+              className="text-xs font-semibold px-4 py-2 rounded-xl border border-red-500/20 text-red-400 hover:bg-red-500/10 cursor-pointer transition-all"
+            >
+              Delete Deck
+            </button>
+          </div>
+        ) : (
+          <div className="w-full">
+            <label className="border border-dashed border-white/10 hover:border-brand-teal/40 bg-white/5 hover:bg-white/10 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all w-full">
+              {uploadingBriefing || savingBriefing ? (
+                <div className="flex flex-col items-center space-y-2">
+                  <Loader2 className="w-6 h-6 text-brand-teal animate-spin" />
+                  <span className="text-xs text-gray-400">Processing file...</span>
+                </div>
+              ) : (
+                <>
+                  <Upload className="w-6 h-6 text-gray-400 mb-2" />
+                  <span className="text-xs font-bold text-gray-300">Upload Briefing Deck PDF</span>
+                  <span className="text-[10px] text-gray-500 mt-1">PDF format only (Max 20MB)</span>
+                </>
+              )}
+              <input
+                type="file"
+                accept=".pdf"
+                disabled={uploadingBriefing || savingBriefing}
+                onChange={handleBriefingUpload}
+                className="hidden"
+              />
+            </label>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
