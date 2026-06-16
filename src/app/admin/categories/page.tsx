@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
-import { Plus, Folder, GripVertical, Edit2, Trash2, X, Save, Loader2, Lock, Unlock } from "lucide-react"
+import { Plus, Folder, GripVertical, Edit2, Trash2, X, Save, Loader2, Lock, Unlock, Copy } from "lucide-react"
 import { ConfirmModal } from "@/components/ui/confirm-modal"
 
 interface Category {
@@ -39,6 +39,7 @@ export default function CategoriesPage() {
   const [groupDisplayName, setGroupDisplayName] = React.useState("")
   const [editingGroup, setEditingGroup] = React.useState<{ id: string; name: string; displayName: string } | null>(null)
   const [savingGroup, setSavingGroup] = React.useState(false)
+  const [isSystemNameUnlocked, setIsSystemNameUnlocked] = React.useState(false)
 
   // Delete modal state
   const [deletingId, setDeletingId] = React.useState<string | null>(null)
@@ -123,6 +124,7 @@ export default function CategoriesPage() {
           setEditingGroup(null)
           setGroupName("")
           setGroupDisplayName("")
+          setIsSystemNameUnlocked(false)
         }
       } else {
         const res = await fetch("/api/target-groups", {
@@ -223,6 +225,23 @@ export default function CategoriesPage() {
       }
     } catch {
       alert("Failed to toggle target group lock status")
+    }
+  }
+
+  const handleDuplicateGroup = async (groupId: string) => {
+    try {
+      const res = await fetch(`/api/target-groups/${groupId}/duplicate`, {
+        method: "POST",
+      })
+      const json = await res.json()
+      if (json.error) {
+        alert(json.error)
+      } else {
+        setTargetGroups([...targetGroups, json.data])
+        alert(`Target group duplicated successfully as "${json.data.displayName}"!`)
+      }
+    } catch {
+      alert("Failed to duplicate target group")
     }
   }
 
@@ -555,6 +574,7 @@ export default function CategoriesPage() {
                 setEditingGroup(null);
                 setGroupName("");
                 setGroupDisplayName("");
+                setIsSystemNameUnlocked(false);
               }}
               className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors cursor-pointer"
             >
@@ -598,10 +618,19 @@ export default function CategoriesPage() {
                     </button>
                     <button
                       type="button"
+                      onClick={() => handleDuplicateGroup(g.id)}
+                      className="p-1 text-gray-400 hover:text-white hover:bg-white/5 rounded border border-transparent transition-colors cursor-pointer"
+                      title="Duplicate Group"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => {
                         setEditingGroup(g);
                         setGroupName(g.name);
                         setGroupDisplayName(g.displayName);
+                        setIsSystemNameUnlocked(false);
                       }}
                       className="p-1 text-brand-cyan hover:bg-brand-cyan/10 rounded border border-transparent transition-colors cursor-pointer"
                     >
@@ -627,14 +656,39 @@ export default function CategoriesPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="block text-[10px] text-gray-400 font-bold uppercase">System Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={groupName}
-                    onChange={(e) => setGroupName(e.target.value.toUpperCase().replace(/\s+/g, "_"))}
-                    placeholder="e.g. AGENCY"
-                    className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-xs text-white placeholder-gray-600 focus:border-brand-cyan focus:outline-none focus:ring-1 focus:ring-brand-cyan transition-all"
-                  />
+                  <div className="relative w-full">
+                    <input
+                      type="text"
+                      required
+                      value={groupName}
+                      onChange={(e) => {
+                        if (editingGroup && !isSystemNameUnlocked) return;
+                        setGroupName(e.target.value.toUpperCase().replace(/\s+/g, "_"));
+                      }}
+                      onClick={() => {
+                        if (editingGroup && !isSystemNameUnlocked) {
+                          const confirmUnlock = window.confirm("Only edit if you know what you are doing.");
+                          if (confirmUnlock) {
+                            setIsSystemNameUnlocked(true);
+                          }
+                        }
+                      }}
+                      readOnly={editingGroup !== null && !isSystemNameUnlocked}
+                      placeholder="e.g. AGENCY"
+                      className={`w-full rounded-xl border border-white/10 bg-white/5 pl-3 pr-10 py-2.5 text-xs text-white placeholder-gray-600 focus:border-brand-cyan focus:outline-none focus:ring-1 focus:ring-brand-cyan transition-all ${
+                        editingGroup && !isSystemNameUnlocked ? "cursor-pointer opacity-70 bg-zinc-900" : ""
+                      }`}
+                    />
+                    {editingGroup && (
+                      <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none">
+                        {isSystemNameUnlocked ? (
+                          <span title="Unlocked"><Unlock className="w-3.5 h-3.5 text-emerald-400" /></span>
+                        ) : (
+                          <span title="Locked (Click input to unlock)"><Lock className="w-3.5 h-3.5 text-red-500" /></span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <label className="block text-[10px] text-gray-400 font-bold uppercase">Display Name *</label>
@@ -656,6 +710,7 @@ export default function CategoriesPage() {
                       setEditingGroup(null);
                       setGroupName("");
                       setGroupDisplayName("");
+                      setIsSystemNameUnlocked(false);
                     }}
                     className="px-4 py-2.5 rounded-xl text-xs font-semibold border border-white/10 bg-white/5 hover:bg-white/10 text-gray-300 transition-all cursor-pointer"
                   >
