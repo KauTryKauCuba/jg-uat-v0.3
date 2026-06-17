@@ -22,7 +22,11 @@ import {
   Filter,
   TrendingUp,
   Activity,
-  ShieldAlert
+  ShieldAlert,
+  UserCheck,
+  MessageSquare,
+  ThumbsUp,
+  AlertTriangle
 } from "lucide-react";
 
 interface TargetGroup {
@@ -185,7 +189,7 @@ export function TestSummaryClient({
   }, [signOffs, activeGroup]);
 
   const groupFilteredTesters = React.useMemo(() => {
-    if (activeGroup === "ALL") return testers;
+    if (activeGroup === "ALL") return testers.filter(t => t.testerGroup !== null && t.testerGroup !== "");
     return testers.filter(t => t.testerGroup === activeGroup);
   }, [testers, activeGroup]);
 
@@ -351,7 +355,9 @@ export function TestSummaryClient({
       if (!orgMap[org]) {
         orgMap[org] = { total: 0, submitted: 0 };
       }
-      orgMap[org].total += totalGroupTestCasesCount;
+      // Calculate expected runs for this tester based on their specific UAT group test cases
+      const testerGroupCases = testCases.filter(tc => tc.targetGroup === t.testerGroup);
+      orgMap[org].total += testerGroupCases.length;
     });
 
     // Count submitted runs for each organisation
@@ -360,8 +366,6 @@ export function TestSummaryClient({
         const org = r.tester.organisationName || "Unassigned";
         if (orgMap[org]) {
           orgMap[org].submitted++;
-        } else {
-          orgMap[org] = { total: totalGroupTestCasesCount, submitted: 1 };
         }
       }
     });
@@ -370,7 +374,7 @@ export function TestSummaryClient({
       const pct = stats.total > 0 ? Math.round((stats.submitted / stats.total) * 100) : 0;
       return { name, ...stats, pct };
     }).sort((a, b) => b.pct - a.pct);
-  }, [groupFilteredTesters, groupFilteredRuns, totalGroupTestCasesCount]);
+  }, [groupFilteredTesters, groupFilteredRuns, testCases]);
 
   // Multi-Dimensional Experience Ratings
   const ratingsBreakdown = React.useMemo(() => {
@@ -401,6 +405,47 @@ export function TestSummaryClient({
     });
     return dist;
   }, [groupFilteredFeedbacks]);
+
+  // Response rate metrics
+  const feedbackResponseRate = React.useMemo(() => {
+    const submitted = groupFilteredFeedbacks.length;
+    const total = groupFilteredTesters.length;
+    const pct = total > 0 ? Math.round((submitted / total) * 100) : 0;
+    return { submitted, total, pct };
+  }, [groupFilteredFeedbacks, groupFilteredTesters]);
+
+  const signOffResponseRate = React.useMemo(() => {
+    const total = groupFilteredTesters.length;
+    const pct = total > 0 ? Math.round((approvedCount / total) * 100) : 0;
+    return { submitted: approvedCount, total, pct };
+  }, [groupFilteredTesters, approvedCount]);
+
+  // Per-tester completion breakdown
+  const testerCompletionData = React.useMemo(() => {
+    return groupFilteredTesters.map(tester => {
+      const testerGroupCases = testCases.filter(tc => tc.targetGroup === tester.testerGroup);
+      const expected = testerGroupCases.length;
+      const completed = groupFilteredRuns.filter(r => r.tester.id === tester.id && r.status !== "PENDING").length;
+      const inProgress = groupFilteredRuns.filter(r => r.tester.id === tester.id && r.status === "PENDING").length;
+      const pct = expected > 0 ? Math.min(100, Math.round((completed / expected) * 100)) : 0;
+      const hasFeedback = groupFilteredFeedbacks.some(f => f.testerId === tester.id);
+      const hasSignOff = groupFilteredSignOffs.some(s => s.testerId === tester.id);
+
+      return {
+        id: tester.id,
+        name: tester.name || "Tester",
+        email: tester.email,
+        organisation: tester.organisationName || "Unassigned",
+        testerGroup: tester.testerGroup,
+        expected,
+        completed,
+        inProgress,
+        pct,
+        hasFeedback,
+        hasSignOff
+      };
+    }).sort((a, b) => b.pct - a.pct);
+  }, [groupFilteredTesters, groupFilteredRuns, groupFilteredFeedbacks, groupFilteredSignOffs, testCases]);
 
   // Blocker & Defect Reason list
   const activeDefects = React.useMemo(() => {
@@ -444,7 +489,7 @@ export function TestSummaryClient({
         } else {
           const testerObj = testers.find(t => t.id === testerId);
           const newSignOff: SignOffItem = {
-            id: Math.random().toString(),
+            id: testerId,
             designation: "UAT Summary Sign-Off",
             createdAt: new Date().toISOString(),
             testerId,
@@ -530,6 +575,17 @@ export function TestSummaryClient({
       } else if (sortField === "status") {
         valA = a.status;
         valB = b.status;
+      } else if (sortField === "severity") {
+        const getSev = (r: RunItem) => {
+          const tf = (r.passFailSummary.failed || 0) + (r.passFailSummary.blocked || 0);
+          if (r.status === "PENDING") return -1;
+          if (tf >= 3) return 3;
+          if (tf >= 1) return 2;
+          if ((r.passFailSummary.na || 0) > 0) return 1;
+          return 0;
+        };
+        valA = getSev(a);
+        valB = getSev(b);
       } else if (sortField === "lastUpdated") {
         valA = new Date(a.submittedAt || a.createdAt).getTime();
         valB = new Date(b.submittedAt || b.createdAt).getTime();
@@ -588,6 +644,255 @@ export function TestSummaryClient({
     });
   };
 
+  const handleExportPDF = () => {
+    const activeGroupName = activeGroup === "ALL" ? "All UAT Groups" : targetGroups.find(g => g.name === activeGroup)?.displayName || activeGroup;
+    
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      alert("Please allow popups to export the UAT summary PDF.");
+      return;
+    }
+
+    const approversRowsHtml = groupFilteredTesters.map(t => {
+      const approval = groupFilteredSignOffs.find(s => s.testerId === t.id);
+      const isApproved = !!approval;
+      return `
+        <tr style="border-bottom: 1px solid #f3f4f6;">
+          <td style="padding: 8px; font-size: 11px; font-weight: bold; color: #111827;">${t.name || "Tester"}</td>
+          <td style="padding: 8px; font-size: 11px; color: #4b5563;">${t.organisationName || "Unassigned"}</td>
+          <td style="padding: 8px; font-size: 11px; color: #4b5563;">${t.testerGroup || "-"}</td>
+          <td style="padding: 8px; font-size: 11px; color: ${isApproved ? "#10b981" : "#ef4444"}; font-weight: bold;">${isApproved ? "Approved" : "Pending"}</td>
+          <td style="padding: 8px; font-size: 11px; color: #6b7280; font-family: monospace;">${isApproved ? formatDateTime(approval.createdAt) : "-"}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const modulesRowsHtml = moduleData.map(m => {
+      return `
+        <tr style="border-bottom: 1px solid #f3f4f6;">
+          <td style="padding: 8px; font-size: 11px; font-weight: bold; color: #111827;">${m.name}</td>
+          <td style="padding: 8px; font-size: 11px; text-align: right; color: #4b5563;">${m.total}</td>
+          <td style="padding: 8px; font-size: 11px; text-align: right; color: #10b981; font-weight: bold;">${m.passed}</td>
+          <td style="padding: 8px; font-size: 11px; text-align: right; color: #ef4444; font-weight: bold;">${m.failed}</td>
+          <td style="padding: 8px; font-size: 11px; text-align: right; color: #f59e0b; font-weight: bold;">${m.blocked}</td>
+          <td style="padding: 8px; font-size: 11px; text-align: right; color: #6b7280;">${m.na}</td>
+        </tr>
+      `;
+    }).join("");
+
+    const defectsHtml = activeDefects.map(d => {
+      return `
+        <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-bottom: 12px; page-break-inside: avoid;">
+          <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;">
+            <strong style="color: ${d.choice === "FAILED" ? "#ef4444" : "#f59e0b"};">${d.choice}</strong>
+            <span style="color: #6b7280;">Scenario: <strong>${d.scenarioTitle}</strong> (${d.fieldName})</span>
+          </div>
+          <p style="margin: 4px 0 0 0; font-size: 11px; color: #374151; font-style: italic;">"${d.defectDetails}"</p>
+          <div style="font-size: 9px; color: #9ca3af; margin-top: 4px;">Logged by: ${d.testerName}</div>
+        </div>
+      `;
+    }).join("") || `<p style="font-size: 11px; color: #6b7280; text-align: center; padding: 12px;">No defects logged for this group.</p>`;
+
+    const feedbackHtml = groupFilteredFeedbacks.map(f => {
+      const fields = [];
+      if (f.impressiveAspects) fields.push(`<div style="margin-top: 4px;"><span style="font-size: 9px; color: #10b981; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em;">What impressed you</span><p style="margin: 2px 0 0 0; font-size: 11px; color: #4b5563; font-style: italic;">"${f.impressiveAspects}"</p></div>`);
+      if (f.improvementAreas) fields.push(`<div style="margin-top: 4px;"><span style="font-size: 9px; color: #f59e0b; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em;">Areas for improvement</span><p style="margin: 2px 0 0 0; font-size: 11px; color: #4b5563; font-style: italic;">"${f.improvementAreas}"</p></div>`);
+      if (f.otherFeedback) fields.push(`<div style="margin-top: 4px;"><span style="font-size: 9px; color: #3b82f6; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em;">Other feedback</span><p style="margin: 2px 0 0 0; font-size: 11px; color: #4b5563; font-style: italic;">"${f.otherFeedback}"</p></div>`);
+      return `
+        <div style="border-bottom: 1px solid #f3f4f6; padding: 8px 0; page-break-inside: avoid;">
+          <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; color: #111827;">
+            <span>${f.testerName || "Tester"} (${f.organisationName || "Unassigned"})</span>
+            <span style="margin-left: auto; color: #d97706;">Overall: ${f.ratingOverall}/5 ⭐</span>
+          </div>
+          ${fields.length > 0 ? fields.join("") : `<p style="margin: 4px 0 0 0; font-size: 11px; color: #9ca3af; font-style: italic;">No comment.</p>`}
+        </div>
+      `;
+    }).join("") || `<p style="font-size: 11px; color: #6b7280; text-align: center; padding: 12px;">No feedback questionnaire responses recorded.</p>`;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>UAT Summary - ${activeGroupName}</title>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+              color: #1f2937;
+              line-height: 1.5;
+              padding: 40px;
+              margin: 0;
+              background-color: #ffffff;
+            }
+            @media print {
+              body {
+                padding: 0;
+              }
+              .no-break {
+                page-break-inside: avoid;
+              }
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+            }
+            th {
+              border-bottom: 2px solid #e5e7eb;
+              padding: 8px;
+              font-weight: bold;
+            }
+            td {
+              border-bottom: 1px solid #e5e7eb;
+              padding: 8px;
+            }
+          </style>
+        </head>
+        <body>
+          <div style="border-bottom: 2px solid #0891b2; padding-bottom: 12px; margin-bottom: 24px; display: flex; align-items: flex-end;">
+            <div>
+              <h1 style="margin: 0; color: #111827; font-size: 24px;">UAT Summary Report</h1>
+              <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 12px;">UAT Target Group: <strong>${activeGroupName}</strong></p>
+            </div>
+            <div style="margin-left: auto; text-align: right; font-size: 10px; color: #9ca3af;">
+              Generated: ${new Date().toLocaleString()}<br/>
+              JobGiga UAT Platform
+            </div>
+          </div>
+
+          <div style="background-color: ${isFullySignedOff ? "#ecfdf5" : "#fdf2f2"}; border: 1px solid ${isFullySignedOff ? "#a7f3d0" : "#fecaca"}; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+            <h3 style="margin: 0; color: ${isFullySignedOff ? "#065f46" : "#991b1b"}; font-size: 14px;">${isFullySignedOff ? "FULLY SIGNED OFF" : "SIGN-OFF PENDING"}</h3>
+            <p style="margin: 4px 0 0 0; font-size: 11px; color: ${isFullySignedOff ? "#047857" : "#b91c1c"};">
+              ${isFullySignedOff ? "All required UAT approvers have signed off and zero defects are open." : `Not ready — ${pendingApproversCount} of ${totalApprovers} approver(s) pending, ${failedRunsCount + blockedRunsCount} failed/blocked case(s) open.`}
+            </p>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;" class="no-break">
+            <div>
+              <h3 style="color: #111827; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; margin-top: 0; margin-bottom: 8px;">Execution Scorecard</h3>
+              <table style="font-size: 11px;">
+                <tbody>
+                  <tr><td><strong>UAT Pass Rate</strong></td><td style="text-align: right; font-weight: bold; color: #0891b2;">${passRate}%</td></tr>
+                  <tr><td>Total Scenario Runs</td><td style="text-align: right;">${totalRunsCount}</td></tr>
+                  <tr><td style="color: #10b981;">Passed Runs</td><td style="text-align: right; color: #10b981; font-weight: bold;">${passedRunsCount}</td></tr>
+                  <tr><td style="color: #ef4444;">Failed Runs</td><td style="text-align: right; color: #ef4444; font-weight: bold;">${failedRunsCount}</td></tr>
+                  <tr><td style="color: #f59e0b;">Blocked Runs</td><td style="text-align: right; color: #f59e0b; font-weight: bold;">${blockedRunsCount}</td></tr>
+                  <tr><td style="color: #6b7280;">N/A Runs</td><td style="text-align: right; color: #6b7280;">${naRunsCount}</td></tr>
+                  <tr><td style="color: #f59e0b;">In Progress Runs</td><td style="text-align: right; color: #f59e0b;">${inProgressRunsCount}</td></tr>
+                  <tr><td>Feedback Submissions</td><td style="text-align: right;">${feedbackResponseRate.submitted} / ${feedbackResponseRate.total} (${feedbackResponseRate.pct}%)</td></tr>
+                  <tr><td>Sign-off Completions</td><td style="text-align: right;">${signOffResponseRate.submitted} / ${signOffResponseRate.total} (${signOffResponseRate.pct}%)</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div>
+              <h3 style="color: #111827; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; margin-top: 0; margin-bottom: 8px;">Onboarding & Sign-off Details</h3>
+              <table style="font-size: 11px;">
+                <tbody>
+                  <tr><td>UAT Coverage Completion</td><td style="text-align: right; font-weight: bold;">${coveragePercent}%</td></tr>
+                  <tr><td style="color: #10b981;">Approved Sign-offs</td><td style="text-align: right; color: #10b981; font-weight: bold;">${approvedCount}</td></tr>
+                  <tr><td style="color: #ef4444;">Pending Approvals</td><td style="text-align: right; color: #ef4444; font-weight: bold;">${pendingApproversCount}</td></tr>
+                  <tr><td>Total Registered Approvers</td><td style="text-align: right;">${totalApprovers}</td></tr>
+                  <tr><td>Average Run Velocity</td><td style="text-align: right;">${avgDurationStr}</td></tr>
+                  <tr><td>Total Combined Run Duration</td><td style="text-align: right;">${totalDurationStr}</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="no-break" style="margin-bottom: 24px;">
+            <h3 style="color: #111827; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; margin-top: 0; margin-bottom: 8px;">UAT Sign-off Signatures</h3>
+            <table style="font-size: 10px;">
+              <thead>
+                <tr style="background-color: #f9fafb; text-align: left; border-bottom: 1px solid #d1d5db;">
+                  <th style="padding: 6px;">Approver Name</th>
+                  <th style="padding: 6px;">Organisation</th>
+                  <th style="padding: 6px;">UAT Role</th>
+                  <th style="padding: 6px;">Status</th>
+                  <th style="padding: 6px;">Approval Date / Signature Tag</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${approversRowsHtml || `<tr><td colspan="5" style="text-align: center; color: #6b7280; padding: 12px;">No approvers registered.</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="no-break" style="margin-bottom: 24px;">
+            <h3 style="color: #111827; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; margin-top: 0; margin-bottom: 8px;">UAT Module Breakdown</h3>
+            <table style="font-size: 10px;">
+              <thead>
+                <tr style="background-color: #f9fafb; text-align: left; border-bottom: 1px solid #d1d5db;">
+                  <th style="padding: 6px;">Module Name</th>
+                  <th style="padding: 6px; text-align: right;">Total Runs</th>
+                  <th style="padding: 6px; text-align: right; color: #10b981;">Passed</th>
+                  <th style="padding: 6px; text-align: right; color: #ef4444;">Failed</th>
+                  <th style="padding: 6px; text-align: right; color: #f59e0b;">Blocked</th>
+                  <th style="padding: 6px; text-align: right; color: #6b7280;">N/A</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${modulesRowsHtml || `<tr><td colspan="6" style="text-align: center; color: #6b7280; padding: 12px;">No module data found.</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="no-break" style="margin-bottom: 24px;">
+            <h3 style="color: #111827; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; margin-top: 0; margin-bottom: 12px;">Open UAT Defects & Deficiencies</h3>
+            ${defectsHtml}
+          </div>
+
+          <div class="no-break" style="margin-bottom: 24px;">
+            <h3 style="color: #111827; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; margin-top: 0; margin-bottom: 12px;">Tester Surveys & Qualitative Feedback</h3>
+            <div style="font-size: 11px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; margin-bottom: 12px; background-color: #f9fafb; padding: 12px; border-radius: 8px;">
+              <div>Overall Average Experience: <strong>${ratingsBreakdown.overall}/5 ⭐</strong></div>
+              <div>Platform Usability Average: <strong>${ratingsBreakdown.easeOfUse}/5 ⭐</strong></div>
+              <div>Instruction Clarity Average: <strong>${ratingsBreakdown.instructions}/5 ⭐</strong></div>
+              <div>Form Submission Usability Average: <strong>${ratingsBreakdown.resultForm}/5 ⭐</strong></div>
+            </div>
+            ${feedbackHtml}
+          </div>
+
+          <div class="no-break" style="margin-bottom: 24px;">
+            <h3 style="color: #111827; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; margin-top: 0; margin-bottom: 8px;">Per-Tester Completion Breakdown</h3>
+            <table style="font-size: 10px;">
+              <thead>
+                <tr style="background-color: #f9fafb; text-align: left; border-bottom: 1px solid #d1d5db;">
+                  <th style="padding: 6px;">Tester</th>
+                  <th style="padding: 6px;">Organisation</th>
+                  <th style="padding: 6px; text-align: right;">Completed</th>
+                  <th style="padding: 6px; text-align: right;">Expected</th>
+                  <th style="padding: 6px; text-align: right;">Progress</th>
+                  <th style="padding: 6px; text-align: center;">Feedback</th>
+                  <th style="padding: 6px; text-align: center;">Sign-off</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${testerCompletionData.map(t => `
+                  <tr style="border-bottom: 1px solid #f3f4f6;">
+                    <td style="padding: 6px; font-size: 11px; font-weight: bold; color: #111827;">${t.name}</td>
+                    <td style="padding: 6px; font-size: 11px; color: #4b5563;">${t.organisation}</td>
+                    <td style="padding: 6px; font-size: 11px; text-align: right; font-weight: bold; color: #111827;">${t.completed}</td>
+                    <td style="padding: 6px; font-size: 11px; text-align: right; color: #6b7280;">${t.expected}</td>
+                    <td style="padding: 6px; font-size: 11px; text-align: right; font-weight: bold; color: ${t.pct >= 100 ? '#10b981' : t.pct >= 50 ? '#0891b2' : '#f59e0b'};">${t.pct}%</td>
+                    <td style="padding: 6px; font-size: 11px; text-align: center; color: ${t.hasFeedback ? '#10b981' : '#ef4444'}; font-weight: bold;">${t.hasFeedback ? 'Yes' : 'No'}</td>
+                    <td style="padding: 6px; font-size: 11px; text-align: center; color: ${t.hasSignOff ? '#10b981' : '#ef4444'}; font-weight: bold;">${t.hasSignOff ? 'Approved' : 'Pending'}</td>
+                  </tr>
+                `).join('') || '<tr><td colspan="7" style="text-align: center; color: #6b7280; padding: 12px;">No testers registered.</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+
+          <script>
+            window.onload = function() {
+              setTimeout(function() {
+                window.print();
+              }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
   const totalSubmittedRuns = passedRunsCount + failedRunsCount + blockedRunsCount + naRunsCount;
 
   return (
@@ -638,9 +943,18 @@ export function TestSummaryClient({
                 <p className="text-xs text-emerald-400/80 mt-0.5">All approvers have approved and zero open Failed or Blocked cases exist.</p>
               </div>
             </div>
-            <span className="px-3.5 py-1 text-xs font-black uppercase tracking-wider bg-emerald-500/20 rounded-full border border-emerald-500/30">
-              Approved
-            </span>
+            <div className="flex items-center space-x-3">
+              <span className="px-3.5 py-1 text-xs font-black uppercase tracking-wider bg-emerald-500/20 rounded-full border border-emerald-500/30">
+                Approved
+              </span>
+              <button
+                onClick={handleExportPDF}
+                className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-emerald-500 text-white text-xs font-bold hover:bg-emerald-600 transition-all cursor-pointer border-0 shadow-md shadow-emerald-500/15"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Export PDF</span>
+              </button>
+            </div>
           </div>
         ) : (
           <div className="p-5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-between">
@@ -653,9 +967,18 @@ export function TestSummaryClient({
                 </p>
               </div>
             </div>
-            <span className="px-3.5 py-1 text-xs font-black uppercase tracking-wider bg-rose-500/20 rounded-full border border-rose-500/30 animate-pulse">
-              In Review
-            </span>
+            <div className="flex items-center space-x-3">
+              <span className="px-3.5 py-1 text-xs font-black uppercase tracking-wider bg-rose-500/20 rounded-full border border-rose-500/30 animate-pulse">
+                In Review
+              </span>
+              <button
+                onClick={handleExportPDF}
+                className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-zinc-800 text-zinc-300 text-xs font-bold hover:bg-zinc-700 transition-all cursor-pointer border border-white/5 shadow-md"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>Export PDF</span>
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -799,6 +1122,48 @@ export function TestSummaryClient({
         </div>
       </div>
 
+      {/* Response Rate Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="border border-white/5 bg-zinc-900/40 backdrop-blur-md p-5 rounded-2xl flex items-center space-x-4">
+          <div className="p-2.5 rounded-xl bg-violet-500/10 border border-violet-500/20">
+            <MessageSquare className="w-5 h-5 text-violet-400" />
+          </div>
+          <div className="flex-1">
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Feedback Response Rate</p>
+            <div className="flex items-baseline space-x-2 mt-1">
+              <p className="text-2xl font-black text-white">{feedbackResponseRate.pct}%</p>
+              <p className="text-[11px] text-gray-500">{feedbackResponseRate.submitted} of {feedbackResponseRate.total} testers</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="border border-white/5 bg-zinc-900/40 backdrop-blur-md p-5 rounded-2xl flex items-center space-x-4">
+          <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+            <UserCheck className="w-5 h-5 text-emerald-400" />
+          </div>
+          <div className="flex-1">
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Sign-off Completion Rate</p>
+            <div className="flex items-baseline space-x-2 mt-1">
+              <p className="text-2xl font-black text-white">{signOffResponseRate.pct}%</p>
+              <p className="text-[11px] text-gray-500">{signOffResponseRate.submitted} of {signOffResponseRate.total} approved</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="border border-white/5 bg-zinc-900/40 backdrop-blur-md p-5 rounded-2xl flex items-center space-x-4">
+          <div className="p-2.5 rounded-xl bg-brand-cyan/10 border border-brand-cyan/20">
+            <Users className="w-5 h-5 text-brand-cyan" />
+          </div>
+          <div className="flex-1">
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Registered Testers</p>
+            <div className="flex items-baseline space-x-2 mt-1">
+              <p className="text-2xl font-black text-white">{groupFilteredTesters.length}</p>
+              <p className="text-[11px] text-gray-500">across {new Set(groupFilteredTesters.map(t => t.organisationName || "Unassigned")).size} org{new Set(groupFilteredTesters.map(t => t.organisationName || "Unassigned")).size !== 1 ? "s" : ""}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Grid: 3. Module breakdown & 5. Organisation Participation */}
       <div className="grid grid-cols-1 lg:grid-cols-7 gap-6">
         {/* Module breakdown (4 columns) */}
@@ -877,6 +1242,87 @@ export function TestSummaryClient({
               )}
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Per-Tester Completion Breakdown */}
+      <div className="border border-white/5 bg-zinc-900/40 backdrop-blur-md p-6 rounded-2xl space-y-4">
+        <div className="border-b border-white/5 pb-3 flex justify-between items-center">
+          <div>
+            <h2 className="text-sm font-bold text-gray-200">Tester Completion Breakdown</h2>
+            <p className="text-[10px] text-gray-500 mt-1">Individual tester progress showing completed runs, feedback, and sign-off status.</p>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="border-b border-white/5 text-gray-400 font-semibold bg-white/[0.01] select-none">
+                <th className="py-2.5 px-3">Tester</th>
+                <th className="py-2.5 px-3">Organisation</th>
+                <th className="py-2.5 px-3">UAT Group</th>
+                <th className="py-2.5 px-3 text-center">Progress</th>
+                <th className="py-2.5 px-3 text-center">Completed</th>
+                <th className="py-2.5 px-3 text-center">In Progress</th>
+                <th className="py-2.5 px-3 text-center">Feedback</th>
+                <th className="py-2.5 px-3 text-center">Sign-off</th>
+              </tr>
+            </thead>
+            <tbody>
+              {testerCompletionData.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-8 text-center text-gray-500 font-medium">
+                    No testers registered for this group.
+                  </td>
+                </tr>
+              ) : (
+                testerCompletionData.map((t) => (
+                  <tr key={t.id} className="border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
+                    <td className="py-2.5 px-3">
+                      <div>
+                        <p className="font-bold text-white">{t.name}</p>
+                        <p className="text-[10px] text-gray-500 font-mono truncate max-w-[140px]">{t.email}</p>
+                      </div>
+                    </td>
+                    <td className="py-2.5 px-3 text-gray-300 font-medium">{t.organisation}</td>
+                    <td className="py-2.5 px-3 text-gray-400">{t.testerGroup || "-"}</td>
+                    <td className="py-2.5 px-3">
+                      <div className="flex items-center space-x-2">
+                        <div className="flex-1 bg-white/5 h-2 rounded-full overflow-hidden border border-white/5 min-w-[60px]">
+                          <div className={`h-full rounded-full transition-all ${t.pct >= 100 ? "bg-emerald-500" : t.pct >= 50 ? "bg-brand-cyan" : "bg-amber-500"}`} style={{ width: `${t.pct}%` }} />
+                        </div>
+                        <span className={`text-[10px] font-bold min-w-[28px] text-right ${t.pct >= 100 ? "text-emerald-400" : "text-gray-400"}`}>{t.pct}%</span>
+                      </div>
+                    </td>
+                    <td className="py-2.5 px-3 text-center">
+                      <span className="font-bold text-white">{t.completed}</span>
+                      <span className="text-gray-500">/{t.expected}</span>
+                    </td>
+                    <td className="py-2.5 px-3 text-center">
+                      <span className={`font-bold ${t.inProgress > 0 ? "text-amber-400" : "text-gray-500"}`}>{t.inProgress}</span>
+                    </td>
+                    <td className="py-2.5 px-3 text-center">
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
+                        t.hasFeedback
+                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                          : "bg-zinc-500/10 text-zinc-400 border border-zinc-500/20"
+                      }`}>
+                        {t.hasFeedback ? "Submitted" : "Pending"}
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-3 text-center">
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
+                        t.hasSignOff
+                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                          : "bg-zinc-500/10 text-zinc-400 border border-zinc-500/20"
+                      }`}>
+                        {t.hasSignOff ? "Approved" : "Pending"}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -1001,19 +1447,34 @@ export function TestSummaryClient({
             {/* Individual comments */}
             <div className="space-y-2 flex flex-col justify-between">
               <p className="text-xs font-bold text-gray-300">Tester Comments</p>
-              <div className="space-y-2 max-h-[140px] overflow-y-auto pr-1">
+              <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
                 {groupFilteredFeedbacks.filter(f => f.otherFeedback || f.impressiveAspects || f.improvementAreas).length === 0 ? (
                   <p className="text-xs text-gray-500 text-center py-6">No comments recorded.</p>
                 ) : (
                   groupFilteredFeedbacks.map((f) => (
-                    <div key={f.id} className="border border-white/5 bg-zinc-950/40 p-2.5 rounded-lg space-y-1 text-[11px]">
+                    <div key={f.id} className="border border-white/5 bg-zinc-950/40 p-2.5 rounded-lg space-y-1.5 text-[11px]">
                       <div className="flex justify-between text-gray-400 font-semibold">
-                        <span>{f.testerName || "Tester"}</span>
+                        <span>{f.testerName || "Tester"} <span className="text-[9px] text-gray-500 font-normal">({f.organisationName || "Unassigned"})</span></span>
                         <span className="text-[9px] font-mono">{formatDateTime(f.createdAt)}</span>
                       </div>
-                      <p className="text-gray-300 leading-normal italic">
-                        "{f.otherFeedback || f.impressiveAspects || f.improvementAreas}"
-                      </p>
+                      {f.impressiveAspects && (
+                        <div>
+                          <span className="text-[9px] text-emerald-400/70 font-bold uppercase tracking-wider">What impressed you</span>
+                          <p className="text-gray-300 leading-normal italic mt-0.5">&quot;{f.impressiveAspects}&quot;</p>
+                        </div>
+                      )}
+                      {f.improvementAreas && (
+                        <div>
+                          <span className="text-[9px] text-amber-400/70 font-bold uppercase tracking-wider">Areas for improvement</span>
+                          <p className="text-gray-300 leading-normal italic mt-0.5">&quot;{f.improvementAreas}&quot;</p>
+                        </div>
+                      )}
+                      {f.otherFeedback && (
+                        <div>
+                          <span className="text-[9px] text-blue-400/70 font-bold uppercase tracking-wider">Other feedback</span>
+                          <p className="text-gray-300 leading-normal italic mt-0.5">&quot;{f.otherFeedback}&quot;</p>
+                        </div>
+                      )}
                     </div>
                   ))
                 )}
@@ -1050,7 +1511,7 @@ export function TestSummaryClient({
                     <span className="text-[10px] text-gray-500 font-semibold">({def.fieldName})</span>
                   </div>
                   <p className="text-xs text-gray-300 italic">
-                    "{def.defectDetails}"
+                    &quot;{def.defectDetails}&quot;
                   </p>
                   <p className="text-[9px] text-gray-500 font-mono">Logged by: {def.testerName}</p>
                 </div>
@@ -1171,7 +1632,9 @@ export function TestSummaryClient({
                 <th className="py-3 px-4 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort("status")}>
                   <span>Status</span>
                 </th>
-                <th className="py-3 px-4">Severity</th>
+                <th className="py-3 px-4 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort("severity")}>
+                  <span>Severity</span>
+                </th>
                 <th className="py-3 px-4">Evidence</th>
                 <th className="py-3 px-4 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort("lastUpdated")}>
                   <span>Last Updated</span>
@@ -1182,7 +1645,7 @@ export function TestSummaryClient({
             <tbody>
               {paginatedRuns.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-8 text-center text-gray-500 font-medium">
+                  <td colSpan={9} className="py-8 text-center text-gray-500 font-medium select-none">
                     No runs found matching the selected search criteria.
                   </td>
                 </tr>
@@ -1230,8 +1693,15 @@ export function TestSummaryClient({
                           {derivedStatus === "PENDING" ? "In Progress" : derivedStatus === "NA" ? "N/A" : derivedStatus}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-gray-500 italic">
-                        Not Tracked
+                      <td className="py-3 px-4">
+                        {(() => {
+                          const totalFails = f + b;
+                          if (derivedStatus === "PENDING") return <span className="text-gray-500 italic">—</span>;
+                          if (totalFails >= 3) return <span className="inline-flex px-2 py-0.5 rounded-full text-[9px] font-bold uppercase bg-rose-500/15 text-rose-400 border border-rose-500/25">Critical</span>;
+                          if (totalFails >= 1) return <span className="inline-flex px-2 py-0.5 rounded-full text-[9px] font-bold uppercase bg-amber-500/15 text-amber-400 border border-amber-500/25">Major</span>;
+                          if (n > 0) return <span className="inline-flex px-2 py-0.5 rounded-full text-[9px] font-bold uppercase bg-zinc-500/15 text-zinc-400 border border-zinc-500/25">N/A</span>;
+                          return <span className="inline-flex px-2 py-0.5 rounded-full text-[9px] font-bold uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">None</span>;
+                        })()}
                       </td>
                       <td className="py-3 px-4">
                         {r.evidences.length > 0 ? (

@@ -58,6 +58,7 @@ export default async function AdminTestSummaryPage() {
       testerName: users.name,
       testerEmail: users.email,
       testerGroup: users.testerGroup,
+      organisationName: organisations.name,
       testCaseId: testRuns.testCaseId,
       testCaseTitle: testCases.title,
       categoryName: testCaseCategories.name,
@@ -65,6 +66,7 @@ export default async function AdminTestSummaryPage() {
     })
     .from(testRuns)
     .leftJoin(users, eq(users.id, testRuns.testerId))
+    .leftJoin(organisations, eq(organisations.id, users.organisationId))
     .leftJoin(testCases, eq(testCases.id, testRuns.testCaseId))
     .leftJoin(testCaseCategories, eq(testCaseCategories.id, testCases.categoryId))
     .orderBy(sql`${testRuns.submittedAt} DESC, ${testRuns.createdAt} DESC`);
@@ -195,6 +197,7 @@ export default async function AdminTestSummaryPage() {
         name: run.testerName || "Tester",
         email: run.testerEmail || "",
         testerGroup: run.testerGroup,
+        organisationName: run.organisationName,
       },
       testCase: {
         id: run.testCaseId,

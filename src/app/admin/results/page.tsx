@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { db } from "@/lib/db";
-import { testRuns, testCases, users, testAnswers, testFields, testerFeedbacks, feedbackAuditLogs, organisations, testerSignOffs, signOffAuditLogs, uatTargetGroups } from "@/db/schema";
+import { testRuns, testCases, users, testAnswers, testFields, testerFeedbacks, feedbackAuditLogs, organisations, testerSignOffs, signOffAuditLogs, uatTargetGroups, testCaseCategories } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { ResultsPageClient } from "@/components/admin/ResultsPageClient";
 
@@ -28,10 +28,12 @@ export default async function AdminResultsPage() {
       testerGroup: users.testerGroup,
       testCaseId: testRuns.testCaseId,
       testCaseTitle: testCases.title,
+      categoryName: testCaseCategories.name,
     })
     .from(testRuns)
     .leftJoin(users, eq(users.id, testRuns.testerId))
     .leftJoin(testCases, eq(testCases.id, testRuns.testCaseId))
+    .leftJoin(testCaseCategories, eq(testCaseCategories.id, testCases.categoryId))
     .orderBy(sql`${testRuns.submittedAt} DESC, ${testRuns.createdAt} DESC`);
 
   // Fetch all answers
@@ -128,6 +130,7 @@ export default async function AdminResultsPage() {
         id: run.testCaseId,
         title: run.testCaseTitle || "Test Case",
       },
+      categoryName: run.categoryName || "Uncategorized",
       passFailSummary: {
         total: totalFields,
         passed,

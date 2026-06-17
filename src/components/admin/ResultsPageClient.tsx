@@ -32,6 +32,7 @@ interface RunItem {
   createdAt: string
   tester: Tester
   testCase: TestCase
+  categoryName: string
   passFailSummary: PassFailSummary
 }
 
@@ -153,6 +154,8 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks, initialSignOf
   const [sortField, setSortField] = React.useState<SortField>("submittedAt")
   const [sortOrder, setSortOrder] = React.useState<SortOrder>("desc")
   const [statusFilter, setStatusFilter] = React.useState<string>("ALL")
+  const [categoryFilter, setCategoryFilter] = React.useState<string>("ALL")
+  const [testerFilter, setTesterFilter] = React.useState<string>("ALL")
   const [searchQuery, setSearchQuery] = React.useState<string>("")
   const [groupFilter, setGroupFilter] = React.useState<string>("ALL")
   const [mounted, setMounted] = React.useState(false)
@@ -160,6 +163,10 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks, initialSignOf
   React.useEffect(() => {
     setMounted(true)
   }, [])
+
+  React.useEffect(() => {
+    setTesterFilter("ALL")
+  }, [groupFilter])
 
   const formatDateTime = (dateVal: string | null | undefined) => {
     if (!mounted || !dateVal) return ""
@@ -191,6 +198,30 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks, initialSignOf
     return signOffs.filter((s) => s.testerRole === groupFilter)
   }, [signOffs, groupFilter])
 
+  const uniqueCategories = React.useMemo(() => {
+    const categories = new Set<string>()
+    runs.forEach((r) => {
+      if (r.categoryName) {
+        categories.add(r.categoryName)
+      }
+    })
+    return Array.from(categories).sort()
+  }, [runs])
+
+  const uniqueTesters = React.useMemo(() => {
+    const testersMap = new Map<string, { id: string; name: string; email: string }>()
+    groupFilteredRuns.forEach((r) => {
+      if (r.tester && r.tester.id) {
+        testersMap.set(r.tester.id, {
+          id: r.tester.id,
+          name: r.tester.name || "Tester",
+          email: r.tester.email || ""
+        })
+      }
+    })
+    return Array.from(testersMap.values()).sort((a, b) => a.name.localeCompare(b.name))
+  }, [groupFilteredRuns])
+
   // Filter & sort runs
   const processedRuns = React.useMemo(() => {
     let result = [...groupFilteredRuns]
@@ -212,6 +243,16 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks, initialSignOf
 
         return derived === statusFilter
       })
+    }
+
+    // 1.5. Category Filter
+    if (categoryFilter !== "ALL") {
+      result = result.filter((r) => r.categoryName === categoryFilter)
+    }
+
+    // 1.6. Tester Filter
+    if (testerFilter !== "ALL") {
+      result = result.filter((r) => r.tester.id === testerFilter)
     }
 
     // 2. Search query (by tester name/email or scenario title)
@@ -250,7 +291,7 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks, initialSignOf
     })
 
     return result
-  }, [groupFilteredRuns, statusFilter, searchQuery, sortField, sortOrder])
+  }, [groupFilteredRuns, statusFilter, categoryFilter, testerFilter, searchQuery, sortField, sortOrder])
 
   // Derived calculations of stats headers for runs
   const totalRuns = groupFilteredRuns.length
@@ -311,6 +352,9 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks, initialSignOf
   // Filter feedbacks
   const processedFeedbacks = React.useMemo(() => {
     let result = [...groupFilteredFeedbacks]
+    if (testerFilter !== "ALL") {
+      result = result.filter((f) => f.testerId === testerFilter)
+    }
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase()
       result = result.filter(
@@ -322,11 +366,14 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks, initialSignOf
       )
     }
     return result
-  }, [groupFilteredFeedbacks, searchQuery])
+  }, [groupFilteredFeedbacks, testerFilter, searchQuery])
 
   // Filter sign offs
   const processedSignOffs = React.useMemo(() => {
     let result = [...groupFilteredSignOffs]
+    if (testerFilter !== "ALL") {
+      result = result.filter((s) => s.testerId === testerFilter)
+    }
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase()
       result = result.filter(
@@ -339,7 +386,7 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks, initialSignOf
       )
     }
     return result
-  }, [groupFilteredSignOffs, searchQuery])
+  }, [groupFilteredSignOffs, testerFilter, searchQuery])
 
   // Calculation of stats headers for feedbacks
   const feedbackStats = React.useMemo(() => {
@@ -624,17 +671,60 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks, initialSignOf
           </div>
 
           {/* Filters and Search Bar for runs */}
-          <div className="border border-white/5 bg-zinc-900/40 p-4 rounded-2xl flex flex-col md:flex-row gap-4 justify-between items-center">
-            <div className="w-full md:w-96">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by tester or scenario title..."
-                className="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/10 text-xs text-white focus:outline-none focus:border-brand-cyan/50 placeholder-gray-500"
-              />
+          <div className="border border-white/5 bg-zinc-900/40 p-4 rounded-2xl flex flex-col xl:flex-row gap-4 justify-between items-center">
+            <div className="flex flex-col sm:flex-row gap-4 w-full xl:flex-1 items-center">
+              {/* Tester Select Dropdown */}
+              <div className="relative w-full sm:w-48">
+                <select
+                  value={testerFilter}
+                  onChange={(e) => setTesterFilter(e.target.value)}
+                  className="w-full px-4 py-2 rounded-xl bg-black/40 border border-white/10 text-xs text-white focus:outline-none focus:border-brand-cyan/50 appearance-none pr-8 cursor-pointer"
+                >
+                  <option value="ALL">All Testers</option>
+                  {uniqueTesters.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </div>
+              </div>
+
+              {/* Category Select Dropdown */}
+              <div className="relative w-full sm:w-48">
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="w-full px-4 py-2 rounded-xl bg-black/40 border border-white/10 text-xs text-white focus:outline-none focus:border-brand-cyan/50 appearance-none pr-8 cursor-pointer"
+                >
+                  <option value="ALL">All Categories</option>
+                  {uniqueCategories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-gray-500">
+                  <ChevronDown className="w-3.5 h-3.5" />
+                </div>
+              </div>
+
+              {/* Search input */}
+              <div className="w-full sm:w-80">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by tester or scenario title..."
+                  className="w-full px-4 py-2 rounded-xl bg-black/40 border border-white/10 text-xs text-white focus:outline-none focus:border-brand-cyan/50 placeholder-gray-500"
+                />
+              </div>
             </div>
-            <div className="flex space-x-2 w-full md:w-auto overflow-x-auto">
+
+            {/* Status Buttons */}
+            <div className="flex space-x-2 w-full xl:w-auto overflow-x-auto justify-end">
               {["ALL", "PENDING", "SUBMITTED", "PASSED", "FAILED", "BLOCKED", "NA"].map((status) => (
                 <button
                   key={status}
@@ -727,6 +817,7 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks, initialSignOf
                         <tr key={r.id} className="border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
                           <td className="py-3 px-4">
                             <div className="font-semibold text-white max-w-xs truncate">{r.testCase.title}</div>
+                            <div className="text-[9px] text-gray-500 font-semibold mt-0.5">{r.categoryName}</div>
                           </td>
                           <td className="py-3 px-4">
                             <div className="font-semibold text-white">{r.tester.name || "Tester"}</div>
@@ -1044,17 +1135,17 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks, initialSignOf
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-black/20 p-4 rounded-xl border border-white/5">
                   <div className="space-y-2 text-xs">
                     <div className="flex justify-between border-b border-white/5 pb-2">
-                      <span className="text-gray-400">1. Tester's Name</span>
+                      <span className="text-gray-400">1. Tester&apos;s Name</span>
                       <span className="font-semibold text-white">{selectedFeedback.testerName || "Not provided"}</span>
                     </div>
                     <div className="flex justify-between border-b border-white/5 pb-2 md:border-0 md:pb-0">
-                      <span className="text-gray-400">2. Tester's Organisation</span>
+                      <span className="text-gray-400">2. Tester&apos;s Organisation</span>
                       <span className="font-semibold text-white">{selectedFeedback.organisationName || "Not provided"}</span>
                     </div>
                   </div>
                   <div className="space-y-2 text-xs">
                     <div className="flex justify-between border-b border-white/5 pb-2">
-                      <span className="text-gray-400">3. Tester's Role</span>
+                      <span className="text-gray-400">3. Tester&apos;s Role</span>
                       <span className="font-semibold text-white">{selectedFeedback.testerRole || "Not provided"}</span>
                     </div>
                     <div className="flex justify-between md:border-0 md:pb-0">
@@ -1303,7 +1394,7 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks, initialSignOf
                 <div>
                   <p className="text-xs font-semibold text-emerald-400">Declaration Confirmed</p>
                   <p className="text-[11px] text-gray-400 mt-1 leading-normal">
-                    Tester confirmed: "I hereby confirm that I have executed the UAT scenario scripts and sign off on this release cycle."
+                    Tester confirmed: &quot;I hereby confirm that I have executed the UAT scenario scripts and sign off on this release cycle.&quot;
                   </p>
                 </div>
               </div>
