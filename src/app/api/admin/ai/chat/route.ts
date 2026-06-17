@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { db } from "@/lib/db";
-import { testRuns, testCases, testFields, testAnswers, users } from "@/db/schema";
+import { testRuns, testCases, testFields, testAnswers, users, testerFeedbacks, testerSignOffs } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function POST(req: NextRequest) {
@@ -85,6 +85,36 @@ export async function POST(req: NextRequest) {
 ${formattedAnswers || "No answers submitted yet."}
 `;
       }
+    } else {
+      const allRuns = await db.select({ status: testRuns.status }).from(testRuns);
+      const allFeedbacks = await db.select({
+        ratingOverall: testerFeedbacks.ratingOverall,
+        ratingEaseOfUse: testerFeedbacks.ratingEaseOfUse,
+        ratingInstructions: testerFeedbacks.ratingInstructions,
+        ratingResultForm: testerFeedbacks.ratingResultForm,
+      }).from(testerFeedbacks);
+      const allSignOffs = await db.select().from(testerSignOffs);
+
+      const totalRuns = allRuns.length;
+      const passedRuns = allRuns.filter(r => r.status === "PASSED").length;
+      const failedRuns = allRuns.filter(r => r.status === "FAILED").length;
+      const pendingRuns = allRuns.filter(r => r.status === "PENDING").length;
+
+      const totalFeedbacks = allFeedbacks.length;
+      const avgOverall = totalFeedbacks > 0 ? (allFeedbacks.reduce((acc, f) => acc + f.ratingOverall, 0) / totalFeedbacks).toFixed(1) : "0.0";
+      const avgEaseOfUse = totalFeedbacks > 0 ? (allFeedbacks.reduce((acc, f) => acc + f.ratingEaseOfUse, 0) / totalFeedbacks).toFixed(1) : "0.0";
+      const avgInstructions = totalFeedbacks > 0 ? (allFeedbacks.reduce((acc, f) => acc + f.ratingInstructions, 0) / totalFeedbacks).toFixed(1) : "0.0";
+      const avgResultForm = totalFeedbacks > 0 ? (allFeedbacks.reduce((acc, f) => acc + f.ratingResultForm, 0) / totalFeedbacks).toFixed(1) : "0.0";
+
+      systemPrompt += `\n\n[CONTEXT: GLOBAL UAT STATUS OVERVIEW]
+- Total Runs: ${totalRuns} (Passed: ${passedRuns}, Failed: ${failedRuns}, In Progress: ${pendingRuns})
+- Tester Survey Feedbacks: ${totalFeedbacks} submissions
+  - Avg Overall Rating: ${avgOverall}/5.0
+  - Avg Platform Ease of Use: ${avgEaseOfUse}/5.0
+  - Avg Instruction Clarity: ${avgInstructions}/5.0
+  - Avg Result Form Ease: ${avgResultForm}/5.0
+- Total UAT Sign Offs: ${allSignOffs.length}
+`;
     }
 
     const ollamaUrl = process.env.OLLAMA_URL || "http://localhost:11434/api/chat";

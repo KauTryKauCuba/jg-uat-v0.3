@@ -90,6 +90,15 @@ export function AIChatPageClient({ runs }: AIChatPageClientProps) {
     const textToSend = customPrompt || input
     if (!textToSend.trim() || loading) return
 
+    // Guard suggestion prompts that require specific run context
+    if (customPrompt && !selectedRunId) {
+      const isGlobalPrompt = customPrompt.toLowerCase().includes("overall") || customPrompt.toLowerCase().includes("summarize")
+      if (!isGlobalPrompt) {
+        alert("Please select a UAT test run from the panel on the left to analyze specific errors or guideline details.")
+        return
+      }
+    }
+
     const userMsg: Message = { role: "user", content: textToSend }
     const updatedMessages = [...messages, userMsg]
     
@@ -130,9 +139,21 @@ export function AIChatPageClient({ runs }: AIChatPageClientProps) {
   }
 
   const SUGGESTIONS = [
-    { title: "Review errors", desc: "Identify incorrect values or guideline gaps in UAT" },
-    { title: "Guideline check", desc: "Verify if tester followed the briefing deck" },
-    { title: "Summarize UAT", desc: "Draft a feedback summary report for admin review" }
+    { 
+      title: "Review errors", 
+      desc: "Identify incorrect values or guideline gaps in UAT",
+      prompt: "Review the selected UAT test run results for errors, incorrect inputs, or guideline mismatch. Highlight step details."
+    },
+    { 
+      title: "Guideline check", 
+      desc: "Verify if tester followed the briefing deck",
+      prompt: "Check the answers of the selected UAT run against the expected steps and standard guidelines of the briefing deck."
+    },
+    { 
+      title: "Summarize UAT", 
+      desc: "Draft a feedback summary report for admin review",
+      prompt: "Please provide a comprehensive summary of the entire UAT results. Analyze the total runs, pass rate, average tester ratings across ease of use, instructions, results form, and compile an overall executive report."
+    }
   ]
 
   return (
@@ -239,7 +260,7 @@ export function AIChatPageClient({ runs }: AIChatPageClientProps) {
                 {SUGGESTIONS.map((s, idx) => (
                   <button
                     key={idx}
-                    onClick={() => handleSend(undefined, s.title)}
+                    onClick={() => handleSend(undefined, s.prompt)}
                     className="p-4 text-left border border-white/5 bg-zinc-900/30 hover:border-brand-cyan/20 hover:bg-zinc-900/50 rounded-2xl transition-all cursor-pointer space-y-1 block"
                   >
                     <h4 className="text-xs font-bold text-white flex items-center gap-1.5">
