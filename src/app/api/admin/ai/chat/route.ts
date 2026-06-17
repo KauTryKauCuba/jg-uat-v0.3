@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
             }
           } catch {}
           
-          let attachments = [];
+          const attachments = [];
           if (a.screenshotUrl) attachments.push(`Screenshot = "${a.screenshotUrl}"`);
           if (a.pdfUrl) attachments.push(`PDF = "${a.pdfUrl}"`);
           const attachmentsStr = attachments.length > 0 ? ` (Attachments: ${attachments.join(", ")})` : "";

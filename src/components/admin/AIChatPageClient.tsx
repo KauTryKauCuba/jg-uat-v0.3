@@ -145,7 +145,7 @@ export function AIChatPageClient({ runs }: AIChatPageClientProps) {
             <Layers className="w-4 h-4 text-brand-cyan" />
             <span>UAT Context Panel</span>
           </h2>
-          <p className="text-[10px] text-gray-500 mt-1">Select a test run to ground the AI model's context.</p>
+          <p className="text-[10px] text-gray-500 mt-1">Select a test run to ground the AI model&apos;s context.</p>
         </div>
 
         <div className="relative">

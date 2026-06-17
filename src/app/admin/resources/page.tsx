@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
-import { Plus, Image as ImageIcon, FileText, Trash2, Loader2, Upload, Check, Pencil } from "lucide-react"
+import { Plus, Image as ImageIcon, FileText, Trash2, Loader2, Upload, Check, Pencil, Globe } from "lucide-react"
 import { ConfirmModal } from "@/components/ui/confirm-modal"
 
 interface ResourceSet {
@@ -17,6 +17,9 @@ interface ResourceSet {
 export default function ResourcesPage() {
   const [resourceSets, setResourceSets] = React.useState<ResourceSet[]>([])
   const [briefingDeck, setBriefingDeck] = React.useState<{ id: string; url: string; fileName: string } | null>(null)
+  const [environmentUrl, setEnvironmentUrl] = React.useState("")
+  const [savedEnvironment, setSavedEnvironment] = React.useState<{ id: string; url: string } | null>(null)
+  const [savingEnvironment, setSavingEnvironment] = React.useState(false)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
 
@@ -68,9 +71,26 @@ export default function ResourcesPage() {
     }
   }
 
+  const fetchEnvironment = async () => {
+    try {
+      const res = await fetch("/api/admin/environment")
+      const json = await res.json()
+      if (json.data) {
+        setSavedEnvironment(json.data)
+        setEnvironmentUrl(json.data.url)
+      } else {
+        setSavedEnvironment(null)
+        setEnvironmentUrl("")
+      }
+    } catch (err) {
+      console.error("Failed to load environment link", err)
+    }
+  }
+
   React.useEffect(() => {
     fetchSets()
     fetchBriefingDeck()
+    fetchEnvironment()
   }, [])
 
   const handleBriefingUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -130,6 +150,49 @@ export default function ResourcesPage() {
       alert("Failed to delete briefing deck")
     }
   }
+
+  const handleEnvironmentSave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!environmentUrl) return
+    setSavingEnvironment(true)
+    try {
+      const res = await fetch("/api/admin/environment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: environmentUrl }),
+      })
+      const json = await res.json()
+      if (json.error) {
+        alert(json.error)
+      } else {
+        setSavedEnvironment(json.data)
+        alert("Environment link saved successfully!")
+      }
+    } catch {
+      alert("Failed to save environment link")
+    } finally {
+      setSavingEnvironment(false)
+    }
+  }
+
+  const handleEnvironmentDelete = async () => {
+    if (!confirm("Are you sure you want to delete the environment link?")) return
+    try {
+      const res = await fetch("/api/admin/environment", {
+        method: "DELETE",
+      })
+      const json = await res.json()
+      if (json.error) {
+        alert(json.error)
+      } else {
+        setSavedEnvironment(null)
+        setEnvironmentUrl("")
+      }
+    } catch {
+      alert("Failed to delete environment link")
+    }
+  }
+
 
   const handleFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -245,65 +308,129 @@ export default function ResourcesPage() {
         <p className="text-gray-400 mt-2">Manage global briefing materials and individual testing persona resource sets.</p>
       </div>
 
-      {/* Briefing Deck Card */}
-      <div className="border border-white/5 bg-zinc-900/40 backdrop-blur-md p-6 rounded-2xl space-y-4">
-        <h2 className="text-lg font-bold flex items-center gap-2">
-          <FileText className="w-5 h-5 text-brand-teal" />
-          <span>Global Briefing Deck</span>
-        </h2>
-        <p className="text-xs text-gray-400">
-          Upload a master slide deck or instruction manual (PDF format). Testers will see this at the top of their resources box.
-        </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Briefing Deck Card */}
+        <div className="border border-white/5 bg-zinc-900/40 backdrop-blur-md p-6 rounded-2xl space-y-4">
+          <h2 className="text-lg font-bold flex items-center gap-2">
+            <FileText className="w-5 h-5 text-brand-teal" />
+            <span>Global Briefing Deck</span>
+          </h2>
+          <p className="text-xs text-gray-400">
+            Upload a master slide deck or instruction manual (PDF format). Testers will see this at the top of their resources box.
+          </p>
 
-        {briefingDeck ? (
-          <div className="flex items-center justify-between border border-white/10 bg-black/30 p-4 rounded-xl w-full">
-            <div className="flex items-center space-x-3 truncate">
-              <FileText className="w-10 h-10 text-brand-cyan shrink-0 p-2 bg-brand-cyan/15 rounded-lg border border-brand-teal/20" />
-              <div className="truncate">
-                <p className="text-sm font-semibold text-white truncate">{briefingDeck.fileName}</p>
-                <a
-                  href={briefingDeck.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[10px] text-brand-cyan hover:underline font-mono"
-                >
-                  View Deck PDF
-                </a>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={handleBriefingDelete}
-              className="text-xs font-semibold px-4 py-2 rounded-xl border border-red-500/20 text-red-400 hover:bg-red-500/10 cursor-pointer transition-all"
-            >
-              Delete Deck
-            </button>
-          </div>
-        ) : (
-          <div className="w-full">
-            <label className="border border-dashed border-white/10 hover:border-brand-teal/40 bg-white/5 hover:bg-white/10 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all w-full">
-              {uploadingBriefing || savingBriefing ? (
-                <div className="flex flex-col items-center space-y-2">
-                  <Loader2 className="w-6 h-6 text-brand-teal animate-spin" />
-                  <span className="text-xs text-gray-400">Processing file...</span>
+          {briefingDeck ? (
+            <div className="flex items-center justify-between border border-white/10 bg-black/30 p-4 rounded-xl w-full">
+              <div className="flex items-center space-x-3 truncate">
+                <FileText className="w-10 h-10 text-brand-cyan shrink-0 p-2 bg-brand-cyan/15 rounded-lg border border-brand-teal/20" />
+                <div className="truncate">
+                  <p className="text-sm font-semibold text-white truncate">{briefingDeck.fileName}</p>
+                  <a
+                    href={briefingDeck.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[10px] text-brand-cyan hover:underline font-mono"
+                  >
+                    View Deck PDF
+                  </a>
                 </div>
-              ) : (
-                <>
-                  <Upload className="w-6 h-6 text-gray-400 mb-2" />
-                  <span className="text-xs font-bold text-gray-300">Upload Briefing Deck PDF</span>
-                  <span className="text-[10px] text-gray-500 mt-1">PDF format only (Max 20MB)</span>
-                </>
-              )}
-              <input
-                type="file"
-                accept=".pdf"
-                disabled={uploadingBriefing || savingBriefing}
-                onChange={handleBriefingUpload}
-                className="hidden"
-              />
-            </label>
+              </div>
+              <button
+                type="button"
+                onClick={handleBriefingDelete}
+                className="text-xs font-semibold px-4 py-2 rounded-xl border border-red-500/20 text-red-400 hover:bg-red-500/10 cursor-pointer transition-all"
+              >
+                Delete Deck
+              </button>
+            </div>
+          ) : (
+            <div className="w-full">
+              <label className="border border-dashed border-white/10 hover:border-brand-teal/40 bg-white/5 hover:bg-white/10 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-all w-full">
+                {uploadingBriefing || savingBriefing ? (
+                  <div className="flex flex-col items-center space-y-2">
+                    <Loader2 className="w-6 h-6 text-brand-teal animate-spin" />
+                    <span className="text-xs text-gray-400">Processing file...</span>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="w-6 h-6 text-gray-400 mb-2" />
+                    <span className="text-xs font-bold text-gray-300">Upload Briefing Deck PDF</span>
+                    <span className="text-[10px] text-gray-500 mt-1">PDF format only (Max 20MB)</span>
+                  </>
+                )}
+                <input
+                  type="file"
+                  accept=".pdf"
+                  disabled={uploadingBriefing || savingBriefing}
+                  onChange={handleBriefingUpload}
+                  className="hidden"
+                />
+              </label>
+            </div>
+          )}
+        </div>
+
+        {/* Environment Link Card */}
+        <div className="border border-white/5 bg-zinc-900/40 backdrop-blur-md p-6 rounded-2xl space-y-4 flex flex-col justify-between">
+          <div className="space-y-4">
+            <h2 className="text-lg font-bold flex items-center gap-2">
+              <Globe className="w-5 h-5 text-brand-cyan" />
+              <span>Testing Environment Link</span>
+            </h2>
+            <p className="text-xs text-gray-400">
+              Provide the URL where the UAT testing will occur (e.g. staging/preview URL). Testers can quickly launch it from their dashboard.
+            </p>
+
+            {savedEnvironment ? (
+              <div className="flex items-center justify-between border border-white/10 bg-black/30 p-4 rounded-xl w-full">
+                <div className="flex items-center space-x-3 truncate">
+                  <Globe className="w-10 h-10 text-brand-cyan shrink-0 p-2 bg-brand-cyan/15 rounded-lg border border-brand-teal/20" />
+                  <div className="truncate">
+                    <p className="text-sm font-semibold text-white truncate">{savedEnvironment.url}</p>
+                    <a
+                      href={savedEnvironment.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[10px] text-brand-cyan hover:underline font-mono"
+                    >
+                      Test Launch Environment
+                    </a>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleEnvironmentDelete}
+                  className="text-xs font-semibold px-4 py-2 rounded-xl border border-red-500/20 text-red-400 hover:bg-red-500/10 cursor-pointer transition-all"
+                >
+                  Delete Link
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleEnvironmentSave} className="space-y-3">
+                <input
+                  type="url"
+                  required
+                  value={environmentUrl}
+                  onChange={(e) => setEnvironmentUrl(e.target.value)}
+                  placeholder="https://example.com"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-brand-cyan focus:outline-none focus:ring-1 focus:ring-brand-cyan transition-all"
+                />
+                <button
+                  type="submit"
+                  disabled={savingEnvironment || !environmentUrl}
+                  className="w-full py-2.5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-brand-teal to-brand-cyan hover:opacity-90 active:scale-[0.98] disabled:opacity-50 transition-all cursor-pointer flex items-center justify-center space-x-1.5"
+                >
+                  {savingEnvironment ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Check className="w-4 h-4" />
+                  )}
+                  <span>Save Environment Link</span>
+                </button>
+              </form>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

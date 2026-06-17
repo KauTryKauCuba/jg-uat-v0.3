@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import { redirect } from "next/navigation"
 import { db } from "@/lib/db"
-import { testCases, testRuns, testCaseCategories, testFields, testAnswers, uatTargetGroups } from "@/db/schema"
+import { testCases, testRuns, testCaseCategories, testFields, testAnswers, uatTargetGroups, users, organisations } from "@/db/schema"
 import { eq, and, sql } from "drizzle-orm"
 import { TesterPageClient } from "@/components/tester/TesterPageClient"
 
@@ -12,8 +12,32 @@ export default async function TesterPage() {
     redirect("/")
   }
 
-  const testerGroup = session.user.testerGroup
-  const employerLocked = session.user.employerLocked
+  // Fetch fresh user record directly from database
+  const userRecord = await db
+    .select({
+      name: users.name,
+      testerGroup: users.testerGroup,
+      employerLocked: users.employerLocked,
+      organisationId: users.organisationId,
+    })
+    .from(users)
+    .where(eq(users.id, session.user.id))
+    .limit(1);
+
+  if (userRecord.length === 0) {
+    redirect("/");
+  }
+
+  const { name: freshName, testerGroup, employerLocked, organisationId } = userRecord[0];
+
+  // Fetch organisations list
+  const orgsList = await db
+    .select({
+      id: organisations.id,
+      name: organisations.name,
+    })
+    .from(organisations)
+    .orderBy(sql`${organisations.name} ASC`);
 
   let categories: any[] = []
   let cases: any[] = []
@@ -160,11 +184,13 @@ export default async function TesterPage() {
     <TesterPageClient
       initialCategories={categories}
       initialCases={cases}
-      userName={session?.user?.name || "Tester"}
+      userName={freshName || "Tester"}
       testerGroup={testerGroup}
       employerLocked={employerLocked}
       isGroupGloballyLocked={isGroupGloballyLocked}
       testerId={session.user.id}
+      initialOrganisationId={organisationId}
+      organisations={orgsList}
     />
   )
 }

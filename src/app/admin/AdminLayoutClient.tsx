@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { LayoutDashboard, ClipboardList, Folder, Users, BarChart3, Files, ChevronLeft, ChevronRight, Sparkles } from "lucide-react"
+import { LayoutDashboard, ClipboardList, Folder, Users, BarChart3, Files, ChevronLeft, ChevronRight, Sparkles, Building } from "lucide-react"
 import Link from "next/link"
 import { NavLink } from "./nav-link"
 import { HelpRequestNavLink } from "@/components/admin/HelpRequestNavLink"
@@ -94,6 +94,10 @@ export function AdminLayoutClient({ userEmail, children }: AdminLayoutClientProp
             <NavLink href="/admin/testers" isCollapsed={isCollapsed}>
               <Users className="w-5 h-5 shrink-0" />
               {!isCollapsed && <span>Testers</span>}
+            </NavLink>
+            <NavLink href="/admin/organisations" isCollapsed={isCollapsed}>
+              <Building className="w-5 h-5 shrink-0" />
+              {!isCollapsed && <span>Organisations</span>}
             </NavLink>
             <NavLink href="/admin/categories" isCollapsed={isCollapsed}>
               <Folder className="w-5 h-5 shrink-0" />

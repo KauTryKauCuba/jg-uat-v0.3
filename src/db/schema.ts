@@ -6,6 +6,14 @@ export const roleEnum = pgEnum("role", ["ADMIN", "TESTER"]);
 export const fieldTypeEnum = pgEnum("field_type", ["TEXT", "NUMBER", "FILE", "BOOLEAN", "DROPDOWN", "CHECKLIST"]);
 export const runStatusEnum = pgEnum("run_status", ["PENDING", "SUBMITTED", "PASSED", "FAILED"]);
 
+// Organisations table
+export const organisations = pgTable("organisations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Users table
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -16,6 +24,7 @@ export const users = pgTable("users", {
   testerGroup: text("tester_group"), // "JOBSEEKER" | "EMPLOYER" | null
   employerLocked: boolean("employer_locked").default(true).notNull(),
   resourceSelectCount: integer("resource_select_count").default(0).notNull(),
+  organisationId: uuid("organisation_id").references(() => organisations.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -84,9 +93,17 @@ export const testAnswers = pgTable("test_answers", {
 });
 
 // Relations definitions
-export const usersRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ one, many }) => ({
   testCases: many(testCases),
   testRuns: many(testRuns),
+  organisation: one(organisations, {
+    fields: [users.organisationId],
+    references: [organisations.id],
+  }),
+}));
+
+export const organisationsRelations = relations(organisations, ({ many }) => ({
+  users: many(users),
 }));
 
 export const testCaseCategoriesRelations = relations(testCaseCategories, ({ many }) => ({
@@ -241,6 +258,14 @@ export const testRunAuditLogsRelations = relations(testRunAuditLogs, ({ one }) =
     references: [users.id],
   }),
 }));
+
+export const uatEnvironment = pgTable("uat_environment", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  url: text("url").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 
 
 

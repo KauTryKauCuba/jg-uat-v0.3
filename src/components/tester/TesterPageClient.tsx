@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { Folder, Loader2, Clock, Lock, ShieldAlert, User, Briefcase, ChevronRight, ChevronDown, Check } from "lucide-react"
+import { Folder, Loader2, Clock, Lock, ShieldAlert, User, Briefcase, ChevronRight, ChevronDown, Check, Building, Unlock } from "lucide-react"
 import { StatusBadge } from "@/components/ui/status-badge"
 import { usePageTitle } from "@/components/tester/TesterLayout"
 
@@ -203,6 +203,8 @@ interface TesterPageClientProps {
   employerLocked: boolean
   isGroupGloballyLocked: boolean
   testerId: string
+  initialOrganisationId: string | null
+  organisations: { id: string; name: string }[]
 }
 
 export function TesterPageClient({
@@ -213,6 +215,8 @@ export function TesterPageClient({
   employerLocked,
   isGroupGloballyLocked,
   testerId,
+  initialOrganisationId,
+  organisations,
 }: TesterPageClientProps) {
   const router = useRouter()
   const uncategorizedCases = initialCases.filter((c) => !c.categoryId)
@@ -268,12 +272,25 @@ export function TesterPageClient({
   const [resourceSets, setResourceSets] = React.useState<ResourceSet[]>([])
   const [selectedSet, setSelectedSet] = React.useState<ResourceSet | null>(null)
   const [briefingDeck, setBriefingDeck] = React.useState<{ id: string; url: string; fileName: string } | null>(null)
+  const [environmentUrl, setEnvironmentUrl] = React.useState<string | null>(null)
   const [loadingResources, setLoadingResources] = React.useState(true)
   const [selectCount, setSelectCount] = React.useState<number>(0)
   const [startTime, setStartTime] = React.useState("")
   const [selectingGroup, setSelectingGroup] = React.useState<string | null>(null)
   const [targetGroups, setTargetGroups] = React.useState<{ id: string; name: string; displayName: string; locked?: boolean }[]>([])
   const [loadingGroups, setLoadingGroups] = React.useState(true)
+  
+  // Organisation / Onboarding states
+  const [organisationId, setOrganisationId] = React.useState<string | null>(initialOrganisationId)
+  const [organisationList, setOrganisationList] = React.useState<{ id: string; name: string }[]>(organisations || [])
+  const [hasSubmittedProfile, setHasSubmittedProfile] = React.useState(!!initialOrganisationId)
+  const [tempName, setTempName] = React.useState(userName || "")
+  const [selectedOrgId, setSelectedOrgId] = React.useState(initialOrganisationId || "")
+  const [customOrgName, setCustomOrgName] = React.useState("")
+  const [isSubmittingProfile, setIsSubmittingProfile] = React.useState(false)
+  const [currentUserName, setCurrentUserName] = React.useState(userName || "")
+  const [isNameUnlocked, setIsNameUnlocked] = React.useState(false)
+
   const scrollContainerRef = React.useRef<HTMLDivElement>(null)
 
   // Tooltip Tour Guide Configuration
@@ -569,12 +586,70 @@ export function TesterPageClient({
         console.error("Failed to load UAT briefing deck:", err)
       }
     }
+
+    const fetchEnvironment = async () => {
+      try {
+        const res = await fetch("/api/tester/environment")
+        const json = await res.json()
+        if (json.data) {
+          setEnvironmentUrl(json.data.url)
+        }
+      } catch (err) {
+        console.error("Failed to load UAT environment link:", err)
+      }
+    }
     
     if (testerGroup) {
       fetchResources()
       fetchBriefing()
+      fetchEnvironment()
     }
   }, [testerGroup, testerId])
+
+  const handleProfileSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!tempName.trim()) {
+      alert("Username is required")
+      return
+    }
+    if (!selectedOrgId && !customOrgName.trim()) {
+      alert("Please select or type an organisation")
+      return
+    }
+
+    setIsSubmittingProfile(true)
+    try {
+      const res = await fetch("/api/tester/profile-setup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: tempName.trim(),
+          organisationId: selectedOrgId === "OTHER" ? null : selectedOrgId,
+          newOrganisationName: selectedOrgId === "OTHER" ? customOrgName.trim() : null,
+        }),
+      })
+
+      const json = await res.json()
+      if (json.error) {
+        alert(json.error)
+      } else {
+        setOrganisationId(json.organisationId)
+        setHasSubmittedProfile(true)
+        setCurrentUserName(tempName.trim())
+        if (selectedOrgId === "OTHER" && customOrgName.trim()) {
+          const freshOrgsRes = await fetch("/api/tester/organisations")
+          const freshOrgsJson = await freshOrgsRes.json()
+          if (freshOrgsJson.data) {
+            setOrganisationList(freshOrgsJson.data)
+          }
+        }
+      }
+    } catch {
+      alert("Failed to save profile. Please try again.")
+    } finally {
+      setIsSubmittingProfile(false)
+    }
+  }
 
   const handleSelectSet = async (set: ResourceSet) => {
     const isAlreadySelectedByMe = selectedSet?.id === set.id
@@ -668,6 +743,122 @@ export function TesterPageClient({
 
   // Render first-time select role flow
   if (!testerGroup) {
+    if (!hasSubmittedProfile) {
+      return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          
+          {/* Modal Content */}
+          <div className="relative z-10 w-full max-w-md rounded-2xl border border-white/10 bg-zinc-950 p-6 shadow-2xl animate-in fade-in zoom-in duration-200 text-center space-y-6">
+            
+            {/* Visual Header */}
+            <div className="relative mx-auto w-24 h-24 rounded-full flex items-center justify-center">
+              {/* Outer glowing ring */}
+              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-brand-teal to-brand-cyan opacity-20 blur-md animate-pulse" />
+              {/* Rotating dashed border ring */}
+              <div className="absolute inset-0 rounded-full border border-dashed border-brand-cyan/40 animate-[spin_20s_linear_infinite]" />
+              {/* Core badge */}
+              <div className="relative w-20 h-20 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center text-4xl shadow-xl shadow-brand-teal/10">
+                👤
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h2 className="text-xl font-extrabold tracking-tight text-white">Tester Profile Setup</h2>
+              <p className="text-xs text-gray-400 leading-relaxed">
+                Please verify your display name and organisation before choosing a UAT testing role.
+              </p>
+            </div>
+
+            <form onSubmit={handleProfileSubmit} className="text-left space-y-4">
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-gray-400">Username *</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    required
+                    readOnly={!isNameUnlocked}
+                    value={tempName}
+                    onChange={(e) => setTempName(e.target.value)}
+                    placeholder="Your display name"
+                    className={`w-full rounded-xl border border-white/10 bg-white/5 pl-4 pr-12 py-3 text-sm text-white placeholder-gray-500 focus:border-brand-cyan focus:outline-none focus:ring-1 focus:ring-brand-cyan transition-all ${
+                      !isNameUnlocked ? "opacity-75 cursor-not-allowed bg-zinc-900" : ""
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setIsNameUnlocked(!isNameUnlocked)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center justify-center p-1.5 rounded-lg border border-white/5 bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-all cursor-pointer"
+                    title={isNameUnlocked ? "Lock Input" : "Unlock Input"}
+                  >
+                    {isNameUnlocked ? (
+                      <Unlock className="w-3.5 h-3.5 text-brand-cyan" />
+                    ) : (
+                      <Lock className="w-3.5 h-3.5 text-rose-500" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-gray-400">Organisation *</label>
+                <div className="relative">
+                  <select
+                    value={selectedOrgId}
+                    onChange={(e) => {
+                      setSelectedOrgId(e.target.value)
+                      if (e.target.value !== "OTHER") {
+                        setCustomOrgName("")
+                      }
+                    }}
+                    className="w-full appearance-none rounded-xl border border-white/10 bg-zinc-900 pl-4 pr-10 py-3 text-sm text-white focus:border-brand-cyan focus:outline-none focus:ring-1 focus:ring-brand-cyan transition-all"
+                  >
+                    <option value="">-- Select Organisation --</option>
+                    {organisationList.map((org) => (
+                      <option key={org.id} value={org.id}>
+                        {org.name}
+                      </option>
+                    ))}
+                    <option value="OTHER">Other (Type custom organisation...)</option>
+                  </select>
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none flex items-center text-gray-400">
+                    <ChevronDown className="w-4 h-4" />
+                  </div>
+                </div>
+              </div>
+
+              {selectedOrgId === "OTHER" && (
+                <div className="space-y-2 animate-fade-in">
+                  <label className="block text-xs font-semibold text-gray-400">Custom Organisation Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={customOrgName}
+                    onChange={(e) => setCustomOrgName(e.target.value)}
+                    placeholder="Enter organisation name"
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-brand-cyan focus:outline-none focus:ring-1 focus:ring-brand-cyan transition-all"
+                  />
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={isSubmittingProfile}
+                className="w-full py-3 mt-4 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-brand-teal to-brand-cyan hover:opacity-90 active:scale-[0.98] disabled:opacity-50 transition-all cursor-pointer shadow-md shadow-brand-teal/10 flex items-center justify-center space-x-1.5"
+              >
+                {isSubmittingProfile ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <span>Save Profile</span>
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+      )
+    }
+
     if (loadingGroups) {
       return (
         <main className="max-w-3xl mx-auto px-6 py-16 w-full flex-1 flex flex-col justify-center items-center text-white relative z-10">
@@ -1045,6 +1236,33 @@ export function TesterPageClient({
                       className="px-3 py-1.5 rounded-lg bg-brand-cyan hover:opacity-90 text-white font-bold text-[10px] cursor-pointer whitespace-nowrap shadow-md shadow-brand-cyan/10 transition-all"
                     >
                       Download
+                    </a>
+                  </div>
+                </div>
+                <hr className="border-white/5" />
+              </>
+            )}
+
+            {/* Environment Link Section */}
+            {environmentUrl && (
+              <>
+                <div className="border border-white/5 bg-white/[0.02] p-3 rounded-xl flex items-center justify-between">
+                  <div className="flex items-center space-x-2.5 truncate">
+                    <span className="text-xl">🌐</span>
+                    <div className="truncate">
+                      <p className="text-[11px] font-bold text-white truncate">{environmentUrl}</p>
+                      <p className="text-[9px] text-brand-cyan font-extrabold uppercase tracking-wider">Testing Environment</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2 shrink-0">
+                    <a
+                      href={environmentUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-3 py-1.5 rounded-lg bg-brand-cyan hover:opacity-90 text-white font-bold text-[10px] cursor-pointer whitespace-nowrap shadow-md shadow-brand-cyan/10 transition-all flex items-center space-x-1"
+                    >
+                      <span>Launch</span>
+                      <span>🚀</span>
                     </a>
                   </div>
                 </div>
