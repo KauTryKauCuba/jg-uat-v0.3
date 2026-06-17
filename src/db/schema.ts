@@ -308,6 +308,41 @@ export const feedbackAuditLogsRelations = relations(feedbackAuditLogs, ({ one })
   }),
 }));
 
+export const testerSignOffs = pgTable("tester_sign_offs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  testerId: uuid("tester_id").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
+  designation: text("designation").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const testerSignOffsRelations = relations(testerSignOffs, ({ one }) => ({
+  tester: one(users, {
+    fields: [testerSignOffs.testerId],
+    references: [users.id],
+  }),
+}));
+
+export const signOffAuditLogs = pgTable("sign_off_audit_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  signOffId: uuid("sign_off_id").notNull().references(() => testerSignOffs.id, { onDelete: "cascade" }),
+  testerId: uuid("tester_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  previousData: jsonb("previous_data").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const signOffAuditLogsRelations = relations(signOffAuditLogs, ({ one }) => ({
+  signOff: one(testerSignOffs, {
+    fields: [signOffAuditLogs.signOffId],
+    references: [testerSignOffs.id],
+  }),
+  tester: one(users, {
+    fields: [signOffAuditLogs.testerId],
+    references: [users.id],
+  }),
+}));
+
+
 
 
 

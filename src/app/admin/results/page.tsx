@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { db } from "@/lib/db";
-import { testRuns, testCases, users, testAnswers, testFields, testerFeedbacks, feedbackAuditLogs, organisations } from "@/db/schema";
+import { testRuns, testCases, users, testAnswers, testFields, testerFeedbacks, feedbackAuditLogs, organisations, testerSignOffs, signOffAuditLogs } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { ResultsPageClient } from "@/components/admin/ResultsPageClient";
 
@@ -192,7 +192,59 @@ export default async function AdminResultsPage() {
     };
   });
 
+  // Fetch all sign offs
+  const signOffsList = await db
+    .select({
+      id: testerSignOffs.id,
+      designation: testerSignOffs.designation,
+      createdAt: testerSignOffs.createdAt,
+      updatedAt: testerSignOffs.updatedAt,
+      testerId: testerSignOffs.testerId,
+      testerName: users.name,
+      testerEmail: users.email,
+      testerRole: users.testerGroup,
+      organisationName: organisations.name,
+    })
+    .from(testerSignOffs)
+    .leftJoin(users, eq(users.id, testerSignOffs.testerId))
+    .leftJoin(organisations, eq(organisations.id, users.organisationId))
+    .orderBy(sql`${testerSignOffs.createdAt} DESC`);
+
+  // Fetch all sign off audit logs
+  const signOffAuditLogsList = await db
+    .select()
+    .from(signOffAuditLogs)
+    .orderBy(sql`${signOffAuditLogs.createdAt} DESC`);
+
+  // Group sign off audit logs by signOffId
+  const signOffAuditLogsMap: Record<string, typeof signOffAuditLogsList> = {};
+  for (const log of signOffAuditLogsList) {
+    if (!signOffAuditLogsMap[log.signOffId]) {
+      signOffAuditLogsMap[log.signOffId] = [];
+    }
+    signOffAuditLogsMap[log.signOffId].push(log);
+  }
+
+  // Attach audit logs to sign offs
+  const processedSignOffs = signOffsList.map((so) => {
+    const logs = signOffAuditLogsMap[so.id] || [];
+    return {
+      ...so,
+      createdAt: so.createdAt.toISOString(),
+      updatedAt: so.updatedAt.toISOString(),
+      auditLogs: logs.map((l) => ({
+        id: l.id,
+        previousData: l.previousData,
+        createdAt: l.createdAt.toISOString(),
+      })),
+    };
+  });
+
   return (
-    <ResultsPageClient initialRuns={processedRuns} initialFeedbacks={processedFeedbacks} />
+    <ResultsPageClient 
+      initialRuns={processedRuns} 
+      initialFeedbacks={processedFeedbacks} 
+      initialSignOffs={processedSignOffs} 
+    />
   );
 }

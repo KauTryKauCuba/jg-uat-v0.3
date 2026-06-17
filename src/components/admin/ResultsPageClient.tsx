@@ -60,6 +60,25 @@ interface FeedbackItem {
   auditLogs: FeedbackAuditLog[]
 }
 
+interface SignOffAuditLog {
+  id: string
+  previousData: any
+  createdAt: string
+}
+
+interface SignOffItem {
+  id: string
+  designation: string
+  createdAt: string
+  updatedAt: string
+  testerId: string
+  testerName: string | null
+  testerEmail: string | null
+  testerRole: string | null
+  organisationName: string | null
+  auditLogs: SignOffAuditLog[]
+}
+
 type SortField = "testerName" | "testCaseTitle" | "status" | "submittedAt"
 type SortOrder = "asc" | "desc"
 
@@ -81,6 +100,7 @@ const SortIcon = ({ field, sortField, sortOrder }: SortIconProps) => {
 interface ResultsPageClientProps {
   initialRuns: RunItem[]
   initialFeedbacks: FeedbackItem[]
+  initialSignOffs: SignOffItem[]
 }
 
 const AdminRatingStars = ({ score }: { score: number }) => {
@@ -113,12 +133,15 @@ const AdminRatingStarsLarge = ({ score }: { score: number }) => {
   )
 }
 
-export function ResultsPageClient({ initialRuns, initialFeedbacks }: ResultsPageClientProps) {
+export function ResultsPageClient({ initialRuns, initialFeedbacks, initialSignOffs }: ResultsPageClientProps) {
   const [runs, setRuns] = React.useState<RunItem[]>(initialRuns)
   const [feedbacks, setFeedbacks] = React.useState<FeedbackItem[]>(initialFeedbacks || [])
-  const [activeTab, setActiveTab] = React.useState<"RUNS" | "FEEDBACK">("RUNS")
+  const [signOffs, setSignOffs] = React.useState<SignOffItem[]>(initialSignOffs || [])
+  const [activeTab, setActiveTab] = React.useState<"RUNS" | "FEEDBACK" | "SIGNOFF">("RUNS")
   const [selectedFeedback, setSelectedFeedback] = React.useState<FeedbackItem | null>(null)
+  const [selectedSignOff, setSelectedSignOff] = React.useState<SignOffItem | null>(null)
   const [openAuditLogId, setOpenAuditLogId] = React.useState<string | null>(null)
+  const [openSignOffAuditLogId, setOpenSignOffAuditLogId] = React.useState<string | null>(null)
   const [sortField, setSortField] = React.useState<SortField>("submittedAt")
   const [sortOrder, setSortOrder] = React.useState<SortOrder>("desc")
   const [statusFilter, setStatusFilter] = React.useState<string>("ALL")
@@ -230,6 +253,23 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks }: ResultsPage
     return result
   }, [feedbacks, searchQuery])
 
+  // Filter sign offs
+  const processedSignOffs = React.useMemo(() => {
+    let result = [...signOffs]
+    if (searchQuery.trim() !== "") {
+      const q = searchQuery.toLowerCase()
+      result = result.filter(
+        (s) =>
+          s.testerName?.toLowerCase().includes(q) ||
+          s.testerEmail?.toLowerCase().includes(q) ||
+          s.organisationName?.toLowerCase().includes(q) ||
+          s.testerRole?.toLowerCase().includes(q) ||
+          s.designation.toLowerCase().includes(q)
+      )
+    }
+    return result
+  }, [signOffs, searchQuery])
+
   // Calculation of stats headers for feedbacks
   const feedbackStats = React.useMemo(() => {
     if (feedbacks.length === 0) {
@@ -285,6 +325,20 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks }: ResultsPage
           >
             <MessageSquare className="w-3.5 h-3.5" />
             <span>Tester Feedback ({feedbacks.length})</span>
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab("SIGNOFF")
+              setSearchQuery("")
+            }}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              activeTab === "SIGNOFF"
+                ? "bg-brand-cyan text-white shadow-md shadow-brand-cyan/15"
+                : "text-gray-400 hover:text-white"
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>UAT Sign Offs ({signOffs.length})</span>
           </button>
         </div>
       </div>
@@ -496,7 +550,7 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks }: ResultsPage
             </div>
           </div>
         </>
-      ) : (
+      ) : activeTab === "FEEDBACK" ? (
         <>
           {/* Summary stats bar for tester feedbacks */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -606,6 +660,87 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks }: ResultsPage
                             onClick={() => {
                               setSelectedFeedback(fb)
                               setOpenAuditLogId(null)
+                            }}
+                            className="inline-flex items-center space-x-1.5 text-xs font-bold text-brand-cyan hover:text-brand-cyan/95 hover:underline cursor-pointer bg-transparent border-0"
+                          >
+                            <span>Review</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Search Bar for sign offs */}
+          <div className="border border-white/5 bg-zinc-900/40 p-4 rounded-2xl flex gap-4 items-center">
+            <div className="w-full md:w-96">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search sign offs by tester, organization, role, designation..."
+                className="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/10 text-xs text-white focus:outline-none focus:border-brand-cyan/50 placeholder-gray-500"
+              />
+            </div>
+          </div>
+
+          {/* Sign Offs Table */}
+          <div className="border border-white/5 bg-zinc-900/40 rounded-2xl overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-white/5 text-gray-400 font-semibold bg-white/[0.01] select-none">
+                    <th className="py-3 px-4">Tester</th>
+                    <th className="py-3 px-4">Organisation</th>
+                    <th className="py-3 px-4">Testing Role</th>
+                    <th className="py-3 px-4">Title / Designation</th>
+                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4">Submitted Date</th>
+                    <th className="py-3 px-4 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {processedSignOffs.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-8 text-center text-gray-500 font-medium">
+                        No UAT sign offs matching your query.
+                      </td>
+                    </tr>
+                  ) : (
+                    processedSignOffs.map((so) => (
+                      <tr key={so.id} className="border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
+                        <td className="py-3 px-4">
+                          <div className="font-semibold text-white">{so.testerName || "Tester"}</div>
+                          <div className="text-[9px] text-gray-500 font-mono mt-0.5">{so.testerEmail}</div>
+                        </td>
+                        <td className="py-3 px-4 text-white font-medium">
+                          {so.organisationName || "-"}
+                        </td>
+                        <td className="py-3 px-4 text-gray-300">
+                          {so.testerRole || "-"}
+                        </td>
+                        <td className="py-3 px-4 text-white font-medium">
+                          {so.designation}
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className="inline-flex px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            SIGNED OFF
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-gray-400 font-mono">
+                          {formatDateTime(so.createdAt)}
+                        </td>
+                        <td className="py-3 px-4 text-right">
+                          <button
+                            onClick={() => {
+                              setSelectedSignOff(so)
+                              setOpenSignOffAuditLogId(null)
                             }}
                             className="inline-flex items-center space-x-1.5 text-xs font-bold text-brand-cyan hover:text-brand-cyan/95 hover:underline cursor-pointer bg-transparent border-0"
                           >
@@ -846,6 +981,136 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks }: ResultsPage
             <div className="p-4 border-t border-white/5 bg-zinc-950/40 flex justify-end">
               <button
                 onClick={() => setSelectedFeedback(null)}
+                className="px-4 py-2 bg-white/5 border border-white/5 text-gray-300 hover:text-white rounded-xl text-xs font-semibold cursor-pointer hover:bg-white/10 transition-colors"
+              >
+                Close Details
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sign Off Inspector Modal */}
+      {selectedSignOff && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-md overflow-y-auto">
+          <div className="relative w-full max-w-2xl bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl flex flex-col my-8 max-h-[85vh]">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-white/5 bg-zinc-950/40">
+              <div>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-brand-teal" />
+                  <span>UAT Sign Off Details</span>
+                </h2>
+                <p className="text-xs text-gray-400 mt-1">
+                  Submitted by {selectedSignOff.testerName || selectedSignOff.testerEmail}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedSignOff(null)}
+                className="p-1 rounded-lg bg-white/5 border border-white/5 text-gray-400 hover:text-white cursor-pointer hover:bg-white/10 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto space-y-6 flex-1">
+              
+              {/* Part 1: Sign Off Info */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold uppercase tracking-wider text-brand-teal">Sign Off Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-black/20 p-4 rounded-xl border border-white/5">
+                  <div className="space-y-2 text-xs">
+                    <div className="flex justify-between border-b border-white/5 pb-2">
+                      <span className="text-gray-400">Full Name</span>
+                      <span className="font-semibold text-white">{selectedSignOff.testerName || "Not provided"}</span>
+                    </div>
+                    <div className="flex justify-between md:pb-0">
+                      <span className="text-gray-400">Organisation</span>
+                      <span className="font-semibold text-white">{selectedSignOff.organisationName || "Not provided"}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-2 text-xs">
+                    <div className="flex justify-between border-b border-white/5 pb-2">
+                      <span className="text-gray-400">Testing Role</span>
+                      <span className="font-semibold text-white">{selectedSignOff.testerRole || "Not provided"}</span>
+                    </div>
+                    <div className="flex justify-between md:border-0 md:pb-0">
+                      <span className="text-gray-400">Title / Designation</span>
+                      <span className="font-semibold text-white">{selectedSignOff.designation || "Not provided"}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Part 2: Declaration state */}
+              <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10 flex items-start space-x-3">
+                <span className="text-emerald-400 text-lg">✓</span>
+                <div>
+                  <p className="text-xs font-semibold text-emerald-400">Declaration Confirmed</p>
+                  <p className="text-[11px] text-gray-400 mt-1 leading-normal">
+                    Tester confirmed: "I hereby confirm that I have executed the UAT scenario scripts and sign off on this release cycle."
+                  </p>
+                </div>
+              </div>
+
+              {/* Part 3: Audit Trail / History */}
+              <div className="border-t border-white/5 pt-6 space-y-4">
+                <h3 className="text-sm font-semibold uppercase tracking-wider text-brand-teal flex items-center gap-2">
+                  <History className="w-4 h-4 text-brand-teal" />
+                  <span>Audit Trail & Edit History</span>
+                </h3>
+
+                {selectedSignOff.auditLogs.length === 0 ? (
+                  <p className="text-xs text-gray-500 italic bg-black/20 p-4 rounded-xl border border-white/5">
+                    No edits have been made to this sign off yet. This matches the original submission.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-xs text-amber-400/90 font-medium bg-amber-500/5 border border-amber-500/10 p-3 rounded-lg">
+                      Note: The tester has updated their designation. Below are the historical snapshots archived prior to each update.
+                    </p>
+                    <div className="relative border-l border-white/10 pl-6 ml-3 space-y-4">
+                      {selectedSignOff.auditLogs.map((log) => {
+                        const isExpanded = openSignOffAuditLogId === log.id
+                        const data = log.previousData || {}
+                        return (
+                          <div key={log.id} className="relative">
+                            <span className="absolute -left-[31px] top-1.5 flex h-2 w-2 items-center justify-center rounded-full bg-zinc-700 ring-4 ring-zinc-900 border border-zinc-500" />
+                            
+                            <div className="bg-zinc-950/40 border border-white/5 rounded-xl overflow-hidden">
+                              <button
+                                onClick={() => setOpenSignOffAuditLogId(isExpanded ? null : log.id)}
+                                className="w-full flex items-center justify-between p-3 text-left text-xs font-semibold text-gray-300 hover:text-white cursor-pointer hover:bg-white/[0.02] transition-colors"
+                              >
+                                <span>Snapshot archived on {formatDateTime(log.createdAt)}</span>
+                                <span className="text-[10px] text-brand-teal font-bold underline">
+                                  {isExpanded ? "Collapse Details" : "View Version Details"}
+                                </span>
+                              </button>
+
+                              {isExpanded && (
+                                <div className="p-4 border-t border-white/5 bg-black/20 text-xs text-gray-300 space-y-2">
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-500 font-semibold uppercase text-[10px]">Previous Title / Designation:</span>
+                                    <span className="font-semibold text-white">{data.designation || "-"}</span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-white/5 bg-zinc-950/40 flex justify-end">
+              <button
+                onClick={() => setSelectedSignOff(null)}
                 className="px-4 py-2 bg-white/5 border border-white/5 text-gray-300 hover:text-white rounded-xl text-xs font-semibold cursor-pointer hover:bg-white/10 transition-colors"
               >
                 Close Details

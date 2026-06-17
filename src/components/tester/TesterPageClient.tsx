@@ -381,6 +381,16 @@ export function TesterPageClient({
   const [isSubmittingFeedback, setIsSubmittingFeedback] = React.useState(false)
   const [isEditingFeedback, setIsEditingFeedback] = React.useState(false)
 
+  // Sign off states
+  const [hasSubmittedSignOff, setHasSubmittedSignOff] = React.useState(false)
+  const [submittedSignOffData, setSubmittedSignOffData] = React.useState<any>(null)
+  const [signOffSubmittedAt, setSignOffSubmittedAt] = React.useState<string | null>(null)
+  const [showSignOffModal, setShowSignOffModal] = React.useState(false)
+  const [designation, setDesignation] = React.useState("")
+  const [isSubmittingSignOff, setIsSubmittingSignOff] = React.useState(false)
+  const [isEditingSignOff, setIsEditingSignOff] = React.useState(false)
+  const [signOffCheckbox, setSignOffCheckbox] = React.useState(false)
+
   const testerOrgName = React.useMemo(() => {
     const org = organisations.find(o => o.id === initialOrganisationId)
     return org ? org.name : "N/A"
@@ -391,6 +401,9 @@ export function TesterPageClient({
       setHasSubmittedFeedback(false)
       setSubmittedFeedbackData(null)
       setFeedbackSubmittedAt(null)
+      setHasSubmittedSignOff(false)
+      setSubmittedSignOffData(null)
+      setSignOffSubmittedAt(null)
     } else {
       const checkFeedbackStatus = async () => {
         try {
@@ -407,9 +420,65 @@ export function TesterPageClient({
           console.error("Failed to check feedback status:", err)
         }
       }
+      const checkSignOffStatus = async () => {
+        try {
+          const res = await fetch("/api/tester/sign-off")
+          const json = await res.json()
+          if (json.hasSubmitted) {
+            setHasSubmittedSignOff(true)
+            setSubmittedSignOffData(json.data)
+            setDesignation(json.data.designation)
+            setSignOffCheckbox(true)
+            if (json.data?.createdAt) {
+              setSignOffSubmittedAt(formatSessionTime(new Date(json.data.createdAt)))
+            }
+          }
+        } catch (err) {
+          console.error("Failed to check sign off status:", err)
+        }
+      }
       checkFeedbackStatus()
+      checkSignOffStatus()
     }
   }, [initialOrganisationId])
+
+  const handleSignOffSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!designation.trim()) {
+      alert("Please enter your Title / Designation.")
+      return
+    }
+    if (!signOffCheckbox) {
+      alert("Please check the declaration box to sign off.")
+      return
+    }
+    setIsSubmittingSignOff(true)
+    try {
+      const res = await fetch("/api/tester/sign-off", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ designation: designation.trim() }),
+      })
+      const json = await res.json()
+      if (json.error) {
+        alert(json.error)
+      } else {
+        const dummyData = {
+          designation: designation.trim(),
+          createdAt: new Date().toISOString(),
+        }
+        setHasSubmittedSignOff(true)
+        setSubmittedSignOffData(dummyData)
+        setSignOffSubmittedAt(formatSessionTime(new Date()))
+        setShowSignOffModal(false)
+        alert("Thank you! UAT Sign Off submitted successfully.")
+      }
+    } catch (err) {
+      alert("Failed to submit UAT Sign Off. Please try again.")
+    } finally {
+      setIsSubmittingSignOff(false)
+    }
+  }
 
   const handleFeedbackSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -1650,12 +1719,39 @@ export function TesterPageClient({
                 Formally confirm that you have successfully completed all scenario scripts and sign off on this release cycle.
               </p>
             </div>
-            <button
-              type="button"
-              className="w-full py-3 rounded-xl bg-brand-teal hover:bg-brand-teal/95 text-white font-bold text-xs shadow-md shadow-brand-teal/10 transition-all cursor-pointer"
-            >
-              Sign Off Scenario
-            </button>
+            {hasSubmittedSignOff ? (
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (submittedSignOffData) {
+                      setDesignation(submittedSignOffData.designation)
+                    }
+                    setIsEditingSignOff(false)
+                    setShowSignOffModal(true)
+                  }}
+                  className="w-full py-3 rounded-xl bg-zinc-850 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold text-xs border border-white/5 transition-all cursor-pointer"
+                >
+                  View Submitted Sign Off
+                </button>
+                {signOffSubmittedAt && (
+                  <p className="text-[10px] text-zinc-500 font-mono text-center">
+                    Submitted: {signOffSubmittedAt}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setSignOffCheckbox(false)
+                  setShowSignOffModal(true)
+                }}
+                className="w-full py-3 rounded-xl bg-brand-teal hover:bg-brand-teal/95 text-white font-bold text-xs shadow-md shadow-brand-teal/10 transition-all cursor-pointer"
+              >
+                Sign Off Scenario
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -2198,6 +2294,161 @@ export function TesterPageClient({
                       </>
                     ) : (
                       <span>Submit Feedback</span>
+                    )}
+                  </button>
+                </div>
+              )}
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* UAT Sign Off Form Modal */}
+      {showSignOffModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
+            onClick={() => setShowSignOffModal(false)} 
+          />
+          
+          {/* Modal Content */}
+          <div className="relative z-10 w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-white/10 bg-zinc-950 p-6 shadow-2xl animate-in fade-in zoom-in duration-200 space-y-6 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent">
+            
+            <div className="text-center space-y-2">
+              <div className="relative mx-auto w-16 h-16 rounded-full flex items-center justify-center bg-zinc-900 border border-white/10 shadow-lg text-2xl">
+                ✍️
+              </div>
+              <h2 className="text-xl font-extrabold tracking-tight text-white">UAT Sign Off</h2>
+              <p className="text-xs text-gray-400">
+                Confirm your UAT scenario completion and officially sign off on this release cycle.
+              </p>
+            </div>
+
+            {isEditingSignOff && (
+              <div className="bg-amber-500/10 border border-amber-500/25 rounded-xl p-3.5 text-xs text-amber-400 flex items-start gap-2.5">
+                <span className="text-base select-none">⚠️</span>
+                <div>
+                  <strong className="block mb-0.5">Edit Warning</strong>
+                  <span>Saving changes will overwrite your current UAT sign-off and archive the previous version in the audit logs.</span>
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={handleSignOffSubmit} className="space-y-5 text-left">
+              {/* Prefilled Metadata Section */}
+              <div className="border border-white/5 bg-white/[0.02] p-4 rounded-xl space-y-3.5 text-xs text-gray-400">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <span className="text-[10px] text-zinc-500 font-semibold uppercase block">Full Name</span>
+                    <span className="text-white font-medium">{currentUserName || "N/A"}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-zinc-500 font-semibold uppercase block">Organisation</span>
+                    <span className="text-white font-medium">{testerOrgName}</span>
+                  </div>
+                </div>
+                
+                <div className="pt-2.5 border-t border-white/5 space-y-1.5">
+                  <label className="block text-[10px] text-zinc-500 font-semibold uppercase">
+                    Title / Designation
+                  </label>
+                  <input
+                    type="text"
+                    value={designation}
+                    onChange={(e) => setDesignation(e.target.value)}
+                    required
+                    readOnly={hasSubmittedSignOff && !isEditingSignOff}
+                    placeholder={hasSubmittedSignOff && !isEditingSignOff ? "No title provided." : "e.g. Senior QA Engineer, Product Manager"}
+                    className={`w-full rounded-xl border border-white/10 px-3 py-2.5 text-xs text-white placeholder-gray-500 focus:border-brand-teal focus:outline-none focus:ring-1 focus:ring-brand-teal transition-all ${
+                      hasSubmittedSignOff && !isEditingSignOff ? "bg-zinc-900/60 opacity-80 cursor-not-allowed" : "bg-white/5"
+                    }`}
+                  />
+                </div>
+              </div>
+
+              {/* Sign Off Declaration Checkbox */}
+              <div className="p-4 rounded-xl bg-zinc-900/40 border border-white/5 flex items-start space-x-3 select-none">
+                <input
+                  id="sign-off-declaration"
+                  type="checkbox"
+                  checked={signOffCheckbox}
+                  onChange={(e) => {
+                    if (hasSubmittedSignOff && !isEditingSignOff) return
+                    setSignOffCheckbox(e.target.checked)
+                  }}
+                  disabled={hasSubmittedSignOff && !isEditingSignOff}
+                  className="mt-0.5 rounded border-white/10 text-brand-teal focus:ring-brand-teal cursor-pointer disabled:cursor-not-allowed"
+                />
+                <label htmlFor="sign-off-declaration" className="text-xs text-gray-300 leading-normal cursor-pointer">
+                  I hereby confirm that I have executed the UAT scenario scripts and sign off on this release cycle.
+                </label>
+              </div>
+
+              {/* Form Buttons */}
+              {hasSubmittedSignOff ? (
+                isEditingSignOff ? (
+                  <div className="flex space-x-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (submittedSignOffData) {
+                          setDesignation(submittedSignOffData.designation)
+                        }
+                        setIsEditingSignOff(false)
+                      }}
+                      className="w-1/2 py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-gray-300 font-bold text-xs transition-all cursor-pointer"
+                    >
+                      Cancel Edit
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmittingSignOff}
+                      className="w-1/2 py-3 rounded-xl bg-gradient-to-r from-brand-teal to-brand-cyan hover:opacity-90 text-white font-bold text-xs shadow-md shadow-brand-teal/10 transition-all flex items-center justify-center space-x-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isSubmittingSignOff ? (
+                        <span>Saving...</span>
+                      ) : (
+                        <span>Save Changes</span>
+                      )}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex space-x-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingSignOff(true)}
+                      className="w-1/2 py-3 rounded-xl bg-brand-teal hover:bg-brand-teal/90 text-white font-bold text-xs transition-all cursor-pointer shadow-md shadow-brand-teal/10"
+                    >
+                      Edit Sign Off
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowSignOffModal(false)}
+                      className="w-1/2 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 font-bold text-xs transition-all cursor-pointer border border-white/10"
+                    >
+                      Close
+                    </button>
+                  </div>
+                )
+              ) : (
+                <div className="flex space-x-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowSignOffModal(false)}
+                    className="w-1/2 py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-gray-300 font-bold text-xs transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingSignOff}
+                    className="w-1/2 py-3 rounded-xl bg-gradient-to-r from-brand-teal to-brand-cyan hover:opacity-90 text-white font-bold text-xs shadow-md shadow-brand-teal/10 transition-all flex items-center justify-center space-x-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSubmittingSignOff ? (
+                      <span>Submitting...</span>
+                    ) : (
+                      <span>Submit Sign Off</span>
                     )}
                   </button>
                 </div>
