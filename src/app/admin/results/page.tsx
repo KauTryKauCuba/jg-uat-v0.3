@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { db } from "@/lib/db";
-import { testRuns, testCases, users, testAnswers, testFields } from "@/db/schema";
+import { testRuns, testCases, users, testAnswers, testFields, testerFeedbacks, feedbackAuditLogs, organisations } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { ResultsPageClient } from "@/components/admin/ResultsPageClient";
 
@@ -137,7 +137,62 @@ export default async function AdminResultsPage() {
     };
   });
 
+  // Fetch all feedbacks
+  const feedbacksList = await db
+    .select({
+      id: testerFeedbacks.id,
+      ratingOverall: testerFeedbacks.ratingOverall,
+      ratingEaseOfUse: testerFeedbacks.ratingEaseOfUse,
+      ratingInstructions: testerFeedbacks.ratingInstructions,
+      ratingResultForm: testerFeedbacks.ratingResultForm,
+      impressiveAspects: testerFeedbacks.impressiveAspects,
+      improvementAreas: testerFeedbacks.improvementAreas,
+      otherFeedback: testerFeedbacks.otherFeedback,
+      uatSessionStart: testerFeedbacks.uatSessionStart,
+      createdAt: testerFeedbacks.createdAt,
+      updatedAt: testerFeedbacks.updatedAt,
+      testerId: testerFeedbacks.testerId,
+      testerName: users.name,
+      testerEmail: users.email,
+      testerRole: users.testerGroup,
+      organisationName: organisations.name,
+    })
+    .from(testerFeedbacks)
+    .leftJoin(users, eq(users.id, testerFeedbacks.testerId))
+    .leftJoin(organisations, eq(organisations.id, users.organisationId))
+    .orderBy(sql`${testerFeedbacks.createdAt} DESC`);
+
+  // Fetch all feedback audit logs
+  const auditLogsList = await db
+    .select()
+    .from(feedbackAuditLogs)
+    .orderBy(sql`${feedbackAuditLogs.createdAt} DESC`);
+
+  // Group audit logs by feedbackId
+  const auditLogsMap: Record<string, typeof auditLogsList> = {};
+  for (const log of auditLogsList) {
+    if (!auditLogsMap[log.feedbackId]) {
+      auditLogsMap[log.feedbackId] = [];
+    }
+    auditLogsMap[log.feedbackId].push(log);
+  }
+
+  // Attach audit logs to feedbacks
+  const processedFeedbacks = feedbacksList.map((fb) => {
+    const logs = auditLogsMap[fb.id] || [];
+    return {
+      ...fb,
+      createdAt: fb.createdAt.toISOString(),
+      updatedAt: fb.updatedAt.toISOString(),
+      auditLogs: logs.map((l) => ({
+        id: l.id,
+        previousData: l.previousData,
+        createdAt: l.createdAt.toISOString(),
+      })),
+    };
+  });
+
   return (
-    <ResultsPageClient initialRuns={processedRuns} />
+    <ResultsPageClient initialRuns={processedRuns} initialFeedbacks={processedFeedbacks} />
   );
 }

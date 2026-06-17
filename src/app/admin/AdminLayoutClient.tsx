@@ -1,8 +1,9 @@
 "use client"
 
 import * as React from "react"
-import { LayoutDashboard, ClipboardList, Folder, Users, BarChart3, Files, ChevronLeft, ChevronRight, Sparkles, Building } from "lucide-react"
+import { LayoutDashboard, ClipboardList, Folder, Users, BarChart3, Files, ChevronLeft, ChevronRight, Sparkles, Building, Menu, X } from "lucide-react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { NavLink } from "./nav-link"
 import { HelpRequestNavLink } from "@/components/admin/HelpRequestNavLink"
 import { SignOutButton } from "@/components/ui/sign-out-button"
@@ -17,6 +18,8 @@ interface AdminLayoutClientProps {
 export function AdminLayoutClient({ userEmail, children }: AdminLayoutClientProps) {
   const [isCollapsed, setIsCollapsed] = React.useState(false)
   const [isMounted, setIsMounted] = React.useState(false)
+  const [isMobileOpen, setIsMobileOpen] = React.useState(false)
+  const pathname = usePathname()
 
   React.useEffect(() => {
     const saved = localStorage.getItem("admin-sidebar-collapsed")
@@ -29,6 +32,11 @@ export function AdminLayoutClient({ userEmail, children }: AdminLayoutClientProp
     return () => clearTimeout(timer)
   }, [])
 
+  // Auto-close mobile sidebar when navigating
+  React.useEffect(() => {
+    setIsMobileOpen(false)
+  }, [pathname])
+
   const handleToggle = () => {
     const nextState = !isCollapsed
     setIsCollapsed(nextState)
@@ -36,19 +44,45 @@ export function AdminLayoutClient({ userEmail, children }: AdminLayoutClientProp
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white flex font-sans relative">
+    <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col md:flex-row font-sans relative">
       {/* Full-width background lava lamp behind sidebar and content */}
       <div className="absolute top-0 left-0 right-0 h-[200px] overflow-hidden pointer-events-none z-0">
         <LavaLampBackground className="w-full h-full" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#0a0a0a]" />
       </div>
 
+      {/* Mobile Top Bar */}
+      <div className="md:hidden flex items-center justify-between p-4 border-b border-white/5 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-30">
+        <div className="flex items-center space-x-2">
+          <img src="/icon.png" alt="JobGiga Logo" className="w-5 h-5 object-contain" />
+          <span className="text-sm font-bold text-white">JobGiga UAT</span>
+          <span className="text-[8px] font-mono px-1.5 py-0.5 rounded-full bg-brand-teal/10 border border-brand-teal/20 text-brand-cyan">
+            Admin
+          </span>
+        </div>
+        <button
+          onClick={() => setIsMobileOpen(!isMobileOpen)}
+          className="p-1.5 rounded-lg bg-white/5 border border-white/5 text-gray-400 hover:text-white cursor-pointer"
+          aria-label="Toggle navigation menu"
+        >
+          {isMobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
+      </div>
+
+      {/* Backdrop overlay for mobile menu */}
+      {isMobileOpen && (
+        <div
+          onClick={() => setIsMobileOpen(false)}
+          className="fixed inset-0 bg-black/60 z-30 md:hidden backdrop-blur-sm"
+        />
+      )}
+
       {/* Fixed Sidebar - Floating Pill Design */}
       <aside
         className={cn(
-          "fixed top-5 bottom-5 left-5 z-20 border border-white/[0.08] bg-zinc-950/40 backdrop-blur-xl flex flex-col justify-between p-4 rounded-[15px] shadow-2xl shadow-black/80",
-          isMounted ? "transition-all duration-300 ease-in-out" : "transition-none duration-0",
-          isCollapsed ? "w-20" : "w-64"
+          "fixed top-5 bottom-5 left-5 z-40 border border-white/[0.08] bg-zinc-950/95 md:bg-zinc-950/40 backdrop-blur-xl flex flex-col justify-between p-4 rounded-[15px] shadow-2xl shadow-black/80 transition-all duration-300 ease-in-out",
+          isCollapsed ? "md:w-20" : "md:w-64",
+          isMobileOpen ? "translate-x-0 w-64 top-5 bottom-5" : "-translate-x-[280px] md:translate-x-0"
         )}
       >
         <div className="space-y-8">
@@ -66,7 +100,7 @@ export function AdminLayoutClient({ userEmail, children }: AdminLayoutClientProp
               </div>
               <button
                 onClick={handleToggle}
-                className="p-1 text-gray-400 hover:text-white transition-colors cursor-pointer shrink-0"
+                className="hidden md:block p-1 text-gray-400 hover:text-white transition-colors cursor-pointer shrink-0"
                 title="Collapse sidebar"
               >
                 <ChevronLeft className="w-5 h-5" />
@@ -77,7 +111,7 @@ export function AdminLayoutClient({ userEmail, children }: AdminLayoutClientProp
               <img src="/icon.png" alt="JobGiga Logo" className="w-6 h-6 object-contain shrink-0" />
               <button
                 onClick={handleToggle}
-                className="p-1 text-gray-400 hover:text-white transition-colors cursor-pointer shrink-0"
+                className="hidden md:block p-1 text-gray-400 hover:text-white transition-colors cursor-pointer shrink-0"
                 title="Expand sidebar"
               >
                 <ChevronRight className="w-5 h-5" />
@@ -144,9 +178,9 @@ export function AdminLayoutClient({ userEmail, children }: AdminLayoutClientProp
       {/* Main Content Area */}
       <div
         className={cn(
-          "flex-1 min-h-screen flex flex-col relative z-10 overflow-hidden",
+          "flex-1 min-h-screen flex flex-col relative z-10 overflow-hidden ml-0",
           isMounted ? "transition-all duration-300 ease-in-out" : "transition-none duration-0",
-          isCollapsed ? "ml-[100px]" : "ml-[276px]"
+          isCollapsed ? "md:ml-[100px]" : "md:ml-[276px]"
         )}
       >
         <div className="relative z-10 flex-1 flex flex-col">

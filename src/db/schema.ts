@@ -100,6 +100,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
     fields: [users.organisationId],
     references: [organisations.id],
   }),
+  feedback: one(testerFeedbacks),
 }));
 
 export const organisationsRelations = relations(organisations, ({ many }) => ({
@@ -265,6 +266,48 @@ export const uatEnvironment = pgTable("uat_environment", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+export const testerFeedbacks = pgTable("tester_feedbacks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  testerId: uuid("tester_id").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
+  ratingOverall: integer("rating_overall").notNull(),
+  ratingEaseOfUse: integer("rating_ease_of_use").notNull(),
+  ratingInstructions: integer("rating_instructions").notNull(),
+  ratingResultForm: integer("rating_result_form").notNull(),
+  impressiveAspects: text("impressive_aspects"),
+  improvementAreas: text("improvement_areas"),
+  otherFeedback: text("other_feedback"),
+  uatSessionStart: text("uat_session_start"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const testerFeedbacksRelations = relations(testerFeedbacks, ({ one }) => ({
+  tester: one(users, {
+    fields: [testerFeedbacks.testerId],
+    references: [users.id],
+  }),
+}));
+
+export const feedbackAuditLogs = pgTable("feedback_audit_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  feedbackId: uuid("feedback_id").notNull().references(() => testerFeedbacks.id, { onDelete: "cascade" }),
+  testerId: uuid("tester_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  previousData: jsonb("previous_data").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const feedbackAuditLogsRelations = relations(feedbackAuditLogs, ({ one }) => ({
+  feedback: one(testerFeedbacks, {
+    fields: [feedbackAuditLogs.feedbackId],
+    references: [testerFeedbacks.id],
+  }),
+  tester: one(users, {
+    fields: [feedbackAuditLogs.testerId],
+    references: [users.id],
+  }),
+}));
+
 
 
 

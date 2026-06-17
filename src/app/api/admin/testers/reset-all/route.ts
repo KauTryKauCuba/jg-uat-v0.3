@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { db } from "@/lib/db";
-import { users, testRuns, helpRequests, uatResourceSets } from "@/db/schema";
+import { users, testRuns, helpRequests, uatResourceSets, testerFeedbacks } from "@/db/schema";
 import { eq, isNotNull } from "drizzle-orm";
 
 export async function POST(req: NextRequest) {
@@ -11,6 +11,9 @@ export async function POST(req: NextRequest) {
     if (!session || !session.user || session.user.role !== "ADMIN") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Delete all feedbacks
+    await db.delete(testerFeedbacks);
 
     // 1. Delete all test runs (cascades to testAnswers)
     await db.delete(testRuns);

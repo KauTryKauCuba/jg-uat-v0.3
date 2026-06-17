@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { Folder, Loader2, Clock, Lock, ShieldAlert, User, Briefcase, ChevronRight, ChevronDown, Check, Building, Unlock } from "lucide-react"
+import { Folder, Loader2, Clock, Lock, ShieldAlert, User, Briefcase, ChevronRight, ChevronDown, Check, Building, Unlock, Star } from "lucide-react"
 import { StatusBadge } from "@/components/ui/status-badge"
 import { usePageTitle } from "@/components/tester/TesterLayout"
 
@@ -190,6 +190,64 @@ function CaseCard({
   )
 }
 
+const formatSessionTime = (date: Date) => {
+  return date.toLocaleString("en-US", {
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  })
+}
+
+function RatingStars({
+  value,
+  onChange,
+  labelLeft,
+  labelRight,
+  disabled = false,
+}: {
+  value: number
+  onChange: (v: number) => void
+  labelLeft: string
+  labelRight: string
+  disabled?: boolean
+}) {
+  const [hoverValue, setHoverValue] = React.useState<number | null>(null)
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center space-x-1.5">
+        {[1, 2, 3, 4, 5].map((star) => {
+          const isFilled = hoverValue !== null && !disabled ? star <= hoverValue : star <= value
+          return (
+            <button
+              key={star}
+              type="button"
+              disabled={disabled}
+              onMouseEnter={() => !disabled && setHoverValue(star)}
+              onMouseLeave={() => !disabled && setHoverValue(null)}
+              onClick={() => !disabled && onChange(star)}
+              className={`p-1 focus:outline-none transition-transform active:scale-90 ${disabled ? "cursor-not-allowed" : "cursor-pointer"}`}
+            >
+              <Star
+                className={`w-5.5 h-5.5 transition-all duration-150 ${
+                  isFilled ? "fill-amber-400 text-amber-400 scale-110" : "text-zinc-600 hover:text-zinc-400"
+                }`}
+              />
+            </button>
+          )
+        })}
+      </div>
+      <div className="flex justify-between w-full max-w-[170px] text-[9px] text-zinc-500 font-semibold uppercase tracking-wider">
+        <span>{labelLeft}</span>
+        <span>{labelRight}</span>
+      </div>
+    </div>
+  )
+}
+
 interface CategoryItem {
   id: string
   name: string
@@ -290,8 +348,117 @@ export function TesterPageClient({
   const [isSubmittingProfile, setIsSubmittingProfile] = React.useState(false)
   const [currentUserName, setCurrentUserName] = React.useState(userName || "")
   const [isNameUnlocked, setIsNameUnlocked] = React.useState(false)
+  const [mounted, setMounted] = React.useState(false)
+  const [liveTime, setLiveTime] = React.useState(new Date())
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  React.useEffect(() => {
+    if (!hasSubmittedProfile) {
+      const timer = setInterval(() => {
+        setLiveTime(new Date())
+      }, 1000)
+      return () => clearInterval(timer)
+    }
+  }, [hasSubmittedProfile])
 
   const scrollContainerRef = React.useRef<HTMLDivElement>(null)
+
+  // Feedback states
+  const [hasSubmittedFeedback, setHasSubmittedFeedback] = React.useState(false)
+  const [submittedFeedbackData, setSubmittedFeedbackData] = React.useState<any>(null)
+  const [feedbackSubmittedAt, setFeedbackSubmittedAt] = React.useState<string | null>(null)
+  const [showFeedbackModal, setShowFeedbackModal] = React.useState(false)
+  const [ratingOverall, setRatingOverall] = React.useState(0)
+  const [ratingEaseOfUse, setRatingEaseOfUse] = React.useState(0)
+  const [ratingInstructions, setRatingInstructions] = React.useState(0)
+  const [ratingResultForm, setRatingResultForm] = React.useState(0)
+  const [impressiveAspects, setImpressiveAspects] = React.useState("")
+  const [improvementAreas, setImprovementAreas] = React.useState("")
+  const [otherFeedback, setOtherFeedback] = React.useState("")
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = React.useState(false)
+  const [isEditingFeedback, setIsEditingFeedback] = React.useState(false)
+
+  const testerOrgName = React.useMemo(() => {
+    const org = organisations.find(o => o.id === initialOrganisationId)
+    return org ? org.name : "N/A"
+  }, [initialOrganisationId, organisations])
+
+  React.useEffect(() => {
+    if (!initialOrganisationId) {
+      setHasSubmittedFeedback(false)
+      setSubmittedFeedbackData(null)
+      setFeedbackSubmittedAt(null)
+    } else {
+      const checkFeedbackStatus = async () => {
+        try {
+          const res = await fetch("/api/tester/feedback")
+          const json = await res.json()
+          if (json.hasSubmitted) {
+            setHasSubmittedFeedback(true)
+            setSubmittedFeedbackData(json.data)
+            if (json.data?.createdAt) {
+              setFeedbackSubmittedAt(formatSessionTime(new Date(json.data.createdAt)))
+            }
+          }
+        } catch (err) {
+          console.error("Failed to check feedback status:", err)
+        }
+      }
+      checkFeedbackStatus()
+    }
+  }, [initialOrganisationId])
+
+  const handleFeedbackSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (ratingOverall === 0 || ratingEaseOfUse === 0 || ratingInstructions === 0 || ratingResultForm === 0) {
+      alert("Please provide a rating for all 4 multiple choice questions.")
+      return
+    }
+    setIsSubmittingFeedback(true)
+    try {
+      const res = await fetch("/api/tester/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ratingOverall,
+          ratingEaseOfUse,
+          ratingInstructions,
+          ratingResultForm,
+          impressiveAspects: impressiveAspects.trim() || null,
+          improvementAreas: improvementAreas.trim() || null,
+          otherFeedback: otherFeedback.trim() || null,
+          uatSessionStart: startTime || null,
+        }),
+      })
+      const json = await res.json()
+      if (json.error) {
+        alert(json.error)
+      } else {
+        const dummyData = {
+          ratingOverall,
+          ratingEaseOfUse,
+          ratingInstructions,
+          ratingResultForm,
+          impressiveAspects,
+          improvementAreas,
+          otherFeedback,
+          uatSessionStart: startTime || null,
+        }
+        setHasSubmittedFeedback(true)
+        setSubmittedFeedbackData(dummyData)
+        setFeedbackSubmittedAt(formatSessionTime(new Date()))
+        setShowFeedbackModal(false)
+        alert("Thank you for your feedback! Your submission has been saved.")
+      }
+    } catch (err) {
+      alert("Failed to submit feedback. Please try again.")
+    } finally {
+      setIsSubmittingFeedback(false)
+    }
+  }
 
   // Tooltip Tour Guide Configuration
   const TOUR_STEPS = React.useMemo(() => [
@@ -547,8 +714,20 @@ export function TesterPageClient({
   }, [])
 
   React.useEffect(() => {
-    setStartTime(new Date().toLocaleString())
-  }, [])
+    if (!initialOrganisationId) {
+      localStorage.removeItem(`uat_session_start_${testerId}`)
+      setStartTime("")
+    } else {
+      const saved = localStorage.getItem(`uat_session_start_${testerId}`)
+      if (saved) {
+        setStartTime(saved)
+      } else {
+        const fallbackTime = formatSessionTime(new Date())
+        localStorage.setItem(`uat_session_start_${testerId}`, fallbackTime)
+        setStartTime(fallbackTime)
+      }
+    }
+  }, [initialOrganisationId, testerId])
 
   React.useEffect(() => {
     const fetchResources = async () => {
@@ -636,6 +815,11 @@ export function TesterPageClient({
         setOrganisationId(json.organisationId)
         setHasSubmittedProfile(true)
         setCurrentUserName(tempName.trim())
+        
+        const sessionStartTime = formatSessionTime(new Date())
+        localStorage.setItem(`uat_session_start_${testerId}`, sessionStartTime)
+        setStartTime(sessionStartTime)
+
         if (selectedOrgId === "OTHER" && customOrgName.trim()) {
           const freshOrgsRes = await fetch("/api/tester/organisations")
           const freshOrgsJson = await freshOrgsRes.json()
@@ -798,6 +982,15 @@ export function TesterPageClient({
                       <Lock className="w-3.5 h-3.5 text-rose-500" />
                     )}
                   </button>
+                </div>
+              </div>
+
+              {/* UAT Session Section */}
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-gray-400">UAT Session</label>
+                <div className="rounded-xl border border-white/10 bg-zinc-900/60 px-4 py-3 text-xs font-mono text-brand-teal flex items-center justify-between">
+                  <span className="text-[10px] text-gray-400 uppercase font-sans">Start Timestamp</span>
+                  <span className="font-bold">{mounted ? formatSessionTime(liveTime) : ""}</span>
                 </div>
               </div>
 
@@ -1408,12 +1601,42 @@ export function TesterPageClient({
                 Provide observations, report blocker bugs, or submit feedback to the system administrator about your testing scenarios.
               </p>
             </div>
-            <button
-              type="button"
-              className="w-full py-3 rounded-xl bg-brand-cyan hover:bg-brand-cyan/95 text-white font-bold text-xs shadow-md shadow-brand-cyan/10 transition-all cursor-pointer"
-            >
-              Open Feedback Panel
-            </button>
+            {hasSubmittedFeedback ? (
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (submittedFeedbackData) {
+                      setRatingOverall(submittedFeedbackData.ratingOverall)
+                      setRatingEaseOfUse(submittedFeedbackData.ratingEaseOfUse)
+                      setRatingInstructions(submittedFeedbackData.ratingInstructions)
+                      setRatingResultForm(submittedFeedbackData.ratingResultForm)
+                      setImpressiveAspects(submittedFeedbackData.impressiveAspects || "")
+                      setImprovementAreas(submittedFeedbackData.improvementAreas || "")
+                      setOtherFeedback(submittedFeedbackData.otherFeedback || "")
+                    }
+                    setIsEditingFeedback(false)
+                    setShowFeedbackModal(true)
+                  }}
+                  className="w-full py-3 rounded-xl bg-zinc-850 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold text-xs border border-white/5 transition-all cursor-pointer"
+                >
+                  View Submitted Feedback
+                </button>
+                {feedbackSubmittedAt && (
+                  <p className="text-[10px] text-zinc-500 font-mono text-center">
+                    Submitted: {feedbackSubmittedAt}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowFeedbackModal(true)}
+                className="w-full py-3 rounded-xl bg-brand-cyan hover:bg-brand-cyan/95 text-white font-bold text-xs shadow-md shadow-brand-cyan/10 transition-all cursor-pointer"
+              >
+                Open Feedback Panel
+              </button>
+            )}
           </div>
 
           {/* UAT Sign Off Card */}
@@ -1689,16 +1912,297 @@ export function TesterPageClient({
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                setShowCompletionModal(false)
-                setHasDismissedCompletion(true)
-              }}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-teal to-brand-cyan hover:opacity-90 text-white font-bold text-xs shadow-md shadow-brand-teal/10 transition-all cursor-pointer"
-            >
-              Go to Dashboard
-            </button>
+            {hasSubmittedFeedback ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCompletionModal(false)
+                  setHasDismissedCompletion(true)
+                }}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-teal to-brand-cyan hover:opacity-90 text-white font-bold text-xs shadow-md shadow-brand-teal/10 transition-all cursor-pointer"
+              >
+                Go to Dashboard
+              </button>
+            ) : (
+              <div className="space-y-2.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCompletionModal(false)
+                    setHasDismissedCompletion(true)
+                    setShowFeedbackModal(true)
+                  }}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-teal to-brand-cyan hover:opacity-90 text-white font-bold text-xs shadow-md shadow-brand-teal/10 transition-all cursor-pointer"
+                >
+                  Open Feedback Panel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCompletionModal(false)
+                    setHasDismissedCompletion(true)
+                  }}
+                  className="w-full py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-gray-300 font-bold text-xs transition-all cursor-pointer"
+                >
+                  Go to Dashboard
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      {/* UAT Feedback Form Modal */}
+      {showFeedbackModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm" 
+            onClick={() => setShowFeedbackModal(false)} 
+          />
+          
+          {/* Modal Content - Scrollable for the questionnaire */}
+          <div className="relative z-10 w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-white/10 bg-zinc-950 p-6 shadow-2xl animate-in fade-in zoom-in duration-200 space-y-6 scrollbar-thin scrollbar-thumb-zinc-800 scrollbar-track-transparent">
+            
+            <div className="text-center space-y-2">
+              <div className="relative mx-auto w-16 h-16 rounded-full flex items-center justify-center bg-zinc-900 border border-white/10 shadow-lg text-2xl">
+                💬
+              </div>
+              <h2 className="text-xl font-extrabold tracking-tight text-white">UAT Tester Feedback</h2>
+              <p className="text-xs text-gray-400">
+                Please take a minute to provide your feedback on the release cycle and testing system.
+              </p>
+            </div>
+
+            {isEditingFeedback && (
+              <div className="bg-amber-500/10 border border-amber-500/25 rounded-xl p-3.5 text-xs text-amber-400 flex items-start gap-2.5">
+                <span className="text-base select-none">⚠️</span>
+                <div>
+                  <strong className="block mb-0.5">Edit Warning</strong>
+                  <span>Saving changes will overwrite your current feedback and archive the previous version in the audit logs.</span>
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={handleFeedbackSubmit} className="space-y-5 text-left">
+              {/* Prefilled Metadata Section */}
+              <div className="border border-white/5 bg-white/[0.02] p-4 rounded-xl space-y-3.5 text-xs text-gray-400">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <span className="text-[10px] text-zinc-500 font-semibold uppercase block">Tester Name</span>
+                    <span className="text-white font-medium">{currentUserName || "N/A"}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-zinc-500 font-semibold uppercase block">Organisation</span>
+                    <span className="text-white font-medium">{testerOrgName}</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3 pt-2.5 border-t border-white/5">
+                  <div>
+                    <span className="text-[10px] text-zinc-500 font-semibold uppercase block">Testing Role</span>
+                    <span className="text-white font-medium">
+                      {testerGroup === "EMPLOYER"
+                        ? "Employer"
+                        : testerGroup === "JOBSEEKER_WEB"
+                        ? "Jobseeker Web"
+                        : testerGroup === "JOBSEEKER"
+                        ? "Jobseeker"
+                        : testerGroup || "N/A"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-zinc-500 font-semibold uppercase block">UAT Session Start</span>
+                    <span className="text-white font-medium font-mono text-[10px]">{startTime || "N/A"}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Ratings Section */}
+              <div className="space-y-4 pt-1">
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-gray-300">
+                    5. Overall UAT Session Rating *
+                  </label>
+                  <RatingStars
+                    value={ratingOverall}
+                    onChange={setRatingOverall}
+                    labelLeft="Very Poor"
+                    labelRight="Excellent"
+                    disabled={hasSubmittedFeedback && !isEditingFeedback}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-gray-300">
+                    6. How easy was the JobGiga platform to use overall? *
+                  </label>
+                  <RatingStars
+                    value={ratingEaseOfUse}
+                    onChange={setRatingEaseOfUse}
+                    labelLeft="Very Difficult"
+                    labelRight="Very Easy"
+                    disabled={hasSubmittedFeedback && !isEditingFeedback}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-gray-300">
+                    7. How clear were the test case instructions? *
+                  </label>
+                  <RatingStars
+                    value={ratingInstructions}
+                    onChange={setRatingInstructions}
+                    labelLeft="Very Unclear"
+                    labelRight="Very Clear"
+                    disabled={hasSubmittedFeedback && !isEditingFeedback}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-semibold text-gray-300">
+                    8. How easy was it to fill in the Result Form? *
+                  </label>
+                  <RatingStars
+                    value={ratingResultForm}
+                    onChange={setRatingResultForm}
+                    labelLeft="Very Unclear"
+                    labelRight="Very Clear"
+                    disabled={hasSubmittedFeedback && !isEditingFeedback}
+                  />
+                </div>
+              </div>
+
+              {/* Textareas Section */}
+              <div className="space-y-4 pt-1">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-gray-300">
+                    9. What did you find most impressive about the JobGiga platform?
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={impressiveAspects}
+                    onChange={(e) => setImpressiveAspects(e.target.value)}
+                    readOnly={hasSubmittedFeedback && !isEditingFeedback}
+                    placeholder={hasSubmittedFeedback && !isEditingFeedback ? "No feedback provided." : "Tell us what stood out to you..."}
+                    className={`w-full rounded-xl border border-white/10 p-3 text-xs text-white placeholder-gray-500 focus:border-brand-cyan focus:outline-none focus:ring-1 focus:ring-brand-cyan transition-all resize-none ${
+                      hasSubmittedFeedback && !isEditingFeedback ? "bg-zinc-900/60 opacity-80 cursor-not-allowed" : "bg-white/5"
+                    }`}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-gray-300">
+                    10. What areas of the platform need the most improvement?
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={improvementAreas}
+                    onChange={(e) => setImprovementAreas(e.target.value)}
+                    readOnly={hasSubmittedFeedback && !isEditingFeedback}
+                    placeholder={hasSubmittedFeedback && !isEditingFeedback ? "No feedback provided." : "Identify any friction points or issues..."}
+                    className={`w-full rounded-xl border border-white/10 p-3 text-xs text-white placeholder-gray-500 focus:border-brand-cyan focus:outline-none focus:ring-1 focus:ring-brand-cyan transition-all resize-none ${
+                      hasSubmittedFeedback && !isEditingFeedback ? "bg-zinc-900/60 opacity-80 cursor-not-allowed" : "bg-white/5"
+                    }`}
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-gray-300">
+                    11. Any other feedback for the JobGiga team?
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={otherFeedback}
+                    onChange={(e) => setOtherFeedback(e.target.value)}
+                    readOnly={hasSubmittedFeedback && !isEditingFeedback}
+                    placeholder={hasSubmittedFeedback && !isEditingFeedback ? "No feedback provided." : "Your suggestions, general thoughts, etc..."}
+                    className={`w-full rounded-xl border border-white/10 p-3 text-xs text-white placeholder-gray-500 focus:border-brand-cyan focus:outline-none focus:ring-1 focus:ring-brand-cyan transition-all resize-none ${
+                      hasSubmittedFeedback && !isEditingFeedback ? "bg-zinc-900/60 opacity-80 cursor-not-allowed" : "bg-white/5"
+                    }`}
+                  />
+                </div>
+              </div>
+
+              {/* Form Buttons */}
+              {hasSubmittedFeedback ? (
+                isEditingFeedback ? (
+                  <div className="flex space-x-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (submittedFeedbackData) {
+                          setRatingOverall(submittedFeedbackData.ratingOverall)
+                          setRatingEaseOfUse(submittedFeedbackData.ratingEaseOfUse)
+                          setRatingInstructions(submittedFeedbackData.ratingInstructions)
+                          setRatingResultForm(submittedFeedbackData.ratingResultForm)
+                          setImpressiveAspects(submittedFeedbackData.impressiveAspects || "")
+                          setImprovementAreas(submittedFeedbackData.improvementAreas || "")
+                          setOtherFeedback(submittedFeedbackData.otherFeedback || "")
+                        }
+                        setIsEditingFeedback(false)
+                      }}
+                      className="w-1/2 py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-gray-300 font-bold text-xs transition-all cursor-pointer"
+                    >
+                      Cancel Edit
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmittingFeedback}
+                      className="w-1/2 py-3 rounded-xl bg-gradient-to-r from-brand-teal to-brand-cyan hover:opacity-90 text-white font-bold text-xs shadow-md shadow-brand-teal/10 transition-all flex items-center justify-center space-x-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isSubmittingFeedback ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />
+                          <span>Saving...</span>
+                        </>
+                      ) : (
+                        <span>Save Changes</span>
+                      )}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex space-x-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingFeedback(true)}
+                      className="w-1/2 py-3 rounded-xl bg-brand-cyan hover:bg-brand-cyan/90 text-white font-bold text-xs transition-all cursor-pointer shadow-md shadow-brand-cyan/10"
+                    >
+                      Edit Feedback
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowFeedbackModal(false)}
+                      className="w-1/2 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 font-bold text-xs transition-all cursor-pointer border border-white/10"
+                    >
+                      Close
+                    </button>
+                  </div>
+                )
+              ) : (
+                <div className="flex space-x-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowFeedbackModal(false)}
+                    className="w-1/2 py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-gray-300 font-bold text-xs transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingFeedback}
+                    className="w-1/2 py-3 rounded-xl bg-gradient-to-r from-brand-teal to-brand-cyan hover:opacity-90 text-white font-bold text-xs shadow-md shadow-brand-teal/10 transition-all flex items-center justify-center space-x-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSubmittingFeedback ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />
+                        <span>Submitting...</span>
+                      </>
+                    ) : (
+                      <span>Submit Feedback</span>
+                    )}
+                  </button>
+                </div>
+              )}
+            </form>
           </div>
         </div>
       )}

@@ -50,7 +50,7 @@ export function TesterLayout({ userName, children }: TesterLayoutProps) {
         </div>
 
         {/* Top Bar - Floating Header */}
-        <header className="fixed top-5 left-5 right-5 z-30 h-14 bg-zinc-950/40 border border-white/[0.08] px-6 flex items-center justify-between rounded-[15px] shadow-2xl shadow-black/80 backdrop-blur-xl">
+        <header className="fixed top-2 left-2 right-2 md:top-5 md:left-5 md:right-5 z-30 h-14 bg-zinc-950/40 border border-white/[0.08] px-4 sm:px-6 flex items-center justify-between rounded-[12px] md:rounded-[15px] shadow-2xl shadow-black/80 backdrop-blur-xl">
           {/* Left: Logo */}
           <div className="flex items-center space-x-2">
             <Link href="/tester" className="flex items-center space-x-2 text-base font-bold text-white select-none">
