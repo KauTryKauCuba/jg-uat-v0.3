@@ -33,11 +33,11 @@ export function ResetAllButton() {
   return (
     <>
       <button
-        onClick={() => setIsOpen(true)}
-        className="flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 hover:text-rose-300 transition-all cursor-pointer shadow-md select-none shrink-0"
+        disabled
+        className="flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold border border-rose-500/10 text-rose-500/50 cursor-not-allowed opacity-50 shadow-md select-none shrink-0"
       >
         <RotateCcw className="w-3.5 h-3.5" />
-        <span>Reset All Testers</span>
+        <span>Reset All Testers (Locked)</span>
       </button>
 
       <ConfirmModal
