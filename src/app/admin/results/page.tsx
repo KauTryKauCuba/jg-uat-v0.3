@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { db } from "@/lib/db";
-import { testRuns, testCases, users, testAnswers, testFields, testerFeedbacks, feedbackAuditLogs, organisations, testerSignOffs, signOffAuditLogs } from "@/db/schema";
+import { testRuns, testCases, users, testAnswers, testFields, testerFeedbacks, feedbackAuditLogs, organisations, testerSignOffs, signOffAuditLogs, uatTargetGroups } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { ResultsPageClient } from "@/components/admin/ResultsPageClient";
 
@@ -25,6 +25,7 @@ export default async function AdminResultsPage() {
       testerId: testRuns.testerId,
       testerName: users.name,
       testerEmail: users.email,
+      testerGroup: users.testerGroup,
       testCaseId: testRuns.testCaseId,
       testCaseTitle: testCases.title,
     })
@@ -121,6 +122,7 @@ export default async function AdminResultsPage() {
         id: run.testerId,
         name: run.testerName || "Tester",
         email: run.testerEmail || "",
+        testerGroup: run.testerGroup,
       },
       testCase: {
         id: run.testCaseId,
@@ -240,11 +242,22 @@ export default async function AdminResultsPage() {
     };
   });
 
+  // Fetch all UAT Target Groups
+  const targetGroupsList = await db
+    .select({
+      id: uatTargetGroups.id,
+      name: uatTargetGroups.name,
+      displayName: uatTargetGroups.displayName,
+    })
+    .from(uatTargetGroups)
+    .orderBy(uatTargetGroups.order);
+
   return (
     <ResultsPageClient 
       initialRuns={processedRuns} 
       initialFeedbacks={processedFeedbacks} 
       initialSignOffs={processedSignOffs} 
+      targetGroups={targetGroupsList}
     />
   );
 }

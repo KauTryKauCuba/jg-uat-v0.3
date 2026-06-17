@@ -8,6 +8,7 @@ interface Tester {
   id: string
   name: string
   email: string
+  testerGroup?: string | null
 }
 
 interface TestCase {
@@ -97,10 +98,17 @@ const SortIcon = ({ field, sortField, sortOrder }: SortIconProps) => {
   )
 }
 
+interface TargetGroup {
+  id: string
+  name: string
+  displayName: string
+}
+
 interface ResultsPageClientProps {
   initialRuns: RunItem[]
   initialFeedbacks: FeedbackItem[]
   initialSignOffs: SignOffItem[]
+  targetGroups: TargetGroup[]
 }
 
 const AdminRatingStars = ({ score }: { score: number }) => {
@@ -133,7 +141,7 @@ const AdminRatingStarsLarge = ({ score }: { score: number }) => {
   )
 }
 
-export function ResultsPageClient({ initialRuns, initialFeedbacks, initialSignOffs }: ResultsPageClientProps) {
+export function ResultsPageClient({ initialRuns, initialFeedbacks, initialSignOffs, targetGroups }: ResultsPageClientProps) {
   const [runs, setRuns] = React.useState<RunItem[]>(initialRuns)
   const [feedbacks, setFeedbacks] = React.useState<FeedbackItem[]>(initialFeedbacks || [])
   const [signOffs, setSignOffs] = React.useState<SignOffItem[]>(initialSignOffs || [])
@@ -146,6 +154,7 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks, initialSignOf
   const [sortOrder, setSortOrder] = React.useState<SortOrder>("desc")
   const [statusFilter, setStatusFilter] = React.useState<string>("ALL")
   const [searchQuery, setSearchQuery] = React.useState<string>("")
+  const [groupFilter, setGroupFilter] = React.useState<string>("ALL")
   const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
@@ -166,9 +175,25 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks, initialSignOf
     }
   }
 
+  // UAT Group Filtered Subsets
+  const groupFilteredRuns = React.useMemo(() => {
+    if (groupFilter === "ALL") return runs
+    return runs.filter((r) => r.tester.testerGroup === groupFilter)
+  }, [runs, groupFilter])
+
+  const groupFilteredFeedbacks = React.useMemo(() => {
+    if (groupFilter === "ALL") return feedbacks
+    return feedbacks.filter((f) => f.testerRole === groupFilter)
+  }, [feedbacks, groupFilter])
+
+  const groupFilteredSignOffs = React.useMemo(() => {
+    if (groupFilter === "ALL") return signOffs
+    return signOffs.filter((s) => s.testerRole === groupFilter)
+  }, [signOffs, groupFilter])
+
   // Filter & sort runs
   const processedRuns = React.useMemo(() => {
-    let result = [...runs]
+    let result = [...groupFilteredRuns]
 
     // 1. Status Filter
     if (statusFilter !== "ALL") {
@@ -214,17 +239,17 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks, initialSignOf
     })
 
     return result
-  }, [runs, statusFilter, searchQuery, sortField, sortOrder])
+  }, [groupFilteredRuns, statusFilter, searchQuery, sortField, sortOrder])
 
   // Calculation of stats headers for runs
-  const totalRuns = runs.length
-  const submittedRuns = runs.filter((r) => r.status !== "PENDING").length
-  const passedRuns = runs.filter((r) => r.status === "PASSED").length
-  const failedRuns = runs.filter((r) => r.status === "FAILED").length
+  const totalRuns = groupFilteredRuns.length
+  const submittedRuns = groupFilteredRuns.filter((r) => r.status !== "PENDING").length
+  const passedRuns = groupFilteredRuns.filter((r) => r.status === "PASSED").length
+  const failedRuns = groupFilteredRuns.filter((r) => r.status === "FAILED").length
 
   let totalPassed = 0
   let totalDenom = 0
-  runs.forEach((r) => {
+  groupFilteredRuns.forEach((r) => {
     if (r.status !== "PENDING") {
       const p = r.passFailSummary.passed || 0
       const f = r.passFailSummary.failed || 0
@@ -239,7 +264,7 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks, initialSignOf
 
   // Filter feedbacks
   const processedFeedbacks = React.useMemo(() => {
-    let result = [...feedbacks]
+    let result = [...groupFilteredFeedbacks]
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase()
       result = result.filter(
@@ -251,11 +276,11 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks, initialSignOf
       )
     }
     return result
-  }, [feedbacks, searchQuery])
+  }, [groupFilteredFeedbacks, searchQuery])
 
   // Filter sign offs
   const processedSignOffs = React.useMemo(() => {
-    let result = [...signOffs]
+    let result = [...groupFilteredSignOffs]
     if (searchQuery.trim() !== "") {
       const q = searchQuery.toLowerCase()
       result = result.filter(
@@ -268,79 +293,101 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks, initialSignOf
       )
     }
     return result
-  }, [signOffs, searchQuery])
+  }, [groupFilteredSignOffs, searchQuery])
 
   // Calculation of stats headers for feedbacks
   const feedbackStats = React.useMemo(() => {
-    if (feedbacks.length === 0) {
+    if (groupFilteredFeedbacks.length === 0) {
       return { avgOverall: 0, avgEaseOfUse: 0, avgInstructions: 0, avgResultForm: 0 }
     }
-    const sumOverall = feedbacks.reduce((acc, f) => acc + f.ratingOverall, 0)
-    const sumEaseOfUse = feedbacks.reduce((acc, f) => acc + f.ratingEaseOfUse, 0)
-    const sumInstructions = feedbacks.reduce((acc, f) => acc + f.ratingInstructions, 0)
-    const sumResultForm = feedbacks.reduce((acc, f) => acc + f.ratingResultForm, 0)
+    const sumOverall = groupFilteredFeedbacks.reduce((acc, f) => acc + f.ratingOverall, 0)
+    const sumEaseOfUse = groupFilteredFeedbacks.reduce((acc, f) => acc + f.ratingEaseOfUse, 0)
+    const sumInstructions = groupFilteredFeedbacks.reduce((acc, f) => acc + f.ratingInstructions, 0)
+    const sumResultForm = groupFilteredFeedbacks.reduce((acc, f) => acc + f.ratingResultForm, 0)
     return {
-      avgOverall: Number((sumOverall / feedbacks.length).toFixed(1)),
-      avgEaseOfUse: Number((sumEaseOfUse / feedbacks.length).toFixed(1)),
-      avgInstructions: Number((sumInstructions / feedbacks.length).toFixed(1)),
-      avgResultForm: Number((sumResultForm / feedbacks.length).toFixed(1)),
+      avgOverall: Number((sumOverall / groupFilteredFeedbacks.length).toFixed(1)),
+      avgEaseOfUse: Number((sumEaseOfUse / groupFilteredFeedbacks.length).toFixed(1)),
+      avgInstructions: Number((sumInstructions / groupFilteredFeedbacks.length).toFixed(1)),
+      avgResultForm: Number((sumResultForm / groupFilteredFeedbacks.length).toFixed(1)),
     }
-  }, [feedbacks])
+  }, [groupFilteredFeedbacks])
 
   return (
     <main className="p-8 space-y-8 flex-1">
-      {/* Header with Navigation Tabs */}
+      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/5 pb-5">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">UAT Run Results</h1>
           <p className="text-gray-400 mt-2">Comprehensive logs of all UAT test runs and survey submissions.</p>
         </div>
-        
-        {/* Navigation Tabs */}
-        <div className="flex bg-zinc-950/80 p-1 rounded-xl border border-white/5 self-start md:self-auto">
-          <button
-            onClick={() => {
-              setActiveTab("RUNS")
-              setSearchQuery("")
-            }}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              activeTab === "RUNS"
-                ? "bg-brand-cyan text-white shadow-md shadow-brand-cyan/15"
-                : "text-gray-400 hover:text-white"
-            }`}
-          >
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Scenario Runs ({runs.length})</span>
-          </button>
-          <button
-            onClick={() => {
-              setActiveTab("FEEDBACK")
-              setSearchQuery("")
-            }}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              activeTab === "FEEDBACK"
-                ? "bg-brand-cyan text-white shadow-md shadow-brand-cyan/15"
-                : "text-gray-400 hover:text-white"
-            }`}
-          >
-            <MessageSquare className="w-3.5 h-3.5" />
-            <span>Tester Feedback ({feedbacks.length})</span>
-          </button>
-          <button
-            onClick={() => {
-              setActiveTab("SIGNOFF")
-              setSearchQuery("")
-            }}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              activeTab === "SIGNOFF"
-                ? "bg-brand-cyan text-white shadow-md shadow-brand-cyan/15"
-                : "text-gray-400 hover:text-white"
-            }`}
-          >
-            <FileText className="w-3.5 h-3.5" />
-            <span>UAT Sign Offs ({signOffs.length})</span>
-          </button>
+      </div>
+
+      {/* 1. Choose UAT Group */}
+      <div className="flex border-b border-white/5 justify-between items-center w-full">
+        <div className="flex space-x-4 overflow-x-auto pb-0.5 scrollbar-none">
+          {[
+            { id: "ALL", name: "ALL", displayName: "All Groups" },
+            ...targetGroups.map((tg) => ({ id: tg.id, name: tg.name, displayName: tg.displayName }))
+          ].map((grp) => (
+            <button
+              key={grp.id}
+              onClick={() => setGroupFilter(grp.name)}
+              className={`pb-3 text-sm font-semibold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                groupFilter === grp.name
+                  ? "border-brand-cyan text-brand-cyan"
+                  : "border-transparent text-gray-400 hover:text-white"
+              }`}
+            >
+              {grp.displayName}
+            </button>
+          ))}
         </div>
+      </div>
+
+      {/* 2. Results Navigation Tabs */}
+      <div className="flex bg-zinc-950/80 p-1.5 rounded-2xl border border-white/5 self-start md:self-auto max-w-max">
+        <button
+          onClick={() => {
+            setActiveTab("RUNS")
+            setSearchQuery("")
+          }}
+          className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            activeTab === "RUNS"
+              ? "bg-brand-cyan text-white shadow-md shadow-brand-cyan/15"
+              : "text-gray-400 hover:text-white"
+          }`}
+        >
+          <CheckCircle2 className="w-3.5 h-3.5" />
+          <span>Scenario Runs ({groupFilteredRuns.length})</span>
+        </button>
+        <button
+          onClick={() => {
+            setActiveTab("FEEDBACK")
+            setSearchQuery("")
+          }}
+          className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            activeTab === "FEEDBACK"
+              ? "bg-brand-cyan text-white shadow-md shadow-brand-cyan/15"
+              : "text-gray-400 hover:text-white"
+          }`}
+        >
+          <MessageSquare className="w-3.5 h-3.5" />
+          <span>Tester Feedback ({groupFilteredFeedbacks.length})</span>
+        </button>
+        <button
+          onClick={() => {
+            setActiveTab("SIGNOFF")
+            setSearchQuery("")
+          }}
+          className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            activeTab === "SIGNOFF"
+              ? "bg-brand-cyan text-white shadow-md shadow-brand-cyan/15"
+              : "text-gray-400 hover:text-white"
+          }`}
+        >
+          <FileText className="w-3.5 h-3.5" />
+          <span>UAT Sign Offs ({groupFilteredSignOffs.length})</span>
+        </button>
       </div>
 
       {activeTab === "RUNS" ? (
