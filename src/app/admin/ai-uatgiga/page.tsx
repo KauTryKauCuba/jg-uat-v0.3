@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { testRuns, testCases, users } from "@/db/schema";
+import { testRuns, testCases, users, uatTargetGroups } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -22,12 +22,23 @@ export default async function AIUatGigaPage() {
       submittedAt: testRuns.submittedAt,
       createdAt: testRuns.createdAt,
       testerName: users.name,
+      testerGroup: users.testerGroup,
       testCaseTitle: testCases.title,
     })
     .from(testRuns)
     .leftJoin(users, eq(users.id, testRuns.testerId))
     .leftJoin(testCases, eq(testCases.id, testRuns.testCaseId))
     .orderBy(desc(testRuns.createdAt));
+
+  // Fetch all UAT Target Groups
+  const targetGroupsList = await db
+    .select({
+      id: uatTargetGroups.id,
+      name: uatTargetGroups.name,
+      displayName: uatTargetGroups.displayName,
+    })
+    .from(uatTargetGroups)
+    .orderBy(uatTargetGroups.order);
 
   // Serialize timestamps for Client Component
   const serializedRuns = runs.map(r => ({
@@ -36,5 +47,5 @@ export default async function AIUatGigaPage() {
     submittedAt: r.submittedAt ? r.submittedAt.toISOString() : null,
   }));
 
-  return <AIChatPageClient runs={serializedRuns} />;
+  return <AIChatPageClient runs={serializedRuns} targetGroups={targetGroupsList} />;
 }

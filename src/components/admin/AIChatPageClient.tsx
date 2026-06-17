@@ -9,7 +9,14 @@ interface UATRun {
   submittedAt: string | null
   createdAt: string
   testerName: string | null
+  testerGroup: string | null
   testCaseTitle: string | null
+}
+
+interface TargetGroup {
+  id: string
+  name: string
+  displayName: string
 }
 
 interface Message {
@@ -19,21 +26,24 @@ interface Message {
 
 interface AIChatPageClientProps {
   runs: UATRun[]
+  targetGroups: TargetGroup[]
 }
 
-export function AIChatPageClient({ runs }: AIChatPageClientProps) {
+export function AIChatPageClient({ runs, targetGroups }: AIChatPageClientProps) {
   const [selectedRunId, setSelectedRunId] = React.useState<string>("")
   const [messages, setMessages] = React.useState<Message[]>([])
   const [input, setInput] = React.useState("")
   const [loading, setLoading] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState("")
+  const [groupFilter, setGroupFilter] = React.useState<string>("ALL")
   const chatEndRef = React.useRef<HTMLDivElement>(null)
 
   // Filter UAT runs
   const filteredRuns = runs.filter(
     (run) =>
-      (run.testerName?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
-      (run.testCaseTitle?.toLowerCase() || "").includes(searchQuery.toLowerCase())
+      (groupFilter === "ALL" || run.testerGroup === groupFilter) &&
+      ((run.testerName?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
+       (run.testCaseTitle?.toLowerCase() || "").includes(searchQuery.toLowerCase()))
   )
 
   // Auto scroll to bottom
@@ -112,6 +122,7 @@ export function AIChatPageClient({ runs }: AIChatPageClientProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           runId: selectedRunId || undefined,
+          groupFilter: groupFilter || undefined,
           messages: updatedMessages
         }),
       })
@@ -169,6 +180,55 @@ export function AIChatPageClient({ runs }: AIChatPageClientProps) {
           <p className="text-[10px] text-gray-500 mt-1">Select a test run to ground the AI model&apos;s context.</p>
         </div>
 
+        {/* Choose UAT Group Filter as Visual Cards */}
+        <div className="grid grid-cols-2 gap-2 select-none">
+          {[
+            { id: "ALL", name: "ALL", displayName: "All Groups" },
+            ...targetGroups.map((tg) => ({ id: tg.id, name: tg.name, displayName: tg.displayName.replace("Categories", "").replace("Category", "").trim() }))
+          ].map((grp) => {
+            const isSelected = groupFilter === grp.name
+            const count = grp.name === "ALL" ? runs.length : runs.filter((r) => r.testerGroup === grp.name).length
+
+            // Colorful palette per group type
+            let colorClasses = ""
+            if (grp.name === "ALL") {
+              colorClasses = isSelected
+                ? "border-violet-500/50 bg-violet-500/10 text-white shadow-md shadow-violet-500/10"
+                : "border-violet-500/10 bg-violet-500/5 text-violet-400/80 hover:bg-violet-500/10 hover:text-violet-300"
+            } else if (grp.name === "EMPLOYER") {
+              colorClasses = isSelected
+                ? "border-amber-500/50 bg-amber-500/10 text-white shadow-md shadow-amber-500/10"
+                : "border-amber-500/10 bg-amber-500/5 text-amber-400/80 hover:bg-amber-500/10 hover:text-amber-300"
+            } else if (grp.name === "JOBSEEKER_WEB") {
+              colorClasses = isSelected
+                ? "border-cyan-500/50 bg-cyan-500/10 text-white shadow-md shadow-cyan-500/10"
+                : "border-cyan-500/10 bg-cyan-500/5 text-cyan-400/80 hover:bg-cyan-500/10 hover:text-cyan-300"
+            } else if (grp.name === "JOBSEEKER") {
+              colorClasses = isSelected
+                ? "border-emerald-500/50 bg-emerald-500/10 text-white shadow-md shadow-emerald-500/10"
+                : "border-emerald-500/10 bg-emerald-500/5 text-emerald-400/80 hover:bg-emerald-500/10 hover:text-emerald-300"
+            } else {
+              colorClasses = isSelected
+                ? "border-brand-cyan bg-brand-cyan/10 text-white shadow-md shadow-brand-cyan/10"
+                : "border-white/5 bg-zinc-900/40 hover:bg-white/5 text-gray-400"
+            }
+
+            return (
+              <button
+                key={grp.id}
+                onClick={() => {
+                  setGroupFilter(grp.name)
+                  setSelectedRunId("") // clear selected run context when switching group
+                }}
+                className={`p-2.5 rounded-2xl border text-left cursor-pointer transition-all ${colorClasses}`}
+              >
+                <div className="text-[10px] font-bold truncate">{grp.displayName}</div>
+                <div className="text-[9px] opacity-60 mt-1 font-mono">{count} Runs</div>
+              </button>
+            )
+          })}
+        </div>
+
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
           <input
@@ -211,9 +271,16 @@ export function AIChatPageClient({ runs }: AIChatPageClientProps) {
                       {run.status}
                     </span>
                   </div>
-                  <p className="text-[10px] text-gray-400 line-clamp-1">
-                    {run.testCaseTitle || "UAT Scenario"}
-                  </p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[10px] text-gray-400 line-clamp-1 flex-1">
+                      {run.testCaseTitle || "UAT Scenario"}
+                    </p>
+                    {run.testerGroup && (
+                      <span className="text-[7px] font-mono px-1 rounded bg-white/5 border border-white/10 text-gray-500 shrink-0">
+                        {targetGroups.find((tg) => tg.name === run.testerGroup)?.displayName.replace("Categories", "").replace("Category", "").trim() || run.testerGroup}
+                      </span>
+                    )}
+                  </div>
                 </button>
               )
             })

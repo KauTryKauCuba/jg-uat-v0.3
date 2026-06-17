@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { runId, messages } = body;
+    const { runId, groupFilter, messages } = body;
 
     if (!Array.isArray(messages)) {
       return NextResponse.json({ error: "messages array is required" }, { status: 400 });
@@ -86,14 +86,40 @@ ${formattedAnswers || "No answers submitted yet."}
 `;
       }
     } else {
-      const allRuns = await db.select({ status: testRuns.status }).from(testRuns);
-      const allFeedbacks = await db.select({
-        ratingOverall: testerFeedbacks.ratingOverall,
-        ratingEaseOfUse: testerFeedbacks.ratingEaseOfUse,
-        ratingInstructions: testerFeedbacks.ratingInstructions,
-        ratingResultForm: testerFeedbacks.ratingResultForm,
-      }).from(testerFeedbacks);
-      const allSignOffs = await db.select().from(testerSignOffs);
+      let runsQuery = db
+        .select({ status: testRuns.status })
+        .from(testRuns);
+
+      let feedbacksQuery = db
+        .select({
+          ratingOverall: testerFeedbacks.ratingOverall,
+          ratingEaseOfUse: testerFeedbacks.ratingEaseOfUse,
+          ratingInstructions: testerFeedbacks.ratingInstructions,
+          ratingResultForm: testerFeedbacks.ratingResultForm,
+        })
+        .from(testerFeedbacks);
+
+      let signOffsQuery = db
+        .select()
+        .from(testerSignOffs);
+
+      if (groupFilter && groupFilter !== "ALL") {
+        runsQuery = runsQuery
+          .leftJoin(users, eq(users.id, testRuns.testerId))
+          .where(eq(users.testerGroup, groupFilter)) as any;
+
+        feedbacksQuery = feedbacksQuery
+          .leftJoin(users, eq(users.id, testerFeedbacks.testerId))
+          .where(eq(users.testerGroup, groupFilter)) as any;
+
+        signOffsQuery = signOffsQuery
+          .leftJoin(users, eq(users.id, testerSignOffs.testerId))
+          .where(eq(users.testerGroup, groupFilter)) as any;
+      }
+
+      const allRuns = await runsQuery;
+      const allFeedbacks = await feedbacksQuery;
+      const allSignOffs = await signOffsQuery;
 
       const totalRuns = allRuns.length;
       const passedRuns = allRuns.filter(r => r.status === "PASSED").length;
@@ -106,7 +132,9 @@ ${formattedAnswers || "No answers submitted yet."}
       const avgInstructions = totalFeedbacks > 0 ? (allFeedbacks.reduce((acc, f) => acc + f.ratingInstructions, 0) / totalFeedbacks).toFixed(1) : "0.0";
       const avgResultForm = totalFeedbacks > 0 ? (allFeedbacks.reduce((acc, f) => acc + f.ratingResultForm, 0) / totalFeedbacks).toFixed(1) : "0.0";
 
-      systemPrompt += `\n\n[CONTEXT: GLOBAL UAT STATUS OVERVIEW]
+      const runFilterLabel = groupFilter && groupFilter !== "ALL" ? `GROUP "${groupFilter}"` : "ALL UAT GROUPS";
+
+      systemPrompt += `\n\n[CONTEXT: GLOBAL UAT STATUS OVERVIEW FOR ${runFilterLabel}]
 - Total Runs: ${totalRuns} (Passed: ${passedRuns}, Failed: ${failedRuns}, In Progress: ${pendingRuns})
 - Tester Survey Feedbacks: ${totalFeedbacks} submissions
   - Avg Overall Rating: ${avgOverall}/5.0
