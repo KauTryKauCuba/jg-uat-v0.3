@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { Users, Clock, CheckCircle2, BarChart3, ChevronUp, ChevronDown, ArrowRight, Star, FileText, X, History, MessageSquare } from "lucide-react"
+import { Users, Clock, CheckCircle2, BarChart3, ChevronUp, ChevronDown, ArrowRight, Star, FileText, X, History, MessageSquare, AlertCircle, MinusCircle } from "lucide-react"
 
 interface Tester {
   id: string
@@ -198,8 +198,19 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks, initialSignOf
     // 1. Status Filter
     if (statusFilter !== "ALL") {
       result = result.filter((r) => {
-        if (statusFilter === "SUBMITTED") return r.status === "SUBMITTED" || r.status === "PASSED" || r.status === "FAILED"
-        return r.status === statusFilter
+        if (statusFilter === "SUBMITTED") return r.status !== "PENDING"
+        
+        const derived = r.status === "PENDING"
+          ? "PENDING"
+          : (r.passFailSummary.failed || 0) > 0
+          ? "FAILED"
+          : (r.passFailSummary.blocked || 0) > 0
+          ? "BLOCKED"
+          : ((r.passFailSummary.na || 0) > 0 && (r.passFailSummary.passed || 0) === 0)
+          ? "NA"
+          : "PASSED"
+
+        return derived === statusFilter
       })
     }
 
@@ -241,11 +252,40 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks, initialSignOf
     return result
   }, [groupFilteredRuns, statusFilter, searchQuery, sortField, sortOrder])
 
-  // Calculation of stats headers for runs
+  // Derived calculations of stats headers for runs
   const totalRuns = groupFilteredRuns.length
   const submittedRuns = groupFilteredRuns.filter((r) => r.status !== "PENDING").length
-  const passedRuns = groupFilteredRuns.filter((r) => r.status === "PASSED").length
-  const failedRuns = groupFilteredRuns.filter((r) => r.status === "FAILED").length
+
+  const passedRuns = groupFilteredRuns.filter((r) => {
+    if (r.status === "PENDING") return false
+    const f = r.passFailSummary.failed || 0
+    const b = r.passFailSummary.blocked || 0
+    const n = r.passFailSummary.na || 0
+    const passed = r.passFailSummary.passed || 0
+    return f === 0 && b === 0 && (n === 0 || passed > 0)
+  }).length
+
+  const failedRuns = groupFilteredRuns.filter((r) => {
+    if (r.status === "PENDING") return false
+    const f = r.passFailSummary.failed || 0
+    return f > 0
+  }).length
+
+  const blockedRuns = groupFilteredRuns.filter((r) => {
+    if (r.status === "PENDING") return false
+    const f = r.passFailSummary.failed || 0
+    const b = r.passFailSummary.blocked || 0
+    return f === 0 && b > 0
+  }).length
+
+  const naRuns = groupFilteredRuns.filter((r) => {
+    if (r.status === "PENDING") return false
+    const f = r.passFailSummary.failed || 0
+    const b = r.passFailSummary.blocked || 0
+    const n = r.passFailSummary.na || 0
+    const passed = r.passFailSummary.passed || 0
+    return f === 0 && b === 0 && n > 0 && passed === 0
+  }).length
 
   let totalPassed = 0
   let totalDenom = 0
@@ -261,6 +301,12 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks, initialSignOf
   })
 
   const passRate = totalDenom > 0 ? Math.round((totalPassed / totalDenom) * 100) : 0
+
+  const totalSubmitted = passedRuns + failedRuns + blockedRuns + naRuns
+  const passedPct = totalSubmitted > 0 ? Math.round((passedRuns / totalSubmitted) * 100) : 0
+  const failedPct = totalSubmitted > 0 ? Math.round((failedRuns / totalSubmitted) * 100) : 0
+  const blockedPct = totalSubmitted > 0 ? Math.round((blockedRuns / totalSubmitted) * 100) : 0
+  const naPct = totalSubmitted > 0 ? Math.round((naRuns / totalSubmitted) * 100) : 0
 
   // Filter feedbacks
   const processedFeedbacks = React.useMemo(() => {
@@ -393,44 +439,186 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks, initialSignOf
       {activeTab === "RUNS" ? (
         <>
           {/* Summary stats bar for runs */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="border border-white/5 bg-zinc-900/40 backdrop-blur-md p-6 rounded-2xl flex items-center justify-between">
+          <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+            <div className="md:col-span-2 border border-white/5 bg-zinc-900/40 backdrop-blur-md p-5 rounded-2xl flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Total Runs</p>
-                <p className="text-3xl font-extrabold">{totalRuns}</p>
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Total Runs</p>
+                <p className="text-2xl font-extrabold">{totalRuns}</p>
               </div>
-              <div className="p-3 rounded-xl bg-white/5 text-gray-400 border border-white/5">
-                <Users className="w-6 h-6" />
+              <div className="p-2.5 rounded-xl bg-white/5 text-gray-400 border border-white/5">
+                <Users className="w-5 h-5" />
               </div>
             </div>
 
-            <div className="border border-white/5 bg-zinc-900/40 backdrop-blur-md p-6 rounded-2xl flex items-center justify-between">
+            <div className="md:col-span-2 border border-white/5 bg-zinc-900/40 backdrop-blur-md p-5 rounded-2xl flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Submitted</p>
-                <p className="text-3xl font-extrabold">{submittedRuns}</p>
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Submitted</p>
+                <p className="text-2xl font-extrabold">{submittedRuns}</p>
               </div>
-              <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                <Clock className="w-6 h-6" />
+              <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                <Clock className="w-5 h-5" />
               </div>
             </div>
 
-            <div className="border border-white/5 bg-zinc-900/40 backdrop-blur-md p-6 rounded-2xl flex items-center justify-between">
+            <div className="md:col-span-2 border border-white/5 bg-zinc-900/40 backdrop-blur-md p-5 rounded-2xl flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Passed Runs</p>
-                <p className="text-3xl font-extrabold">{passedRuns}</p>
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Passed</p>
+                <p className="text-2xl font-extrabold">{passedRuns}</p>
               </div>
-              <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                <CheckCircle2 className="w-6 h-6" />
+              <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <CheckCircle2 className="w-5 h-5" />
               </div>
             </div>
 
-            <div className="border border-white/5 bg-zinc-900/40 backdrop-blur-md p-6 rounded-2xl flex items-center justify-between">
+            <div className="md:col-span-1 border border-white/5 bg-zinc-900/40 backdrop-blur-md p-5 rounded-2xl flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Pass Rate</p>
-                <p className="text-3xl font-extrabold">{passRate}%</p>
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Failed</p>
+                <p className="text-2xl font-extrabold">{failedRuns}</p>
               </div>
-              <div className="p-3 rounded-xl bg-brand-cyan/15 text-brand-cyan border border-brand-teal/20">
-                <BarChart3 className="w-6 h-6" />
+              <div className="p-2.5 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                <X className="w-5 h-5" />
+              </div>
+            </div>
+
+            <div className="md:col-span-2 border border-white/5 bg-zinc-900/40 backdrop-blur-md p-5 rounded-2xl flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Blocked</p>
+                <p className="text-2xl font-extrabold">{blockedRuns}</p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+            </div>
+
+            <div className="md:col-span-2 border border-white/5 bg-zinc-900/40 backdrop-blur-md p-5 rounded-2xl flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">N/A</p>
+                <p className="text-2xl font-extrabold">{naRuns}</p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-zinc-500/10 text-zinc-400 border border-zinc-500/20">
+                <MinusCircle className="w-5 h-5" />
+              </div>
+            </div>
+
+            <div className="md:col-span-3 border border-white/5 bg-zinc-900/40 backdrop-blur-md p-6 rounded-2xl flex items-center justify-between relative group/chart">
+              <div className="space-y-1">
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Pass Rate</p>
+                <p className="text-4xl font-extrabold text-brand-cyan">{passRate}%</p>
+              </div>
+              <div className="flex items-center space-x-4 relative">
+                {/* Donut Chart Container */}
+                <div className="relative w-14 h-14 cursor-pointer">
+                  <svg className="w-full h-full transform -rotate-90 overflow-visible" viewBox="0 0 36 36">
+                    {totalSubmitted === 0 ? (
+                      <circle
+                        cx="18"
+                        cy="18"
+                        r="15.9155"
+                        className="text-white/10"
+                        stroke="currentColor"
+                        strokeWidth="3.5"
+                        fill="none"
+                      />
+                    ) : (
+                      <>
+                        {/* Passed Segment */}
+                        {passedRuns > 0 && (
+                          <circle
+                            cx="18"
+                            cy="18"
+                            r="15.9155"
+                            className="text-emerald-500 transition-all duration-300 hover:stroke-[5]"
+                            stroke="currentColor"
+                            strokeWidth="3.5"
+                            strokeDasharray={`${passedPct} 100`}
+                            strokeDashoffset="0"
+                            fill="none"
+                          />
+                        )}
+                        {/* Failed Segment */}
+                        {failedRuns > 0 && (
+                          <circle
+                            cx="18"
+                            cy="18"
+                            r="15.9155"
+                            className="text-rose-500 transition-all duration-300 hover:stroke-[5]"
+                            stroke="currentColor"
+                            strokeWidth="3.5"
+                            strokeDasharray={`${failedPct} 100`}
+                            strokeDashoffset={-passedPct}
+                            fill="none"
+                          />
+                        )}
+                        {/* Blocked Segment */}
+                        {blockedRuns > 0 && (
+                          <circle
+                            cx="18"
+                            cy="18"
+                            r="15.9155"
+                            className="text-amber-500 transition-all duration-300 hover:stroke-[5]"
+                            stroke="currentColor"
+                            strokeWidth="3.5"
+                            strokeDasharray={`${blockedPct} 100`}
+                            strokeDashoffset={-(passedPct + failedPct)}
+                            fill="none"
+                          />
+                        )}
+                        {/* N/A Segment */}
+                        {naRuns > 0 && (
+                          <circle
+                            cx="18"
+                            cy="18"
+                            r="15.9155"
+                            className="text-zinc-400 transition-all duration-300 hover:stroke-[5]"
+                            stroke="currentColor"
+                            strokeWidth="3.5"
+                            strokeDasharray={`${naPct} 100`}
+                            strokeDashoffset={-(passedPct + failedPct + blockedPct)}
+                            fill="none"
+                          />
+                        )}
+                      </>
+                    )}
+                  </svg>
+                  
+                  {/* Tooltip Card on Hover */}
+                  <div className="absolute bottom-full right-0 mb-2 w-48 bg-zinc-950/95 border border-white/10 p-3.5 rounded-xl shadow-2xl transition-all duration-200 opacity-0 scale-95 pointer-events-none group-hover/chart:opacity-100 group-hover/chart:scale-100 z-50 space-y-2 text-xs backdrop-blur-md">
+                    <p className="font-bold text-gray-300 border-b border-white/5 pb-1">Run Status Breakdown</p>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center text-emerald-400 font-medium">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 mr-2" />
+                          Passed
+                        </span>
+                        <span className="text-gray-300 font-bold">{passedPct}% <span className="text-[10px] text-gray-500 font-normal">({passedRuns})</span></span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center text-rose-400 font-medium">
+                          <span className="w-2 h-2 rounded-full bg-rose-500 mr-2" />
+                          Failed
+                        </span>
+                        <span className="text-gray-300 font-bold">{failedPct}% <span className="text-[10px] text-gray-500 font-normal">({failedRuns})</span></span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center text-amber-400 font-medium">
+                          <span className="w-2 h-2 rounded-full bg-amber-500 mr-2" />
+                          Blocked
+                        </span>
+                        <span className="text-gray-300 font-bold">{blockedPct}% <span className="text-[10px] text-gray-500 font-normal">({blockedRuns})</span></span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center text-zinc-400 font-medium">
+                          <span className="w-2 h-2 rounded-full bg-zinc-400 mr-2" />
+                          N/A
+                        </span>
+                        <span className="text-gray-300 font-bold">{naPct}% <span className="text-[10px] text-gray-500 font-normal">({naRuns})</span></span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-3.5 rounded-xl bg-brand-cyan/15 text-brand-cyan border border-brand-teal/20">
+                  <BarChart3 className="w-7 h-7" />
+                </div>
               </div>
             </div>
           </div>
@@ -447,7 +635,7 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks, initialSignOf
               />
             </div>
             <div className="flex space-x-2 w-full md:w-auto overflow-x-auto">
-              {["ALL", "PENDING", "SUBMITTED", "PASSED", "FAILED"].map((status) => (
+              {["ALL", "PENDING", "SUBMITTED", "PASSED", "FAILED", "BLOCKED", "NA"].map((status) => (
                 <button
                   key={status}
                   onClick={() => setStatusFilter(status)}
@@ -457,7 +645,14 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks, initialSignOf
                       : "bg-white/5 border-white/5 text-gray-400 hover:text-white"
                   }`}
                 >
-                  {status === "PENDING" ? "In Progress" : status}
+                  {status === "ALL" ? "All" :
+                   status === "PENDING" ? "In Progress" :
+                   status === "SUBMITTED" ? "Submitted" :
+                   status === "PASSED" ? "Passed" :
+                   status === "FAILED" ? "Failed" :
+                   status === "BLOCKED" ? "Blocked" :
+                   status === "NA" ? "N/A" :
+                   status}
                 </button>
               ))}
             </div>
@@ -509,7 +704,7 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks, initialSignOf
                       </td>
                     </tr>
                   ) : (
-                    processedRuns.map((r) => {
+                     processedRuns.map((r) => {
                       const total = r.passFailSummary.total
                       const passed = r.passFailSummary.passed
                       const f = r.passFailSummary.failed || 0
@@ -517,6 +712,16 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks, initialSignOf
                       const n = r.passFailSummary.na || 0
                       const denom = passed + f + b + n
                       const percent = denom > 0 ? Math.round((passed / denom) * 100) : 0
+
+                      const derivedStatus = r.status === "PENDING"
+                        ? "PENDING"
+                        : f > 0
+                        ? "FAILED"
+                        : b > 0
+                        ? "BLOCKED"
+                        : (n > 0 && passed === 0)
+                        ? "NA"
+                        : "PASSED"
 
                       return (
                         <tr key={r.id} className="border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
@@ -528,16 +733,18 @@ export function ResultsPageClient({ initialRuns, initialFeedbacks, initialSignOf
                             <div className="text-[9px] text-gray-500 font-mono mt-0.5">{r.tester.email}</div>
                           </td>
                           <td className="py-3 px-4">
-                            <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[9px] font-bold ${
-                              r.status === "PASSED"
+                            <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase ${
+                              derivedStatus === "PASSED"
                                 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                                : r.status === "FAILED"
+                                : derivedStatus === "FAILED"
                                 ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
-                                : r.status === "PENDING"
+                                : derivedStatus === "BLOCKED"
                                 ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                                : "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                                : derivedStatus === "NA"
+                                ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                                : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
                             }`}>
-                              {r.status === "PENDING" ? "In Progress" : r.status}
+                              {derivedStatus === "PENDING" ? "In Progress" : derivedStatus === "NA" ? "N/A" : derivedStatus}
                             </span>
                           </td>
                           <td className="py-3 px-4 max-w-xs">

@@ -57,16 +57,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
           const choiceLower = choice.toLowerCase().trim();
           const isPassed = choiceLower === "passed" || choiceLower === "pass";
-          const isNa = choiceLower.includes("n/a") || choiceLower.includes("na") || choiceLower.includes("not execute") || choiceLower.includes("could not");
-          if (!isPassed && !isNa) {
+          if (!isPassed) {
             hasNonPassing = true;
             break;
           }
         } catch {
           const valLower = String(ans.value).toLowerCase().trim();
           const isPassed = valLower === "passed" || valLower === "pass";
-          const isNa = valLower.includes("n/a") || valLower.includes("na") || valLower.includes("not execute") || valLower.includes("could not");
-          if (!isPassed && !isNa) {
+          if (!isPassed) {
             hasNonPassing = true;
             break;
           }
