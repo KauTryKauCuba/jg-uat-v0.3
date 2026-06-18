@@ -22,6 +22,19 @@ interface AnswerRendererProps {
   answer: Answer | null
 }
 
+const getScreenshotUrls = (urlStr: string | null | undefined): string[] => {
+  if (!urlStr) return []
+  const trimmed = urlStr.trim()
+  if (trimmed.startsWith("[")) {
+    try {
+      return JSON.parse(trimmed) as string[]
+    } catch {
+      // fallback
+    }
+  }
+  return trimmed.split(",").map(u => u.trim()).filter(Boolean)
+}
+
 export function AnswerRenderer({ field, answer }: AnswerRendererProps) {
   const value = answer?.value ?? null
   const screenshotUrl = answer?.screenshotUrl ?? null
@@ -101,33 +114,38 @@ export function AnswerRenderer({ field, answer }: AnswerRendererProps) {
 
   // FILE (SCREENSHOT)
   if (field.fieldType === "FILE") {
+    const urls = getScreenshotUrls(screenshotUrl)
     return (
       <div className="space-y-2">
         <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{field.fieldName}</h4>
         <div>
-          {isUnanswered(screenshotUrl) ? (
+          {urls.length === 0 ? (
             renderNoAnswer()
           ) : (
-            <div className="relative rounded-xl overflow-hidden border border-white/15 bg-black/40 p-2 group max-w-sm">
-              <img
-                src={screenshotUrl!}
-                alt="UAT Verification Screenshot"
-                className="w-full max-h-48 object-contain rounded-lg transition-transform duration-300 group-hover:scale-[1.02]"
-              />
-              <div className="mt-2 flex items-center justify-between px-1">
-                <span className="text-[10px] text-gray-500 font-mono truncate max-w-[70%]">
-                  {screenshotUrl}
-                </span>
-                <a
-                  href={screenshotUrl!}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center space-x-1 text-[10px] font-bold text-brand-cyan hover:underline"
-                >
-                  <ImageIcon className="w-3 h-3" />
-                  <span>Open Full Image</span>
-                </a>
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl">
+              {urls.map((url, idx) => (
+                <div key={idx} className="relative rounded-xl overflow-hidden border border-white/15 bg-black/40 p-2 group">
+                  <img
+                    src={url}
+                    alt={`UAT Verification Screenshot ${idx + 1}`}
+                    className="w-full max-h-48 object-contain rounded-lg transition-transform duration-300 group-hover:scale-[1.02]"
+                  />
+                  <div className="mt-2 flex items-center justify-between px-1">
+                    <span className="text-[10px] text-gray-500 font-mono truncate max-w-[50%]">
+                      {url}
+                    </span>
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center space-x-1 text-[10px] font-bold text-brand-cyan hover:underline"
+                    >
+                      <ImageIcon className="w-3 h-3" />
+                      <span>Open Full Image</span>
+                    </a>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -150,6 +168,8 @@ export function AnswerRenderer({ field, answer }: AnswerRendererProps) {
     const isPassed = choice.toLowerCase() === "passed" || choice.toLowerCase() === "pass"
     const isFailed = choice.toLowerCase() === "failed" || choice.toLowerCase() === "fail"
     const isBlocked = choice.toLowerCase() === "blocked" || choice.toLowerCase() === "block"
+
+    const urls = getScreenshotUrls(screenshotUrl)
 
     return (
       <div className="space-y-2">
@@ -179,27 +199,31 @@ export function AnswerRenderer({ field, answer }: AnswerRendererProps) {
             </div>
           )}
 
-          {!isUnanswered(screenshotUrl) && (
-            <div className="relative rounded-xl overflow-hidden border border-white/15 bg-black/40 p-2 group max-w-sm">
-              <img
-                src={screenshotUrl!}
-                alt="UAT Verification Screenshot"
-                className="w-full max-h-48 object-contain rounded-lg"
-              />
-              <div className="mt-2 flex items-center justify-between px-1">
-                <span className="text-[10px] text-gray-500 font-mono truncate max-w-[60%]">
-                  {screenshotUrl}
-                </span>
-                <a
-                  href={screenshotUrl!}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center space-x-1 text-[10px] font-bold text-brand-cyan hover:underline"
-                >
-                  <ImageIcon className="w-3 h-3" />
-                  <span>Open Full Image</span>
-                </a>
-              </div>
+          {urls.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl">
+              {urls.map((url, idx) => (
+                <div key={idx} className="relative rounded-xl overflow-hidden border border-white/15 bg-black/40 p-2 group">
+                  <img
+                    src={url}
+                    alt={`UAT Verification Screenshot ${idx + 1}`}
+                    className="w-full max-h-48 object-contain rounded-lg transition-transform duration-300 group-hover:scale-[1.02]"
+                  />
+                  <div className="mt-2 flex items-center justify-between px-1">
+                    <span className="text-[10px] text-gray-500 font-mono truncate max-w-[50%]">
+                      {url}
+                    </span>
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center space-x-1 text-[10px] font-bold text-brand-cyan hover:underline"
+                    >
+                      <ImageIcon className="w-3 h-3" />
+                      <span>Open Full Image</span>
+                    </a>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>

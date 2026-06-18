@@ -136,6 +136,19 @@ interface TestSummaryClientProps {
   testers: TesterInfo[];
 }
 
+const getScreenshotUrls = (urlStr: string | null | undefined): string[] => {
+  if (!urlStr) return []
+  const trimmed = urlStr.trim()
+  if (trimmed.startsWith("[")) {
+    try {
+      return JSON.parse(trimmed) as string[]
+    } catch {
+      // fallback
+    }
+  }
+  return trimmed.split(",").map(u => u.trim()).filter(Boolean)
+}
+
 export function TestSummaryClient({
   targetGroups,
   testCases,
@@ -973,7 +986,7 @@ export function TestSummaryClient({
               </span>
               <button
                 onClick={handleExportPDF}
-                className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-zinc-800 text-zinc-300 text-xs font-bold hover:bg-zinc-700 transition-all cursor-pointer border border-white/5 shadow-md"
+                className="flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-zinc-800 dark:text-zinc-300 text-zinc-800 text-xs font-bold hover:bg-zinc-700 transition-all cursor-pointer border border-white/5 shadow-md"
               >
                 <FileText className="w-3.5 h-3.5" />
                 <span>Export PDF</span>
@@ -1786,13 +1799,31 @@ export function TestSummaryClient({
             </div>
 
             {/* Content */}
-            <div className="p-6 flex-1 flex items-center justify-center min-h-[300px] max-h-[600px] overflow-auto bg-black/20">
+            <div className="p-6 flex-1 flex flex-col items-center justify-center min-h-[300px] max-h-[600px] overflow-auto bg-black/20">
               {previewEvidence.screenshotUrl ? (
-                <img
-                  src={previewEvidence.screenshotUrl}
-                  alt={previewEvidence.fieldName}
-                  className="max-w-full max-h-[500px] object-contain rounded-lg shadow-md border border-white/5"
-                />
+                (() => {
+                  const urls = getScreenshotUrls(previewEvidence.screenshotUrl);
+                  return (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+                      {urls.map((url, idx) => (
+                        <div key={idx} className="flex flex-col items-center border border-white/5 p-2 rounded-xl bg-zinc-950/20">
+                          <img
+                            src={url}
+                            alt={`${previewEvidence.fieldName} ${idx + 1}`}
+                            className="max-w-full max-h-[350px] object-contain rounded-lg shadow-md border border-white/5"
+                          />
+                          <a
+                            href={url}
+                            target="_blank; noreferrer"
+                            className="mt-2 text-xs text-brand-cyan hover:underline"
+                          >
+                            Open Full Image
+                          </a>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()
               ) : previewEvidence.pdfUrl ? (
                 <iframe
                   src={previewEvidence.pdfUrl}

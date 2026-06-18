@@ -117,8 +117,19 @@ export default function TestResultsPage() {
     // 1. Status Filter
     if (statusFilter !== "ALL") {
       result = result.filter((r) => {
-        if (statusFilter === "SUBMITTED") return r.status === "SUBMITTED" || r.status === "PASSED" || r.status === "FAILED"
-        return r.status === statusFilter
+        if (statusFilter === "SUBMITTED") return r.status !== "PENDING"
+        
+        const derived = r.status === "PENDING"
+          ? "PENDING"
+          : (r.passFailSummary.failed || 0) > 0
+          ? "FAILED"
+          : (r.passFailSummary.blocked || 0) > 0
+          ? "BLOCKED"
+          : ((r.passFailSummary.na || 0) > 0 && (r.passFailSummary.passed || 0) === 0)
+          ? "NA"
+          : "PASSED"
+
+        return derived === statusFilter
       })
     }
 
@@ -260,7 +271,7 @@ export default function TestResultsPage() {
               />
             </div>
             <div className="flex space-x-2 w-full md:w-auto overflow-x-auto">
-              {["ALL", "PENDING", "SUBMITTED", "PASSED", "FAILED"].map((status) => (
+              {["ALL", "PENDING", "SUBMITTED", "PASSED", "FAILED", "BLOCKED", "NA"].map((status) => (
                 <button
                   key={status}
                   onClick={() => setStatusFilter(status)}
@@ -270,7 +281,14 @@ export default function TestResultsPage() {
                       : "bg-white/5 border-white/5 text-gray-400 hover:text-white"
                   }`}
                 >
-                  {status === "ALL" ? "All Runs" : status === "PENDING" ? "In Progress" : status}
+                  {status === "ALL" ? "All" :
+                   status === "PENDING" ? "In Progress" :
+                   status === "SUBMITTED" ? "Submitted" :
+                   status === "PASSED" ? "Passed" :
+                   status === "FAILED" ? "Failed" :
+                   status === "BLOCKED" ? "Blocked" :
+                   status === "NA" ? "N/A" :
+                   status}
                 </button>
               ))}
             </div>

@@ -12,7 +12,7 @@ const PDFViewer = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex items-center justify-center h-full bg-[#0a0a0a] text-gray-400">
+      <div className="flex items-center justify-center h-full bg-background text-gray-400">
         <Loader2 className="w-8 h-8 text-brand-teal animate-spin mr-2" />
         <span>Loading PDF Viewer...</span>
       </div>
@@ -159,7 +159,7 @@ export default function AdminRunDetailPage() {
 
   if (loading) {
     return (
-      <div className="h-[calc(100vh-56px)] flex flex-col items-center justify-center bg-[#0a0a0a] text-white">
+      <div className="h-[calc(100vh-56px)] flex flex-col items-center justify-center bg-background text-foreground">
         <Loader2 className="w-8 h-8 text-brand-teal animate-spin mb-2" />
         <p className="text-xs text-gray-500 font-medium">Reconstructing test execution timeline...</p>
       </div>
@@ -168,14 +168,14 @@ export default function AdminRunDetailPage() {
 
   if (error || !run) {
     return (
-      <div className="h-[calc(100vh-56px)] flex items-center justify-center bg-[#0a0a0a] text-white p-8">
+      <div className="h-[calc(100vh-56px)] flex items-center justify-center bg-background text-foreground p-8">
         <div className="text-center space-y-4 max-w-md">
           <AlertCircle className="w-12 h-12 text-rose-500 mx-auto" />
           <h2 className="text-xl font-bold">Failed to load run details</h2>
           <p className="text-xs text-gray-400">{error || "The test run log could not be loaded."}</p>
           <button
             onClick={() => router.push(`/admin/test-cases/${testCaseId}/results`)}
-            className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-xs font-semibold"
+            className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-xs font-semibold text-gray-300"
           >
             Go Back
           </button>
@@ -187,11 +187,11 @@ export default function AdminRunDetailPage() {
   return (
     <div className="h-[calc(100vh-56px)] flex overflow-hidden w-full relative">
       {/* Left PDF panel */}
-      <div className="w-3/4 h-full relative border-r border-white/5 bg-[#0a0a0a]">
+      <div className="w-3/4 h-full relative border-r border-white/5 bg-zinc-950">
         <div className="absolute top-4 left-4 z-20 flex items-center space-x-2">
           <Link
             href={`/admin/test-cases/${testCaseId}/results`}
-            className="flex items-center space-x-1 px-4 py-2 rounded-xl bg-black/60 border border-white/10 text-xs font-bold text-gray-300 hover:bg-black/80 hover:text-white transition-all shadow-md backdrop-blur-md"
+            className="flex items-center space-x-1 px-4 py-2 rounded-xl bg-zinc-900/40 border border-white/10 text-xs font-bold text-gray-300 hover:bg-zinc-800/80 hover:text-white transition-all shadow-md backdrop-blur-md"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Back to Results</span>
@@ -208,10 +208,10 @@ export default function AdminRunDetailPage() {
       </div>
 
       {/* Right answers panel */}
-      <div className="w-1/4 h-full flex flex-col bg-black/60 border-l border-white/5 backdrop-blur-md text-white overflow-hidden shadow-2xl relative z-10">
+      <div className="w-1/4 h-full flex flex-col bg-zinc-900/40 border-l border-white/5 backdrop-blur-md text-foreground overflow-hidden shadow-2xl relative z-10">
         
         {/* Run Title Header */}
-        <div className="h-14 px-4 flex items-center justify-between border-b border-white/5 bg-black/40">
+        <div className="h-14 px-4 flex items-center justify-between border-b border-white/5 bg-zinc-950/40">
           <div className="flex flex-col min-w-0">
             <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Scenario Execution Log</span>
             <h2 className="text-xs font-semibold text-white truncate max-w-[180px]" title={run.testCase.title}>
@@ -232,7 +232,7 @@ export default function AdminRunDetailPage() {
         {/* Scrollable inputs list */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Tester Info Card */}
-          <div className="border border-white/5 bg-white/[0.02] p-4 rounded-xl space-y-3">
+          <div className="border border-white/5 bg-zinc-900/40 p-4 rounded-xl space-y-3">
             <div className="flex items-center space-x-2.5">
               <div className="p-1.5 rounded-lg bg-brand-cyan/15 text-brand-cyan border border-brand-teal/20">
                 <User className="w-4 h-4" />
@@ -260,11 +260,11 @@ export default function AdminRunDetailPage() {
 
           {/* Audit trail details for admin */}
           {run.auditLogs && run.auditLogs.length > 0 && (
-            <div className="border border-white/5 bg-white/[0.02] p-4 rounded-xl space-y-3">
+            <div className="border border-white/5 bg-zinc-900/40 p-4 rounded-xl space-y-3">
               <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Run History (Audit Trail)</p>
               <div className="space-y-2 max-h-40 overflow-y-auto pr-1 scrollbar-thin">
                 {run.auditLogs.map((log) => (
-                  <div key={log.id} className="text-xs bg-black/30 border border-white/5 p-2.5 rounded-lg space-y-1">
+                  <div key={log.id} className="text-xs bg-zinc-950/40 border border-white/5 p-2.5 rounded-lg space-y-1">
                     <div className="flex justify-between items-center">
                       <span className={`font-bold uppercase tracking-tight text-[10px] ${log.action === "SUBMIT" ? "text-emerald-400" : "text-amber-400"}`}>
                         {log.action === "SUBMIT" ? "Submitted" : "Re-opened"}
@@ -305,7 +305,7 @@ export default function AdminRunDetailPage() {
         </div>
 
         {/* Bottom card & export bar */}
-        <div className="p-4 border-t border-white/5 bg-black/60 space-y-4">
+        <div className="p-4 border-t border-white/5 bg-zinc-950/40 space-y-4">
           
           {/* Pass/Fail Verdict Card */}
           <div className={`border p-3.5 rounded-xl flex items-center justify-between transition-colors ${

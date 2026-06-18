@@ -139,7 +139,7 @@ export default function AdminHelpRequests() {
       <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-8 min-h-0">
         {/* Left column: List of pending requests */}
         <div className="border border-white/5 bg-zinc-900/40 backdrop-blur-md rounded-2xl flex flex-col overflow-hidden">
-          <div className="p-4 border-b border-white/5 bg-zinc-950/20">
+          <div className="p-4 border-b border-white/5">
             <h2 className="text-sm font-bold uppercase tracking-wider text-gray-400">Incoming Requests ({requests.length})</h2>
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -201,7 +201,7 @@ export default function AdminHelpRequests() {
           {selectedRequest ? (
             <div className="flex-1 flex flex-col min-h-0">
               {/* Chat Header */}
-              <div className="p-4 border-b border-white/5 bg-zinc-950/20 flex justify-between items-center">
+              <div className="p-4 border-b border-white/5 flex justify-between items-center">
                 <div>
                   <h2 className="text-sm font-bold">{selectedRequest.testerName}</h2>
                   <p className="text-[11px] text-gray-400">{selectedRequest.testerEmail}</p>
@@ -256,7 +256,7 @@ export default function AdminHelpRequests() {
               </div>
 
               {/* Chat Input */}
-              <div className="p-4 border-t border-white/5 bg-zinc-950/20">
+              <div className="p-4 border-t border-white/5">
                 <form onSubmit={handleSendMessage} className="flex items-center space-x-3">
                   <input
                     type="text"

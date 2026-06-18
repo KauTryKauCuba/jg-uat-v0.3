@@ -302,11 +302,12 @@ export default function ResourcesPage() {
   }
 
   return (
-    <main className="p-8 space-y-6 flex-1">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">UAT Testing Resources</h1>
-        <p className="text-gray-400 mt-2">Manage global briefing materials and individual testing persona resource sets.</p>
-      </div>
+    <main className="p-8 space-y-8 flex-1 flex flex-col justify-between">
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">UAT Testing Resources</h1>
+          <p className="text-gray-400 mt-2">Manage global briefing materials and individual testing persona resource sets.</p>
+        </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Briefing Deck Card */}
@@ -693,6 +694,8 @@ export default function ResourcesPage() {
         </div>
       </div>
 
+      </div>
+
       <ConfirmModal
         isOpen={deletingId !== null}
         onClose={() => setDeletingId(null)}
@@ -702,6 +705,10 @@ export default function ResourcesPage() {
         confirmText="Delete permanently"
         variant="destructive"
       />
+
+      <footer className="text-center text-[10px] text-gray-600 pt-8 border-t border-white/5">
+        &copy; {new Date().getFullYear()} JobGiga UAT Platform. All rights reserved.
+      </footer>
     </main>
   )
 }

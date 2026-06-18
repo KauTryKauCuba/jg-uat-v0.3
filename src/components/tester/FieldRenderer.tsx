@@ -5,6 +5,19 @@ import { CheckCircle2, XCircle, Upload, X, Loader2, QrCode, Camera } from "lucid
 import { TestFieldWithOptions } from "@/types"
 import { QRUploadModal } from "@/components/tester/QRUploadModal"
 
+const getScreenshotUrls = (urlStr: string | null | undefined): string[] => {
+  if (!urlStr) return []
+  const trimmed = urlStr.trim()
+  if (trimmed.startsWith("[")) {
+    try {
+      return JSON.parse(trimmed) as string[]
+    } catch {
+      // fallback
+    }
+  }
+  return trimmed.split(",").map(u => u.trim()).filter(Boolean)
+}
+
 interface FieldRendererProps {
   field: TestFieldWithOptions
   answer: {
@@ -119,6 +132,8 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
 
   // FILE -> SCREENSHOT
   if (field.fieldType === "FILE") {
+    const urls = getScreenshotUrls(currentScreenshotUrl)
+
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
       if (disabled || uploading) return
       const file = e.target.files?.[0]
@@ -139,7 +154,8 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
         if (json.error) {
           setUploadError(json.error)
         } else {
-          onChange(field.id, currentValue, json.data.url)
+          const newUrls = [...urls, json.data.url]
+          onChange(field.id, currentValue, JSON.stringify(newUrls))
         }
       } catch {
         setUploadError("Upload failed")
@@ -148,45 +164,54 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
       }
     }
 
-    const handleRemoveScreenshot = () => {
+    const handleRemoveScreenshot = (indexToRemove: number) => {
       if (disabled) return
-      onChange(field.id, currentValue, null)
+      const newUrls = urls.filter((_, idx) => idx !== indexToRemove)
+      onChange(field.id, currentValue, newUrls.length > 0 ? JSON.stringify(newUrls) : null)
     }
 
     return (
       <div className="space-y-4">
         <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">{field.fieldName}</label>
         
-        {currentScreenshotUrl ? (
-          <div className="relative rounded-xl overflow-hidden border border-white/10 bg-black/30 p-2 group">
-            <img
-              src={currentScreenshotUrl}
-              alt="UAT Screenshot Verification"
-              className="w-full max-h-48 object-contain rounded-lg"
-            />
-            {!disabled && (
-              <button
-                type="button"
-                onClick={handleRemoveScreenshot}
-                className="absolute top-4 right-4 p-1.5 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all shadow-md cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
+        {urls.length > 0 && (
+          <div className="grid grid-cols-2 gap-3">
+            {urls.map((url, idx) => (
+              <div key={idx} className="relative rounded-xl overflow-hidden border border-white/10 bg-black/30 p-2 group">
+                <img
+                  src={url}
+                  alt={`Screenshot ${idx + 1}`}
+                  className="w-full h-24 object-cover rounded-lg"
+                />
+                {!disabled && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveScreenshot(idx)}
+                    className="absolute top-3 right-3 p-1 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all shadow-md cursor-pointer animate-fade-in"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            ))}
           </div>
-        ) : (
+        )}
+
+        {(!disabled || urls.length === 0) && (
           <div>
-            <label className={`relative border border-dashed rounded-xl p-6 flex flex-col items-center justify-center space-y-2 cursor-pointer transition-all border-white/10 hover:border-brand-cyan bg-white/5 hover:bg-white/10 ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}>
+            <label className={`relative border border-dashed rounded-xl p-5 flex flex-col items-center justify-center space-y-1 cursor-pointer transition-all border-white/10 hover:border-brand-cyan bg-white/5 hover:bg-white/10 ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}>
               {uploading ? (
                 <>
-                  <Loader2 className="w-6 h-6 text-brand-teal animate-spin" />
+                  <Loader2 className="w-5 h-5 text-brand-teal animate-spin" />
                   <span className="text-xs text-gray-400">Uploading screenshot...</span>
                 </>
               ) : (
                 <>
-                  <Upload className="w-6 h-6 text-gray-400" />
-                  <span className="text-xs font-semibold text-gray-300">Click to upload screenshot</span>
-                  <span className="text-xs text-gray-500">PNG, JPG, WEBP (max 5MB)</span>
+                  <Upload className="w-5 h-5 text-gray-400" />
+                  <span className="text-xs font-semibold text-gray-300">
+                    {urls.length > 0 ? "Click to add another screenshot" : "Click to upload screenshot"}
+                  </span>
+                  <span className="text-[10px] text-gray-500">PNG, JPG, WEBP (max 5MB)</span>
                 </>
               )}
               <input
@@ -199,7 +224,7 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
             </label>
             {uploadError && <p className="text-xs text-red-500 mt-1 font-medium">{uploadError}</p>}
             {!disabled && (
-              <div className="grid grid-cols-2 gap-2 mt-3 w-full">
+              <div className="grid grid-cols-2 gap-2 mt-2.5 w-full">
                 <button
                   type="button"
                   onClick={() => setIsQRModalOpen(true)}
@@ -229,7 +254,10 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
           onClose={() => setIsQRModalOpen(false)}
           testRunId={testRunId}
           testFieldId={field.id}
-          onUploadComplete={(imageUrl) => onChange(field.id, currentValue, imageUrl)}
+          onUploadComplete={(imageUrl) => {
+            const newUrls = [...urls, imageUrl]
+            onChange(field.id, currentValue, JSON.stringify(newUrls))
+          }}
         />
       </div>
     )
@@ -238,6 +266,7 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
   // DROPDOWN
   if (field.fieldType === "DROPDOWN") {
     const choices = field.choices || []
+    const urls = getScreenshotUrls(currentScreenshotUrl)
 
     // Parse value safely
     let selectedChoice = ""
@@ -284,7 +313,8 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
         if (json.error) {
           setUploadError(json.error)
         } else {
-          onChange(field.id, { choice: selectedChoice, defectDetails }, json.data.url)
+          const newUrls = [...urls, json.data.url]
+          onChange(field.id, { choice: selectedChoice, defectDetails }, JSON.stringify(newUrls))
         }
       } catch {
         setUploadError("Upload failed")
@@ -293,9 +323,10 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
       }
     }
 
-    const handleRemoveScreenshot = () => {
+    const handleRemoveScreenshot = (indexToRemove: number) => {
       if (disabled) return
-      onChange(field.id, { choice: selectedChoice, defectDetails }, null)
+      const newUrls = urls.filter((_, idx) => idx !== indexToRemove)
+      onChange(field.id, { choice: selectedChoice, defectDetails }, newUrls.length > 0 ? JSON.stringify(newUrls) : null)
     }
 
     const isPassed = selectedChoice.toLowerCase() === "passed" || selectedChoice.toLowerCase() === "pass"
@@ -413,24 +444,31 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
             {/* Screenshot Upload */}
             <div className="space-y-4">
               <label className={`block text-xs font-bold ${defectStyles.label} uppercase tracking-wider`}>Screenshot Attachment *</label>
-              {currentScreenshotUrl ? (
-                <div className="relative rounded-xl overflow-hidden border border-white/10 bg-black/30 p-2 group">
-                  <img
-                    src={currentScreenshotUrl}
-                    alt="UAT Defect Screenshot"
-                    className="w-full max-h-36 object-contain rounded-lg"
-                  />
-                  {!disabled && (
-                    <button
-                      type="button"
-                      onClick={handleRemoveScreenshot}
-                      className="absolute top-4 right-4 p-1 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all shadow-md cursor-pointer"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+              
+              {urls.length > 0 && (
+                <div className="grid grid-cols-2 gap-3">
+                  {urls.map((url, idx) => (
+                    <div key={idx} className="relative rounded-xl overflow-hidden border border-white/10 bg-black/30 p-2 group">
+                      <img
+                        src={url}
+                        alt={`Screenshot ${idx + 1}`}
+                        className="w-full h-24 object-cover rounded-lg"
+                      />
+                      {!disabled && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveScreenshot(idx)}
+                          className="absolute top-3 right-3 p-1 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all shadow-md cursor-pointer animate-fade-in"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ) : (
+              )}
+
+              {(!disabled || urls.length === 0) && (
                 <div>
                   <label className={`relative border border-dashed rounded-xl p-4 flex flex-col items-center justify-center space-y-1 cursor-pointer transition-all bg-black/20 hover:bg-black/30 ${defectStyles.uploadBorder} ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}>
                     {uploading ? (
@@ -441,7 +479,9 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
                     ) : (
                       <>
                         <Upload className="w-5 h-5 text-gray-400" />
-                        <span className="text-xs font-semibold text-gray-300">Click to upload defect screenshot</span>
+                        <span className="text-xs font-semibold text-gray-300">
+                          {urls.length > 0 ? "Click to add another screenshot" : "Click to upload defect screenshot"}
+                        </span>
                       </>
                     )}
                     <input
@@ -487,7 +527,10 @@ export function FieldRenderer({ field, answer, onChange, disabled, testRunId }: 
           onClose={() => setIsQRModalOpen(false)}
           testRunId={testRunId}
           testFieldId={field.id}
-          onUploadComplete={(imageUrl) => onChange(field.id, currentValue, imageUrl)}
+          onUploadComplete={(imageUrl) => {
+            const newUrls = [...urls, imageUrl]
+            onChange(field.id, { choice: selectedChoice, defectDetails }, JSON.stringify(newUrls))
+          }}
         />
       </div>
     )

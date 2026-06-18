@@ -8,6 +8,7 @@ import { Compass } from "lucide-react"
 
 import { HelpWidget } from "@/components/tester/HelpWidget"
 import { LavaLampBackground } from "@/components/ui/lava-lamp-background"
+import { ThemeToggle } from "@/components/ui/theme-toggle"
 
 const PageTitleContext = React.createContext<{
   title: string
@@ -43,17 +44,17 @@ export function TesterLayout({ userName, children }: TesterLayoutProps) {
 
   return (
     <PageTitleContext.Provider value={{ title, setTitle }}>
-      <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col font-sans relative overflow-hidden">
+      <div className="tester-layout-root min-h-screen bg-background text-foreground flex flex-col font-sans relative overflow-hidden transition-colors duration-300">
         <div className="absolute top-0 left-0 right-0 h-[200px] overflow-hidden pointer-events-none z-0">
           <LavaLampBackground className="w-full h-full" />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#0a0a0a]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background transition-colors duration-300" />
         </div>
 
         {/* Top Bar - Floating Header */}
-        <header className="fixed top-2 left-2 right-2 md:top-5 md:left-5 md:right-5 z-30 h-14 bg-zinc-950/40 border border-white/[0.08] px-4 sm:px-6 flex items-center justify-between rounded-[12px] md:rounded-[15px] shadow-2xl shadow-black/80 backdrop-blur-xl">
+        <header className="fixed top-2 left-2 right-2 md:top-5 md:left-5 md:right-5 z-30 h-14 bg-white/70 dark:bg-zinc-950/40 border border-black/[0.08] dark:border-white/[0.08] px-4 sm:px-6 flex items-center justify-between rounded-[12px] md:rounded-[15px] shadow-lg dark:shadow-2xl dark:shadow-black/80 backdrop-blur-xl transition-colors duration-300">
           {/* Left: Logo */}
           <div className="flex items-center space-x-2">
-            <Link href="/tester" className="flex items-center space-x-2 text-base font-bold text-white select-none">
+            <Link href="/tester" className="flex items-center space-x-2 text-base font-bold text-zinc-900 dark:text-white select-none">
               <img src="/icon.png" alt="JobGiga Logo" className="w-5 h-5 object-contain" />
               <span>JobGiga UAT</span>
             </Link>
@@ -61,19 +62,20 @@ export function TesterLayout({ userName, children }: TesterLayoutProps) {
 
           {/* Center: Title */}
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden md:block">
-            <h1 className="text-sm font-semibold text-gray-200">{title}</h1>
+            <h1 className="text-sm font-semibold text-foreground">{title}</h1>
           </div>
 
-          {/* Right: User + Sign Out */}
+          {/* Right: User + Theme + Sign Out */}
           <div className="flex items-center space-x-2 sm:space-x-4">
             <div className="flex items-center space-x-1 sm:space-x-2">
-              <span className="text-xs font-semibold text-gray-300 truncate max-w-[80px] sm:max-w-[150px]" title={userName}>
+              <span className="text-xs font-semibold text-gray-600 dark:text-gray-300 truncate max-w-[80px] sm:max-w-[150px]" title={userName}>
                 {userName}
               </span>
               <span className="hidden sm:inline-block text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-brand-teal/10 border border-brand-teal/20 text-brand-cyan">
                 TESTER
               </span>
             </div>
+            <ThemeToggle />
             <button
               onClick={() => {
                 localStorage.removeItem("jg-uat-tour-completed")
@@ -83,7 +85,7 @@ export function TesterLayout({ userName, children }: TesterLayoutProps) {
                 sessionStorage.removeItem("jg-uat-tour-session-seen")
                 signOut({ callbackUrl: "/" })
               }}
-              className="text-xs font-semibold px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-gray-200 hover:text-white transition-all cursor-pointer shrink-0 hover:scale-[1.02] active:scale-[0.98]"
+              className="text-xs font-semibold px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-lg border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white transition-all cursor-pointer shrink-0 hover:scale-[1.02] active:scale-[0.98]"
             >
               Sign Out
             </button>
@@ -91,7 +93,7 @@ export function TesterLayout({ userName, children }: TesterLayoutProps) {
         </header>
 
         {/* Main Content Area */}
-        <div className="pt-24 flex-1 flex flex-col relative z-10">
+        <div className="tester-container pt-24 flex-1 flex flex-col relative z-10">
           {children}
         </div>
 

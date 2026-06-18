@@ -39,14 +39,14 @@ export function HelpRequestNavLink({ isCollapsed }: { isCollapsed?: boolean }) {
         "flex items-center rounded-xl text-sm font-semibold transition-all duration-200 border relative",
         isCollapsed ? "justify-center p-3" : "justify-between px-4 py-3",
         isActive
-          ? "bg-gradient-to-r from-brand-teal/15 to-brand-cyan/15 border-brand-teal/20 text-brand-cyan"
+          ? "bg-gradient-to-r from-brand-teal/15 to-brand-cyan/15 border-brand-teal/20 text-brand-teal dark:text-brand-cyan"
           : hasNotification
-          ? "bg-rose-500/10 border-rose-500/20 text-rose-400 hover:bg-rose-500/20"
-          : "text-gray-400 hover:text-gray-200 hover:bg-white/5 border-transparent"
+          ? "bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400 hover:bg-rose-500/15 dark:hover:bg-rose-500/20"
+          : "text-gray-500 hover:text-gray-950 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/5 border-transparent"
       )}
     >
       <div className="flex items-center space-x-3">
-        <HelpCircle className={cn("w-5 h-5 shrink-0", hasNotification && !isActive ? "text-rose-400" : "")} />
+        <HelpCircle className={cn("w-5 h-5 shrink-0", hasNotification && !isActive ? "text-rose-600 dark:text-rose-400" : "")} />
         {!isCollapsed && <span>Help Requests</span>}
       </div>
       {hasNotification && (

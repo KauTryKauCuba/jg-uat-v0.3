@@ -193,23 +193,23 @@ export function AIChatPageClient({ runs, targetGroups }: AIChatPageClientProps) 
             let colorClasses = ""
             if (grp.name === "ALL") {
               colorClasses = isSelected
-                ? "border-violet-500/50 bg-violet-500/10 text-white shadow-md shadow-violet-500/10"
+                ? "border-violet-500/50 bg-violet-500/10 dark:text-white text-zinc-900 shadow-md shadow-violet-500/10"
                 : "border-violet-500/10 bg-violet-500/5 text-violet-400/80 hover:bg-violet-500/10 hover:text-violet-300"
             } else if (grp.name === "EMPLOYER") {
               colorClasses = isSelected
-                ? "border-amber-500/50 bg-amber-500/10 text-white shadow-md shadow-amber-500/10"
+                ? "border-amber-500/50 bg-amber-500/10 dark:text-white text-zinc-900 shadow-md shadow-amber-500/10"
                 : "border-amber-500/10 bg-amber-500/5 text-amber-400/80 hover:bg-amber-500/10 hover:text-amber-300"
             } else if (grp.name === "JOBSEEKER_WEB") {
               colorClasses = isSelected
-                ? "border-cyan-500/50 bg-cyan-500/10 text-white shadow-md shadow-cyan-500/10"
+                ? "border-cyan-500/50 bg-cyan-500/10 dark:text-white text-zinc-900 shadow-md shadow-cyan-500/10"
                 : "border-cyan-500/10 bg-cyan-500/5 text-cyan-400/80 hover:bg-cyan-500/10 hover:text-cyan-300"
             } else if (grp.name === "JOBSEEKER") {
               colorClasses = isSelected
-                ? "border-emerald-500/50 bg-emerald-500/10 text-white shadow-md shadow-emerald-500/10"
+                ? "border-emerald-500/50 bg-emerald-500/10 dark:text-white text-zinc-900 shadow-md shadow-emerald-500/10"
                 : "border-emerald-500/10 bg-emerald-500/5 text-emerald-400/80 hover:bg-emerald-500/10 hover:text-emerald-300"
             } else {
               colorClasses = isSelected
-                ? "border-brand-cyan bg-brand-cyan/10 text-white shadow-md shadow-brand-cyan/10"
+                ? "border-brand-cyan bg-brand-cyan/10 dark:text-white text-zinc-900 shadow-md shadow-brand-cyan/10"
                 : "border-white/5 bg-zinc-900/40 hover:bg-white/5 text-gray-400"
             }
 
@@ -259,7 +259,7 @@ export function AIChatPageClient({ runs, targetGroups }: AIChatPageClientProps) 
                   onClick={() => handleSelectRun(run.id)}
                   className={`w-full text-left p-3.5 rounded-2xl border transition-all cursor-pointer select-none space-y-1.5 block ${
                     isSelected
-                      ? "border-brand-cyan bg-brand-cyan/5 text-white"
+                      ? "border-brand-cyan bg-brand-cyan/5 dark:text-white text-zinc-900"
                       : "border-white/5 bg-zinc-900/40 hover:bg-white/5 text-gray-300"
                   }`}
                 >
@@ -407,9 +407,9 @@ export function AIChatPageClient({ runs, targetGroups }: AIChatPageClientProps) 
               <button
                 type="submit"
                 disabled={loading || !input.trim()}
-                className="absolute right-3 p-2 rounded-full bg-brand-cyan hover:opacity-90 active:scale-[0.98] transition-all text-black disabled:opacity-30 disabled:hover:opacity-30 cursor-pointer shadow-md shadow-brand-cyan/10"
+                className="absolute right-3 p-2 rounded-full bg-brand-cyan hover:opacity-90 active:scale-[0.98] transition-all text-white disabled:opacity-30 disabled:hover:opacity-30 cursor-pointer shadow-md shadow-brand-cyan/10"
               >
-                <Send className="w-3.5 h-3.5" />
+                <Send className="w-3.5 h-3.5 text-white" />
               </button>
             </form>
             <p className="text-[9px] text-gray-600 text-center mt-2.5">

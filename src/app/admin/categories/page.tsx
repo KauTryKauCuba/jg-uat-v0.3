@@ -365,7 +365,7 @@ export default function CategoriesPage() {
   }
 
   return (
-    <main className="p-8 space-y-6 flex-1 bg-zinc-950/20">
+    <main className="p-8 space-y-6 flex-1">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Test Case Categories</h1>
         <p className="text-gray-400 mt-2">Create and organize categories before building test cases. Drag items to reorder.</p>

@@ -15,7 +15,7 @@ const PDFViewer = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex items-center justify-center h-full bg-[#0a0a0a] text-gray-400">
+      <div className="flex items-center justify-center h-full bg-zinc-950 text-gray-400">
         <Loader2 className="w-8 h-8 text-brand-teal animate-spin mr-2" />
         <span>Loading PDF Viewer...</span>
       </div>
@@ -313,7 +313,7 @@ export function TestRunClient({ run }: TestRunClientProps) {
         {run.testCase.pdfUrl ? (
           <PDFViewer fileUrl={run.testCase.pdfUrl} />
         ) : (
-          <div className="flex items-center justify-center h-full bg-[#0a0a0a] text-gray-500 w-full">
+          <div className="flex items-center justify-center h-full bg-zinc-950 text-gray-500 w-full">
             No verification PDF assigned to this test case.
           </div>
         )}

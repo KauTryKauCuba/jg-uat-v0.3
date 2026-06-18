@@ -121,7 +121,7 @@ export default function OrganisationsPage() {
   }
 
   return (
-    <main className="p-8 space-y-6 flex-1 bg-zinc-950/20">
+    <main className="p-8 space-y-6 flex-1">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Organisations</h1>
         <p className="text-gray-400 mt-2">Manage organisations representing testers and testing sources.</p>

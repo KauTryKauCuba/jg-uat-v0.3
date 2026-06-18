@@ -16,7 +16,7 @@ export function SignOutButton({ isCollapsed }: { isCollapsed?: boolean }) {
         signOut({ callbackUrl: "/" })
       }}
       className={cn(
-        "text-xs font-semibold rounded-xl border border-white/10 hover:bg-white/5 transition-all cursor-pointer flex items-center justify-center w-full text-gray-300 hover:text-white",
+        "text-xs font-semibold rounded-xl border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 transition-all cursor-pointer flex items-center justify-center w-full text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white",
         isCollapsed ? "py-2.5" : "px-4 py-2 space-x-2"
       )}
       title={isCollapsed ? "Sign Out" : undefined}

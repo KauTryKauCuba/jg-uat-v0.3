@@ -104,7 +104,7 @@ export function PDFViewer({ fileUrl }: PDFViewerProps) {
   }, [numPages])
 
   return (
-    <div className="relative flex flex-col h-full bg-zinc-950/40 border border-white/5 overflow-hidden select-none backdrop-blur-md">
+    <div className="relative flex flex-col h-full bg-zinc-950/10 border border-white/5 overflow-hidden select-none backdrop-blur-md">
       {/* Scrollable PDF container */}
       <div ref={containerRef} className="flex-1 overflow-auto p-6 flex flex-col items-center pb-20 space-y-6">
         {error ? (
@@ -130,7 +130,7 @@ export function PDFViewer({ fileUrl }: PDFViewerProps) {
                   <div
                     key={pageNum}
                     data-page-number={pageNum}
-                    className="bg-zinc-900 border border-white/10 shadow-2xl shadow-black/50 rounded-lg overflow-hidden flex items-center justify-center text-gray-500 font-medium"
+                    className="bg-zinc-900/40 border border-white/10 shadow-2xl shadow-black/50 rounded-lg overflow-hidden flex items-center justify-center text-gray-500 font-medium"
                     style={{
                       width: `${700 * scale}px`,
                       height: `${700 * 1.414 * scale}px`,
@@ -161,7 +161,7 @@ export function PDFViewer({ fileUrl }: PDFViewerProps) {
       </div>
 
       {/* Control bar */}
-      <div className="absolute bottom-0 left-0 right-0 h-14 bg-black/60 border-t border-white/5 px-6 flex items-center justify-between shadow-lg backdrop-blur-md text-white">
+      <div className="absolute bottom-0 left-0 right-0 h-14 bg-zinc-950/40 border-t border-white/5 px-6 flex items-center justify-between shadow-lg backdrop-blur-md text-foreground">
         {/* Navigation */}
         <div className="flex items-center space-x-2">
           <button

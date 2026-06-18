@@ -57,3 +57,112 @@ body {
   font-family: Arial, Helvetica, sans-serif;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
+
+/* Admin & Tester container light mode adjustments */
+html:not(.dark) :is(.admin-container, .tester-container, .tester-layout-root) {
+  /* Cards & Backdrops */
+  & .bg-zinc-900\/40,
+  & [class*="bg-zinc-900/40"] {
+    background-color: rgba(255, 255, 255, 0.7) !important;
+    border-color: rgba(0, 0, 0, 0.08) !important;
+    backdrop-filter: blur(12px) !important;
+  }
+
+  & [class*="bg-zinc-950"] {
+    background-color: #ffffff !important;
+    border-color: rgba(0, 0, 0, 0.08) !important;
+  }
+
+  & [class*="bg-zinc-900"] {
+    background-color: #f9f9f9 !important;
+    border-color: rgba(0, 0, 0, 0.08) !important;
+  }
+
+  & [class*="bg-zinc-800"] {
+    background-color: #f3f4f6 !important;
+    border-color: rgba(0, 0, 0, 0.08) !important;
+  }
+
+  /* List Items & Inner Containers */
+  & [class*="bg-black/"] {
+    background-color: rgba(0, 0, 0, 0.03) !important;
+  }
+  & [class*="bg-black/60"],
+  & [class*="bg-black/70"],
+  & [class*="bg-black/80"] {
+    background-color: rgba(255, 255, 255, 0.75) !important;
+  }
+  & [class*="bg-white/"] {
+    background-color: rgba(0, 0, 0, 0.02) !important;
+  }
+  & [class*="hover:bg-white/"]:hover {
+    background-color: rgba(0, 0, 0, 0.04) !important;
+  }
+  & [class*="hover:bg-black/"]:hover {
+    background-color: rgba(0, 0, 0, 0.04) !important;
+  }
+
+  /* Form Inputs, Selects & Textareas */
+  & input:not(.bg-transparent),
+  & select:not(.bg-transparent),
+  & textarea:not(.bg-transparent) {
+    background-color: rgba(0, 0, 0, 0.04) !important;
+    border-color: rgba(0, 0, 0, 0.1) !important;
+  }
+  & input.bg-transparent,
+  & select.bg-transparent,
+  & textarea.bg-transparent {
+    background-color: transparent !important;
+    border-color: transparent !important;
+  }
+  & input,
+  & select,
+  & textarea {
+    color: #111111 !important;
+  }
+  & input::placeholder,
+  & textarea::placeholder {
+    color: #888888 !important;
+  }
+
+  /* Borders */
+  & [class*="border-white/"] {
+    border-color: rgba(0, 0, 0, 0.08) !important;
+  }
+  & tr, & td, & th {
+    border-color: rgba(0, 0, 0, 0.08) !important;
+  }
+
+  /* Texts */
+  & .text-white:not(.bg-brand-teal):not(.bg-brand-cyan):not(.bg-emerald-500):not(.bg-rose-500):not(.bg-red-600):not([class*="bg-brand"]):not([class*="bg-emerald"]):not([class*="bg-rose"]):not([class*="bg-red"]):not([class*="from-"]):not([class*="to-"]):not(.text-white-force) {
+    color: #111111 !important;
+  }
+  & .text-gray-300 {
+    color: #333333 !important;
+  }
+  & .text-gray-400 {
+    color: #555555 !important;
+  }
+  & .text-gray-500 {
+    color: #777777 !important;
+  }
+  & .hover\:text-white:hover {
+    color: #111111 !important;
+  }
+}
+
+/* Standardize minimum font size in admin and tester to 12px */
+:is(.admin-layout-root, .tester-layout-root) {
+  & [class*="text-[5px]"],
+  & [class*="text-[6px]"],
+  & [class*="text-[7px]"],
+  & [class*="text-[8px]"],
+  & [class*="text-[9px]"],
+  & [class*="text-[10px]"],
+  & [class*="text-[11px]"] {
+    font-size: 12px !important;
+  }
+}
+
+
+

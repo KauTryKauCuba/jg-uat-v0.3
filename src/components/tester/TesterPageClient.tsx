@@ -1589,7 +1589,7 @@ export function TesterPageClient({
                             : isClaimedByOthers
                             ? "border-red-500/20 opacity-30 cursor-not-allowed grayscale"
                             : isPermanent
-                            ? "border-white/5 opacity-20 cursor-not-allowed grayscale"
+                            ? "border-black/10 dark:border-white/5 opacity-30 dark:opacity-20 cursor-not-allowed grayscale"
                             : "border-white/10 opacity-60 hover:opacity-100"
                         }`}
                         title={isClaimedByOthers ? `${set.name} (Claimed by another tester)` : isPermanent ? `${set.name} (Selection is permanent)` : set.name}
@@ -1601,8 +1601,8 @@ export function TesterPageClient({
                           </div>
                         )}
                         {isPermanent && (
-                          <div className="absolute inset-0 bg-zinc-900/70 flex items-center justify-center">
-                            <span className="text-xs font-bold text-gray-400">🔒</span>
+                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                            <span className="text-xs font-bold text-gray-300">🔒</span>
                           </div>
                         )}
                       </button>
@@ -1614,7 +1614,7 @@ export function TesterPageClient({
                 {selectedSet && (
                   <div className="space-y-3 animate-fade-in">
                     <p className="text-xs text-gray-400 font-semibold truncate">
-                      Selected Set: <span className="text-gray-200">{selectedSet.name}</span>
+                      Selected Set: <span className="text-zinc-800 dark:text-gray-200">{selectedSet.name}</span>
                     </p>
                     <div className="grid grid-cols-3 gap-2">
                       <a
@@ -1687,7 +1687,7 @@ export function TesterPageClient({
                     setIsEditingFeedback(false)
                     setShowFeedbackModal(true)
                   }}
-                  className="w-full py-3 rounded-xl bg-zinc-850 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold text-xs border border-white/5 transition-all cursor-pointer"
+                  className="w-full py-3 rounded-xl bg-zinc-850 hover:bg-zinc-800 dark:text-zinc-300 text-zinc-800 dark:hover:text-white hover:text-zinc-950 font-bold text-xs border border-white/5 transition-all cursor-pointer"
                 >
                   View Submitted Feedback
                 </button>
@@ -1730,7 +1730,7 @@ export function TesterPageClient({
                     setIsEditingSignOff(false)
                     setShowSignOffModal(true)
                   }}
-                  className="w-full py-3 rounded-xl bg-zinc-850 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold text-xs border border-white/5 transition-all cursor-pointer"
+                  className="w-full py-3 rounded-xl bg-zinc-850 hover:bg-zinc-800 dark:text-zinc-300 text-zinc-800 dark:hover:text-white hover:text-zinc-950 font-bold text-xs border border-white/5 transition-all cursor-pointer"
                 >
                   View Submitted Sign Off
                 </button>
