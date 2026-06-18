@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
-import { Plus, Folder, GripVertical, Edit2, Trash2, X, Save, Loader2, Lock, Unlock, Copy } from "lucide-react"
+import { Plus, Folder, GripVertical, Edit2, Trash2, X, Save, Loader2, Lock, Unlock, Copy, Sparkles, Upload, Download } from "lucide-react"
 import { ConfirmModal } from "@/components/ui/confirm-modal"
 
 interface Category {
@@ -18,6 +18,7 @@ export default function CategoriesPage() {
   const [targetGroups, setTargetGroups] = React.useState<{ id: string; name: string; displayName: string; locked: boolean }[]>([])
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
+  const [importing, setImporting] = React.useState(false)
   
   // Tab Selection
   const [activeTab, setActiveTab] = React.useState<string>("JOBSEEKER_WEB")
@@ -93,6 +94,59 @@ export default function CategoriesPage() {
     fetchCategories()
     fetchTargetGroups(savedTab)
   }, [])
+
+  const handleAIImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    
+    if (file.type !== "application/pdf") {
+      alert("Only PDF documents are supported for AI scanning.")
+      return
+    }
+
+    setImporting(true)
+    try {
+      const { pdfjs } = await import("react-pdf")
+      pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`
+
+      const arrayBuffer = await file.arrayBuffer()
+      const loadingTask = pdfjs.getDocument({ data: arrayBuffer })
+      const pdf = await loadingTask.promise
+      
+      let extractedText = ""
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i)
+        const textContent = await page.getTextContent()
+        const pageText = textContent.items.map((item: any) => item.str).join(" ")
+        extractedText += pageText + "\n"
+      }
+
+      if (!extractedText.trim()) {
+        alert("The PDF file seems to be empty or contains non-readable scanned text.")
+        setImporting(false)
+        return
+      }
+
+      const res = await fetch("/api/admin/categories/import-ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: extractedText, targetGroup: activeTab }),
+      })
+
+      const json = await res.json()
+      if (json.error) {
+        alert(json.error)
+      } else if (json.data) {
+        setCategories((prev) => [...prev, ...json.data])
+        alert(`Successfully imported ${json.data.length} new UAT categories!`)
+      }
+    } catch (err: any) {
+      alert("Failed to parse and import categories: " + (err.message || err))
+    } finally {
+      setImporting(false)
+      e.target.value = ""
+    }
+  }
 
   const handleEditClick = (c: Category) => {
     setEditingCategory(c)
@@ -369,6 +423,39 @@ export default function CategoriesPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Test Case Categories</h1>
         <p className="text-gray-400 mt-2">Create and organize categories before building test cases. Drag items to reorder.</p>
+      </div>
+
+      {/* AI Category Scanning Card */}
+      <div className="border border-white/5 bg-zinc-900/10 opacity-50 p-6 rounded-2xl space-y-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 select-none cursor-not-allowed">
+        <div className="space-y-1.5 max-w-2xl">
+          <h3 className="text-lg font-bold text-gray-400 flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-gray-500" />
+            <span>AI Category Auto-Setup</span>
+            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase bg-amber-500/10 border border-amber-500/20 text-amber-400">Coming Soon</span>
+          </h3>
+          <p className="text-xs text-gray-500 leading-relaxed">
+            Upload your UAT testcase specification document (PDF), and our local AI will automatically scan, detect, and create all categories for the active UAT group.
+          </p>
+          <p className="text-[11px] text-gray-500 font-medium">
+            💡 <strong>Requirement:</strong> Ensure category header titles are styled with exactly <strong>18pt</strong> font size in your document so the AI can accurately distinguish them.
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3 shrink-0 w-full md:w-auto pointer-events-none">
+          <button
+            disabled
+            className="px-4 py-2.5 rounded-xl border border-white/5 bg-zinc-950/20 text-gray-600 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-not-allowed"
+          >
+            <Download className="w-4 h-4 text-gray-650" />
+            <span>Download Template</span>
+          </button>
+          <button
+            disabled
+            className="px-5 py-2.5 rounded-xl border border-white/5 bg-zinc-950/20 text-gray-600 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-not-allowed"
+          >
+            <Upload className="w-4 h-4 text-gray-650" />
+            <span>Upload & Scan PDF</span>
+          </button>
+        </div>
       </div>
 
       {/* Tabs Header with Manage Target Groups Trigger */}

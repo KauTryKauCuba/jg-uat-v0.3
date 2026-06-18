@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { Plus, Edit2, BarChart2, Trash2, Folder, GripVertical, Search, ChevronDown, ChevronRight, Eye, EyeOff } from "lucide-react"
+import { Plus, Edit2, BarChart2, Trash2, Folder, GripVertical, Search, ChevronDown, ChevronRight, Eye, EyeOff, Sparkles, Upload, Download } from "lucide-react"
 import { ConfirmModal } from "@/components/ui/confirm-modal"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
@@ -254,6 +254,39 @@ export default function TestCasesPage() {
           <Plus className="w-4 h-4" />
           <span>New Test Case</span>
         </Link>
+      </div>
+
+      {/* AI Test Case Scanning Card */}
+      <div className="border border-white/5 bg-zinc-900/10 opacity-50 p-6 rounded-2xl space-y-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 select-none cursor-not-allowed">
+        <div className="space-y-1.5 max-w-2xl">
+          <h3 className="text-lg font-bold text-gray-400 flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-gray-500" />
+            <span>AI Test Case Auto-Setup</span>
+            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase bg-amber-500/10 border border-amber-500/20 text-amber-400">Coming Soon</span>
+          </h3>
+          <p className="text-xs text-gray-500 leading-relaxed">
+            Upload your UAT testcase specification document (PDF), and our local AI will automatically scan, detect, and create all test cases along with their steps/fields for the active UAT group.
+          </p>
+          <p className="text-[11px] text-gray-500 font-medium">
+            💡 <strong>Requirement:</strong> Ensure test case header titles are styled with exactly <strong>18pt</strong> font size in your document so the AI can accurately distinguish them.
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3 shrink-0 w-full md:w-auto pointer-events-none">
+          <button
+            disabled
+            className="px-4 py-2.5 rounded-xl border border-white/5 bg-zinc-950/20 text-gray-600 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-not-allowed"
+          >
+            <Download className="w-4 h-4 text-gray-650" />
+            <span>Download Template</span>
+          </button>
+          <button
+            disabled
+            className="px-5 py-2.5 rounded-xl border border-white/5 bg-zinc-950/20 text-gray-600 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-not-allowed"
+          >
+            <Upload className="w-4 h-4 text-gray-650" />
+            <span>Upload & Scan PDF</span>
+          </button>
+        </div>
       </div>
 
       {/* Search bar & Tabs */}
