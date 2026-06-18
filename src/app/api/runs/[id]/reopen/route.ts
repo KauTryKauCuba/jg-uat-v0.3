@@ -34,12 +34,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const now = new Date();
 
-    // Update status back to PENDING and clear submittedAt
+    // Update status back to PENDING, clear submittedAt, and reset elapsedSeconds
     const updated = await db
       .update(testRuns)
       .set({
         status: "PENDING",
         submittedAt: null,
+        elapsedSeconds: 0,
         updatedAt: now,
       })
       .where(eq(testRuns.id, runId))

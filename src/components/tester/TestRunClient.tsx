@@ -220,6 +220,8 @@ export function TestRunClient({ run }: TestRunClientProps) {
       if (json.error) {
         setSubmitError(json.error)
       } else {
+        run.elapsedSeconds = 0
+        run.updatedAt = new Date().toISOString()
         setIsSubmitted(false)
         router.refresh()
       }
