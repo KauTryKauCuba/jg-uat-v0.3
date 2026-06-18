@@ -72,6 +72,13 @@ export function TestRunClient({ run }: TestRunClientProps) {
 
   // Countdown timer state
   const [timeLeft, setTimeLeft] = React.useState<number | null>(null)
+  const [elapsedSeconds, setElapsedSeconds] = React.useState(run.elapsedSeconds)
+  const [updatedAt, setUpdatedAt] = React.useState(run.updatedAt)
+
+  React.useEffect(() => {
+    setElapsedSeconds(run.elapsedSeconds)
+    setUpdatedAt(run.updatedAt)
+  }, [run.elapsedSeconds, run.updatedAt])
 
   const timeoutsRef = React.useRef<Record<string, NodeJS.Timeout>>({})
 
@@ -101,7 +108,7 @@ export function TestRunClient({ run }: TestRunClientProps) {
     if (isSubmitted || !run.testCase.timer) return
 
     const totalDurationSeconds = run.testCase.timer * 60
-    const startSessionMs = new Date(run.updatedAt).getTime()
+    const startSessionMs = new Date(updatedAt).getTime()
 
     // eslint-disable-next-line prefer-const
     let interval: NodeJS.Timeout
@@ -109,7 +116,7 @@ export function TestRunClient({ run }: TestRunClientProps) {
     const updateTimer = () => {
       const now = Date.now()
       const sessionElapsedSeconds = Math.max(0, Math.floor((now - startSessionMs) / 1000))
-      const totalElapsedSeconds = run.elapsedSeconds + sessionElapsedSeconds
+      const totalElapsedSeconds = elapsedSeconds + sessionElapsedSeconds
       const diffSec = Math.max(0, totalDurationSeconds - totalElapsedSeconds)
       
       setTimeLeft(diffSec)
@@ -126,7 +133,7 @@ export function TestRunClient({ run }: TestRunClientProps) {
     return () => {
       if (interval) clearInterval(interval)
     }
-  }, [isSubmitted, run.testCase.timer, run.updatedAt, run.elapsedSeconds, triggerAutoSubmit])
+  }, [isSubmitted, run.testCase.timer, updatedAt, elapsedSeconds, triggerAutoSubmit])
 
   // Clean up timeouts on unmount
   React.useEffect(() => {
@@ -220,8 +227,8 @@ export function TestRunClient({ run }: TestRunClientProps) {
       if (json.error) {
         setSubmitError(json.error)
       } else {
-        run.elapsedSeconds = 0
-        run.updatedAt = new Date().toISOString()
+        setElapsedSeconds(0)
+        setUpdatedAt(new Date().toISOString())
         setIsSubmitted(false)
         router.refresh()
       }
