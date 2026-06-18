@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { db } from "@/lib/db";
-import { users } from "@/db/schema";
+import { users, organisations } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 
 export async function GET(req: NextRequest) {
@@ -20,8 +20,10 @@ export async function GET(req: NextRequest) {
         testerGroup: users.testerGroup,
         employerLocked: users.employerLocked,
         createdAt: users.createdAt,
+        organisationName: organisations.name,
       })
       .from(users)
+      .leftJoin(organisations, eq(organisations.id, users.organisationId))
       .where(eq(users.role, "TESTER"))
       .orderBy(desc(users.createdAt));
 

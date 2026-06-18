@@ -442,9 +442,10 @@ export default function CategoriesPage() {
             <div className="space-y-4">
               <label className="block text-xs text-gray-400 font-semibold">Target Group</label>
               <select
+                disabled={editingCategory !== null}
                 value={targetGroup}
                 onChange={(e) => setTargetGroup(e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-zinc-900 px-4 py-3 text-sm text-white focus:border-brand-cyan focus:outline-none focus:ring-1 focus:ring-brand-cyan transition-all"
+                className="w-full rounded-xl border border-white/10 bg-zinc-900 px-4 py-3 text-sm text-white focus:border-brand-cyan focus:outline-none focus:ring-1 focus:ring-brand-cyan transition-all disabled:opacity-50 disabled:bg-zinc-950 disabled:cursor-not-allowed"
               >
                 {targetGroups.map((g) => (
                   <option key={g.id} value={g.name}>

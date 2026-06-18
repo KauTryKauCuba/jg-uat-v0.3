@@ -12,6 +12,7 @@ interface Tester {
   testerGroup: string | null
   employerLocked: boolean
   createdAt: string
+  organisationName: string | null
 }
 
 export default function AdminTestersPage() {
@@ -20,6 +21,8 @@ export default function AdminTestersPage() {
   const [error, setError] = React.useState<string | null>(null)
   const [updatingId, setUpdatingId] = React.useState<string | null>(null)
   const [deletingId, setDeletingId] = React.useState<string | null>(null)
+  const [selectedOrg, setSelectedOrg] = React.useState<string>("ALL")
+  const [selectedGroup, setSelectedGroup] = React.useState<string>("ALL")
 
   const fetchTesters = async () => {
     try {
@@ -101,6 +104,49 @@ export default function AdminTestersPage() {
     }
   }
 
+  // Unique organization names list
+  const organisationsList = React.useMemo(() => {
+    const orgs = new Set<string>()
+    testers.forEach((t) => {
+      if (t.organisationName) orgs.add(t.organisationName)
+    })
+    return Array.from(orgs).sort()
+  }, [testers])
+
+  // Unique tester groups list
+  const groupsList = React.useMemo(() => {
+    const groups = new Set<string>()
+    let hasNull = false
+    testers.forEach((t) => {
+      if (t.testerGroup) {
+        groups.add(t.testerGroup)
+      } else {
+        hasNull = true
+      }
+    })
+    const list = Array.from(groups).sort()
+    if (hasNull) {
+      list.push("UNASSIGNED")
+    }
+    return list
+  }, [testers])
+
+  // Filtered testers based on selected organisation and group
+  const filteredTesters = React.useMemo(() => {
+    return testers.filter((t) => {
+      const matchOrg = selectedOrg === "ALL" || t.organisationName === selectedOrg
+      let matchGroup = false
+      if (selectedGroup === "ALL") {
+        matchGroup = true
+      } else if (selectedGroup === "UNASSIGNED") {
+        matchGroup = t.testerGroup === null || t.testerGroup === ""
+      } else {
+        matchGroup = t.testerGroup === selectedGroup
+      }
+      return matchOrg && matchGroup
+    })
+  }, [testers, selectedOrg, selectedGroup])
+
   return (
     <main className="p-8 space-y-6 flex-1">
       <div>
@@ -110,8 +156,58 @@ export default function AdminTestersPage() {
         </p>
       </div>
 
+      {/* Filter Dropdowns Wrapper */}
+      {!loading && testers.length > 0 && (
+        <div className="flex flex-col sm:flex-row gap-4 border-b border-white/5 pb-4">
+          <div className="flex items-center gap-2">
+            <label htmlFor="orgFilter" className="text-xs font-semibold text-gray-400">Organisation:</label>
+            <select
+              id="orgFilter"
+              value={selectedOrg}
+              onChange={(e) => setSelectedOrg(e.target.value)}
+              className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-1.5 text-xs text-white focus:border-brand-cyan focus:outline-none focus:ring-1 focus:ring-brand-cyan transition-all cursor-pointer"
+            >
+              <option value="ALL">All Organisations</option>
+              {organisationsList.map((org) => (
+                <option key={org} value={org}>
+                  {org}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label htmlFor="groupFilter" className="text-xs font-semibold text-gray-400">Selected Group:</label>
+            <select
+              id="groupFilter"
+              value={selectedGroup}
+              onChange={(e) => setSelectedGroup(e.target.value)}
+              className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-1.5 text-xs text-white focus:border-brand-cyan focus:outline-none focus:ring-1 focus:ring-brand-cyan transition-all cursor-pointer"
+            >
+              <option value="ALL">All Groups</option>
+              {groupsList.map((group) => {
+                const displayName = group === "UNASSIGNED" 
+                  ? "Not Chosen" 
+                  : group === "JOBSEEKER_WEB"
+                  ? "Jobseeker Web"
+                  : group === "JOBSEEKER"
+                  ? "Jobseeker"
+                  : group === "EMPLOYER"
+                  ? "Employer"
+                  : group;
+                return (
+                  <option key={group} value={group}>
+                    {displayName}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        </div>
+      )}
+
       <div className="border border-white/5 bg-zinc-900/40 backdrop-blur-md p-6 rounded-2xl space-y-4">
-        <h2 className="text-xl font-bold flex items-center gap-2">
+        <h2 className="text-xl font-bold flex items-center gap-2 border-b border-white/5 pb-4">
           <Users className="w-5 h-5 text-brand-cyan" />
           <span>Registered Testers</span>
         </h2>
@@ -126,6 +222,8 @@ export default function AdminTestersPage() {
           </div>
         ) : testers.length === 0 ? (
           <p className="text-xs text-gray-500 py-16 text-center">No testers registered yet.</p>
+        ) : filteredTesters.length === 0 ? (
+          <p className="text-xs text-gray-500 py-16 text-center">No testers match the selected filters.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm border-collapse">
@@ -133,13 +231,14 @@ export default function AdminTestersPage() {
                 <tr className="border-b border-white/5 text-gray-400 font-semibold">
                   <th className="py-3 px-4">Name</th>
                   <th className="py-3 px-4">Email</th>
+                  <th className="py-3 px-4">Organisation</th>
                   <th className="py-3 px-4">Selected Group</th>
                   <th className="py-3 px-4">Created At</th>
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {testers.map((tester) => {
+                {filteredTesters.map((tester) => {
                   const isUpdating = updatingId === tester.id
 
                   return (
@@ -151,6 +250,9 @@ export default function AdminTestersPage() {
                         {tester.name || <span className="text-gray-500 italic">No Name</span>}
                       </td>
                       <td className="py-4 px-4 text-gray-300">{tester.email}</td>
+                      <td className="py-4 px-4 text-gray-300">
+                        {tester.organisationName || <span className="text-gray-500 italic">—</span>}
+                      </td>
                       <td className="py-4 px-4">
                         {tester.testerGroup === "JOBSEEKER" || tester.testerGroup === "JOBSEEKER_WEB" ? (
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 border border-emerald-500/25 text-emerald-400">

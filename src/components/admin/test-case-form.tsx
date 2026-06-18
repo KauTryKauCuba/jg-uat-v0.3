@@ -37,6 +37,8 @@ export function TestCaseForm({ initialData }: TestCaseFormProps) {
   const [description, setDescription] = React.useState(initialData?.description || "")
   const [pdfUrl, setPdfUrl] = React.useState<string | null>(initialData?.pdfUrl || null)
   const [categories, setCategories] = React.useState<{ id: string; name: string; targetGroup: string }[]>([])
+  const [targetGroups, setTargetGroups] = React.useState<{ id: string; name: string; displayName: string }[]>([])
+  const [selectedGroup, setSelectedGroup] = React.useState<string>("")
   const [categoryId, setCategoryId] = React.useState(initialData?.categoryId || queryCategoryId || "")
   const [timer, setTimer] = React.useState<number>(initialData?.timer || 0)
   const [hidden, setHidden] = React.useState(initialData?.hidden || false)
@@ -58,7 +60,7 @@ export function TestCaseForm({ initialData }: TestCaseFormProps) {
     })) || []
   )
 
-  // Fetch categories
+  // Fetch categories & targetGroups
   React.useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -73,8 +75,38 @@ export function TestCaseForm({ initialData }: TestCaseFormProps) {
         setLoadingCategories(false)
       }
     }
+
+    const fetchTargetGroups = async () => {
+      try {
+        const res = await fetch("/api/target-groups")
+        const json = await res.json()
+        if (json.data) {
+          setTargetGroups(json.data)
+        }
+      } catch (err) {
+        console.error("Failed to fetch target groups:", err)
+      }
+    }
+
     fetchCategories()
+    fetchTargetGroups()
   }, [])
+
+  // Auto-select UAT Group based on chosen/initial category
+  React.useEffect(() => {
+    if (categories.length > 0 && categoryId) {
+      const cat = categories.find((c) => c.id === categoryId)
+      if (cat) {
+        setSelectedGroup(cat.targetGroup)
+      }
+    }
+  }, [categories, categoryId])
+
+  // Filtered categories based on selected UAT Group
+  const filteredCategories = React.useMemo(() => {
+    if (!selectedGroup) return []
+    return categories.filter((c) => c.targetGroup === selectedGroup)
+  }, [categories, selectedGroup])
 
   // Uploading states
   const [uploading, setUploading] = React.useState(false)
@@ -291,7 +323,7 @@ export function TestCaseForm({ initialData }: TestCaseFormProps) {
     }
   }
 
-  const isSaveDisabled = !title || !pdfUrl || !categoryId || saving
+  const isSaveDisabled = !title || !pdfUrl || !categoryId || !timer || saving
 
   return (
     <div className="space-y-6">
@@ -301,12 +333,33 @@ export function TestCaseForm({ initialData }: TestCaseFormProps) {
           <h2 className="text-lg font-bold">General Information</h2>
           <div className="space-y-4">
             <div className="space-y-4">
+              <label className="block text-xs text-gray-400 font-semibold">UAT Group *</label>
+              <select
+                value={selectedGroup}
+                onChange={(e) => {
+                  setSelectedGroup(e.target.value)
+                  setCategoryId("")
+                }}
+                className="w-full rounded-xl border border-white/10 bg-zinc-950 px-4 py-3 text-sm text-white focus:border-brand-cyan focus:outline-none focus:ring-1 focus:ring-brand-cyan transition-all"
+              >
+                <option value="">-- Select UAT Group --</option>
+                {targetGroups.map((g) => (
+                  <option key={g.id} value={g.name}>
+                    {g.displayName}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-4">
               <label className="block text-xs text-gray-400 font-semibold">Category *</label>
-              {loadingCategories ? (
+              {!selectedGroup ? (
+                <div className="text-xs text-gray-500 py-2 italic">Please select a UAT Group first.</div>
+              ) : loadingCategories ? (
                 <div className="text-xs text-gray-500 py-2">Loading categories...</div>
-              ) : categories.length === 0 ? (
+              ) : filteredCategories.length === 0 ? (
                 <div className="text-xs text-amber-500 py-2">
-                  No categories found. Please{" "}
+                  No categories found for this group. Please{" "}
                   <Link href="/admin/categories" className="text-brand-cyan hover:underline">
                     create a category
                   </Link>{" "}
@@ -319,9 +372,9 @@ export function TestCaseForm({ initialData }: TestCaseFormProps) {
                   className="w-full rounded-xl border border-white/10 bg-zinc-950 px-4 py-3 text-sm text-white focus:border-brand-cyan focus:outline-none focus:ring-1 focus:ring-brand-cyan transition-all"
                 >
                   <option value="">-- Select Category --</option>
-                  {categories.map((c) => (
+                  {filteredCategories.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.name} ({c.targetGroup.charAt(0) + c.targetGroup.slice(1).toLowerCase()})
+                      {c.name}
                     </option>
                   ))}
                 </select>
@@ -341,13 +394,13 @@ export function TestCaseForm({ initialData }: TestCaseFormProps) {
             </div>
 
             <div className="space-y-4">
-              <label className="block text-xs text-gray-400 font-semibold">Timer Limit</label>
+              <label className="block text-xs text-gray-400 font-semibold">Timer Limit *</label>
               <select
                 value={timer}
                 onChange={(e) => setTimer(Number(e.target.value))}
                 className="w-full rounded-xl border border-white/10 bg-zinc-950 px-4 py-3 text-sm text-white focus:border-brand-cyan focus:outline-none focus:ring-1 focus:ring-brand-cyan transition-all"
               >
-                <option value={0}>None</option>
+                <option value={0}>-- Select Timer Limit --</option>
                 <option value={3}>3 Minutes</option>
                 <option value={5}>5 Minutes</option>
                 <option value={10}>10 Minutes</option>

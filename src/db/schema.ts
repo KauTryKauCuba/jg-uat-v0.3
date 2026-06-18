@@ -1,4 +1,4 @@
-import { pgEnum, pgTable, uuid, text, timestamp, jsonb, integer, boolean } from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, uuid, text, timestamp, jsonb, integer, boolean, unique } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 // Enums
@@ -32,13 +32,15 @@ export const users = pgTable("users", {
 // Test Case Categories table
 export const testCaseCategories = pgTable("test_case_categories", {
   id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull().unique(),
+  name: text("name").notNull(),
   description: text("description"),
   order: integer("order").default(0).notNull(),
   targetGroup: text("target_group").default("JOBSEEKER_WEB").notNull(), // "JOBSEEKER_WEB" | "EMPLOYER"
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (t) => [
+  unique("test_case_categories_name_target_group_unique").on(t.name, t.targetGroup)
+]);
 
 // Test Cases table
 export const testCases = pgTable("test_cases", {
