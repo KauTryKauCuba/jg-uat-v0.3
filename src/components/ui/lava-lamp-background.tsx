@@ -270,12 +270,12 @@ export const LavaLampBackground: React.FC<LavaLampBackgroundProps> = ({ classNam
       {/* Lava Lamp Blobs Canvas - with heavy CSS blur to merge them together */}
       <canvas
         ref={blobsCanvasRef}
-        className="absolute inset-0 w-full h-full opacity-55 mix-blend-screen blur-[60px] md:blur-[90px] pointer-events-none"
+        className="absolute inset-0 w-full h-full dark:mix-blend-screen mix-blend-multiply dark:opacity-55 opacity-20 transition-all duration-500 blur-[60px] md:blur-[90px] pointer-events-none"
       />
       {/* Crisp floating particle Canvas */}
       <canvas
         ref={particlesCanvasRef}
-        className="absolute inset-0 w-full h-full opacity-65 pointer-events-none"
+        className="absolute inset-0 w-full h-full dark:opacity-65 opacity-35 transition-opacity duration-500 pointer-events-none"
       />
     </div>
   )

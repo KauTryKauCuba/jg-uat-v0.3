@@ -2,6 +2,7 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 import { ChevronRight } from "lucide-react"
 import { LavaLampBackground } from "@/components/ui/lava-lamp-background"
+import { ThemeToggle } from "@/components/ui/theme-toggle"
 
 interface HeroSectionProps extends React.HTMLAttributes<HTMLDivElement> {
   title?: string
@@ -49,8 +50,11 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
     ref,
   ) => {
     return (
-      <div className={cn("relative overflow-hidden w-full min-h-screen", className)} ref={ref} {...props}>
+      <div className={cn("relative overflow-hidden w-full min-h-screen transition-colors duration-300", className)} ref={ref} {...props}>
         <LavaLampBackground className="absolute inset-0 z-0 pointer-events-none" />
+        <div className="absolute top-6 right-6 z-50">
+          <ThemeToggle />
+        </div>
         <section className="relative max-w-full mx-auto z-10">
           
           <div className="max-w-screen-xl z-10 mx-auto px-4 py-12 md:py-28 gap-12 md:px-8">
@@ -84,15 +88,7 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
                 </div>
               )}
             </div>
-            {bottomImage && (
-              <div className="mt-16 md:mt-32 mx-4 md:mx-10 relative z-10">
-                <img
-                  src={bottomImage.light}
-                  className="w-full shadow-lg rounded-lg border border-gray-200 dark:hidden"
-                  alt="Dashboard preview"
-                />
-              </div>
-            )}
+
           </div>
         </section>
       </div>
