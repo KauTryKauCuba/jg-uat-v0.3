@@ -137,8 +137,9 @@ export function TestRunClient({ run }: TestRunClientProps) {
 
   // Clean up timeouts on unmount
   React.useEffect(() => {
+    const currentTimeouts = timeoutsRef.current
     return () => {
-      Object.values(timeoutsRef.current).forEach((t) => clearTimeout(t))
+      Object.values(currentTimeouts).forEach((t) => clearTimeout(t))
     }
   }, [])
 

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { X, Smartphone, Loader2, QrCode, CheckCircle2 } from "lucide-react"
+import { X, Smartphone, Loader2, CheckCircle2 } from "lucide-react"
 import QRCode from "qrcode"
 
 interface QRUploadModalProps {
